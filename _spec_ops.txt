@@ -1,0 +1,266 @@
+=== GET / ===
+=== GET /admin/activity-logs ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+  QUERY actorId required=False schema={'format': 'uuid', 'example': '0f8fad5b-d9cb-469f-a165-70867728950e', 'type': 'string'}
+  QUERY action required=False schema={'example': 'report.created', 'type': 'string'}
+  QUERY entityType required=False schema={'example': 'report', 'type': 'string'}
+  RESP 200 application/json ref=#/components/schemas/ActivityLogListDto
+=== POST /auth/signup ===
+  REQ_BODY application/json ref=#/components/schemas/SignupDto schema={'$ref': '#/components/schemas/SignupDto'}
+=== POST /auth/login ===
+  REQ_BODY application/json ref=#/components/schemas/LoginDto schema={'$ref': '#/components/schemas/LoginDto'}
+=== POST /auth/refresh ===
+  REQ_BODY application/json ref=#/components/schemas/RefreshTokenDto schema={'$ref': '#/components/schemas/RefreshTokenDto'}
+=== POST /auth/logout ===
+=== GET /auth/verify-email ===
+  QUERY token required=True schema={'type': 'string'}
+=== POST /auth/resend-verification ===
+  REQ_BODY application/json ref=#/components/schemas/ResendVerificationDto schema={'$ref': '#/components/schemas/ResendVerificationDto'}
+=== POST /auth/forgot-password ===
+  REQ_BODY application/json ref=#/components/schemas/ForgotPasswordDto schema={'$ref': '#/components/schemas/ForgotPasswordDto'}
+=== POST /auth/reset-password ===
+  REQ_BODY application/json ref=#/components/schemas/ResetPasswordDto schema={'$ref': '#/components/schemas/ResetPasswordDto'}
+=== POST /auth/otp/request ===
+  REQ_BODY application/json ref=#/components/schemas/RequestOtpDto schema={'$ref': '#/components/schemas/RequestOtpDto'}
+=== POST /auth/otp/verify ===
+  REQ_BODY application/json ref=#/components/schemas/VerifyOtpDto schema={'$ref': '#/components/schemas/VerifyOtpDto'}
+=== GET /auth/me ===
+=== GET /users/me ===
+=== PATCH /users/me ===
+  REQ_BODY application/json ref=#/components/schemas/UpdateProfileDto schema={'$ref': '#/components/schemas/UpdateProfileDto'}
+=== GET /notifications ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+  RESP 200 application/json ref=#/components/schemas/NotificationListDto
+=== PATCH /notifications/{id}/read ===
+  PATH id required=True
+=== GET /categories ===
+=== GET /products ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+  QUERY categoryId required=False schema={'minimum': 1, 'example': 1, 'type': 'number'}
+  QUERY search required=False schema={'example': 'tomato', 'type': 'string'}
+  QUERY sellerId required=False schema={'format': 'uuid', 'example': '0f8fad5b-d9cb-469f-a165-70867728950e', 'type': 'string'}
+  RESP 200 application/json ref=#/components/schemas/ProductListDto
+=== POST /products ===
+  REQ_BODY application/json ref=#/components/schemas/CreateProductDto schema={'$ref': '#/components/schemas/CreateProductDto'}
+=== GET /products/{id} ===
+  PATH id required=True
+=== PUT /products/{id} ===
+  PATH id required=True
+  REQ_BODY application/json ref=#/components/schemas/UpdateProductDto schema={'$ref': '#/components/schemas/UpdateProductDto'}
+=== DELETE /products/{id} ===
+  PATH id required=True
+=== POST /products/{id}/image ===
+  PATH id required=True
+  REQ_BODY multipart/form-data ref= schema={'type': 'object', 'properties': {'file': {'type': 'string', 'format': 'binary', 'description': 'Image file (jpeg/png/webp, max 5 MB)'}}}
+=== GET /seller-profiles/me ===
+=== POST /seller-profiles/me ===
+  REQ_BODY application/json ref=#/components/schemas/UpsertSellerProfileDto schema={'$ref': '#/components/schemas/UpsertSellerProfileDto'}
+=== PATCH /seller-profiles/me ===
+  REQ_BODY application/json ref=#/components/schemas/UpsertSellerProfileDto schema={'$ref': '#/components/schemas/UpsertSellerProfileDto'}
+=== POST /seller-profiles/me/national-id ===
+  REQ_BODY multipart/form-data ref= schema={'type': 'object', 'properties': {'file': {'type': 'string', 'format': 'binary', 'description': 'National ID image (jpeg/png/webp, max 5 MB)'}}}
+=== POST /seller-profiles/me/selfie ===
+  REQ_BODY multipart/form-data ref= schema={'type': 'object', 'properties': {'file': {'type': 'string', 'format': 'binary', 'description': 'Selfie image (jpeg/png/webp, max 5 MB)'}}}
+=== GET /seller-profiles/me/documents/{kind} ===
+  PATH kind required=True
+=== GET /admin/seller-profiles ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+  QUERY status required=False schema={'$ref': '#/components/schemas/SellerApprovalStatus'}
+  RESP 200 application/json ref=#/components/schemas/SellerProfileListDto
+=== GET /admin/seller-profiles/{userId} ===
+  PATH userId required=True
+=== PATCH /admin/seller-profiles/{userId}/approve ===
+  PATH userId required=True
+=== PATCH /admin/seller-profiles/{userId}/reject ===
+  PATH userId required=True
+=== GET /admin/seller-profiles/{userId}/documents/{kind} ===
+  PATH userId required=True
+  PATH kind required=True
+=== GET /addresses ===
+=== POST /addresses ===
+  REQ_BODY application/json ref=#/components/schemas/CreateAddressDto schema={'$ref': '#/components/schemas/CreateAddressDto'}
+=== PATCH /addresses/{id} ===
+  PATH id required=True
+  REQ_BODY application/json ref=#/components/schemas/UpdateAddressDto schema={'$ref': '#/components/schemas/UpdateAddressDto'}
+=== DELETE /addresses/{id} ===
+  PATH id required=True
+=== POST /orders ===
+  REQ_BODY application/json ref=#/components/schemas/CreateOrderDto schema={'$ref': '#/components/schemas/CreateOrderDto'}
+=== GET /orders/buyer ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+  RESP 200 application/json ref=#/components/schemas/OrderListDto
+=== GET /orders/seller ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+  RESP 200 application/json ref=#/components/schemas/OrderListDto
+=== GET /orders/{id} ===
+  PATH id required=True
+=== GET /orders/{id}/status-history ===
+  PATH id required=True
+=== PATCH /orders/{id}/status ===
+  PATH id required=True
+  REQ_BODY application/json ref=#/components/schemas/UpdateOrderStatusDto schema={'$ref': '#/components/schemas/UpdateOrderStatusDto'}
+=== GET /chat/threads ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+=== GET /chat/threads/{threadId} ===
+  PATH threadId required=True
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+=== POST /chat/threads/{threadId}/messages ===
+  PATH threadId required=True
+  REQ_BODY application/json ref=#/components/schemas/SendMessageDto schema={'$ref': '#/components/schemas/SendMessageDto'}
+=== POST /chat/threads/{threadId}/read ===
+  PATH threadId required=True
+=== POST /chat/threads/{threadId}/attachments ===
+  PATH threadId required=True
+  REQ_BODY multipart/form-data ref= schema={'type': 'object', 'properties': {'file': {'type': 'string', 'format': 'binary', 'description': 'Image (jpeg/png/webp) or voice recording (webm/mp3/ogg/m4a), max 10 MB'}}}
+=== GET /admin/chat/threads ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+=== GET /admin/chat/threads/{threadId} ===
+  PATH threadId required=True
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+=== GET /admin/stats ===
+=== GET /admin/admins ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+  RESP 200 application/json ref=#/components/schemas/AdminListDto
+=== POST /admin/admins ===
+  REQ_BODY application/json ref=#/components/schemas/CreateAdminDto schema={'$ref': '#/components/schemas/CreateAdminDto'}
+  RESP 201 application/json ref=#/components/schemas/AdminListItemDto
+=== PATCH /admin/admins/{userId}/role ===
+  PATH userId required=True
+  REQ_BODY application/json ref=#/components/schemas/UpdateAdminRoleDto schema={'$ref': '#/components/schemas/UpdateAdminRoleDto'}
+  RESP 200 application/json ref=#/components/schemas/AdminListItemDto
+=== GET /platform-config ===
+=== PUT /platform-config/{key} ===
+  PATH key required=True
+  REQ_BODY application/json ref=#/components/schemas/UpdatePlatformConfigDto schema={'$ref': '#/components/schemas/UpdatePlatformConfigDto'}
+=== GET /wallets/me ===
+  RESP 200 application/json ref=#/components/schemas/WalletResponseDto
+=== GET /transactions/me ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+  RESP 200 application/json ref=#/components/schemas/TransactionListDto
+=== GET /admin/transactions ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+  QUERY type required=False schema={'$ref': '#/components/schemas/TransactionType'}
+  QUERY status required=False schema={'$ref': '#/components/schemas/TransactionStatus'}
+  QUERY walletId required=False schema={'format': 'uuid', 'example': '0f8fad5b-d9cb-469f-a165-70867728950e', 'type': 'string'}
+  RESP 200 application/json ref=#/components/schemas/TransactionListDto
+=== POST /payments/{orderId} ===
+  PATH orderId required=True
+  REQ_BODY application/json ref=#/components/schemas/InitiatePaymentDto schema={'$ref': '#/components/schemas/InitiatePaymentDto'}
+  RESP 200 application/json ref=#/components/schemas/PaymentResultDto
+=== POST /payments/webhook/{channel} ===
+  PATH channel required=True
+  REQ_BODY application/json ref=#/components/schemas/PaymentWebhookDto schema={'$ref': '#/components/schemas/PaymentWebhookDto'}
+  RESP 200 application/json ref=#/components/schemas/PaymentResultDto
+=== GET /payments/{orderId}/status ===
+  PATH orderId required=True
+  RESP 200 application/json ref=#/components/schemas/PaymentStatusDto
+=== POST /withdrawals ===
+  REQ_BODY application/json ref=#/components/schemas/RequestWithdrawalDto schema={'$ref': '#/components/schemas/RequestWithdrawalDto'}
+=== GET /withdrawals/me ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+  RESP 200 application/json ref=#/components/schemas/WithdrawalListDto
+=== GET /admin/withdrawals ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+  QUERY status required=False schema={'$ref': '#/components/schemas/WithdrawalStatus'}
+  RESP 200 application/json ref=#/components/schemas/WithdrawalListDto
+=== POST /admin/withdrawals/{id}/process ===
+  PATH id required=True
+  REQ_BODY application/json ref=#/components/schemas/ProcessWithdrawalDto schema={'$ref': '#/components/schemas/ProcessWithdrawalDto'}
+=== POST /deliveries ===
+  REQ_BODY application/json ref=#/components/schemas/AssignDeliveryDto schema={'$ref': '#/components/schemas/AssignDeliveryDto'}
+=== GET /deliveries/driver ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+  RESP 200 application/json ref=#/components/schemas/DeliveryListDto
+=== POST /deliveries/{id}/pickup ===
+  PATH id required=True
+=== POST /deliveries/{id}/complete ===
+  PATH id required=True
+=== POST /deliveries/{id}/confirm ===
+  PATH id required=True
+  REQ_BODY application/json ref=#/components/schemas/ConfirmDeliveryDto schema={'$ref': '#/components/schemas/ConfirmDeliveryDto'}
+=== GET /deliveries/{id} ===
+  PATH id required=True
+=== GET /admin/deliveries ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+  QUERY activeOnly required=False schema={'default': False, 'type': 'boolean'}
+  RESP 200 application/json ref=#/components/schemas/DeliveryListDto
+=== POST /admin/drivers ===
+  REQ_BODY application/json ref=#/components/schemas/CreateDriverDto schema={'$ref': '#/components/schemas/CreateDriverDto'}
+  RESP 201 application/json ref=#/components/schemas/DriverListItemDto
+=== GET /admin/drivers ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+  RESP 200 application/json ref=#/components/schemas/DriverListDto
+=== GET /receipts/me ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+  RESP 200 application/json ref=#/components/schemas/ReceiptListDto
+=== GET /receipts/order/{orderId} ===
+  PATH orderId required=True
+=== GET /receipts/{id} ===
+  PATH id required=True
+=== GET /receipts/{id}/download ===
+  PATH id required=True
+  RESP 200 application/pdf ref=
+=== GET /wishlist ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+=== POST /wishlist/{productId} ===
+  PATH productId required=True
+=== DELETE /wishlist/{productId} ===
+  PATH productId required=True
+=== POST /ratings ===
+  REQ_BODY application/json ref=#/components/schemas/CreateRatingDto schema={'$ref': '#/components/schemas/CreateRatingDto'}
+=== GET /ratings/seller/{sellerId} ===
+  PATH sellerId required=True
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+=== POST /support-tickets ===
+  REQ_BODY application/json ref=#/components/schemas/CreateTicketDto schema={'$ref': '#/components/schemas/CreateTicketDto'}
+=== GET /support-tickets/me ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+  RESP 200 application/json ref=#/components/schemas/TicketListDto
+=== GET /admin/support-tickets ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+  QUERY status required=False schema={'$ref': '#/components/schemas/TicketStatus'}
+  RESP 200 application/json ref=#/components/schemas/TicketListDto
+=== PATCH /admin/support-tickets/{id}/assign ===
+  PATH id required=True
+=== PATCH /admin/support-tickets/{id}/resolve ===
+  PATH id required=True
+=== POST /reports ===
+  REQ_BODY application/json ref=#/components/schemas/CreateReportDto schema={'$ref': '#/components/schemas/CreateReportDto'}
+=== GET /reports/me ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+  RESP 200 application/json ref=#/components/schemas/ReportListDto
+=== GET /admin/reports ===
+  QUERY page required=False schema={'minimum': 1, 'default': 1, 'example': 1, 'type': 'number'}
+  QUERY limit required=False schema={'minimum': 1, 'maximum': 100, 'default': 20, 'example': 20, 'type': 'number'}
+  QUERY status required=False schema={'$ref': '#/components/schemas/ReportStatus'}
+  RESP 200 application/json ref=#/components/schemas/ReportListDto
+=== PATCH /admin/reports/{id}/handle ===
+  PATH id required=True
+  REQ_BODY application/json ref=#/components/schemas/HandleReportDto schema={'$ref': '#/components/schemas/HandleReportDto'}
+=== GET /seller-analytics/overview ===
+=== GET /seller-analytics/best-sellers ===
+=== GET /seller-analytics/monthly ===

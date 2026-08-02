@@ -1,0 +1,59 @@
+import '../models/activity_log.dart';
+import '../models/admin_stats.dart';
+import '../models/chat.dart';
+import '../models/delivery.dart';
+import '../models/report.dart';
+import '../models/seller_profile.dart';
+import '../models/support_ticket.dart';
+import '../models/wallet.dart';
+import '../models/withdrawal.dart';
+
+/// Admin console — admin-only endpoints (ADM-01..13). Server-side RBAC is the
+/// real gate; this repo is only ever exercised from the admin UI.
+abstract class AdminRepository {
+  // Stats & seller approval
+  Future<AdminStats> stats();
+  Future<List<SellerProfile>> pendingSellers();
+  Future<void> approveSeller(String userId);
+  Future<void> rejectSeller(String userId);
+
+  // Wallets & withdrawals
+  Future<List<Wallet>> allWallets();
+  Future<List<Withdrawal>> pendingWithdrawals();
+  Future<void> processWithdrawal(String id, {bool reject = false});
+
+  // Deliveries
+  Future<List<Delivery>> activeDeliveries();
+
+  // Support & reports
+  Future<List<SupportTicket>> tickets();
+  Future<void> resolveTicket(String id);
+  Future<List<Report>> reports();
+  Future<void> actionReport(String id, {bool action = false});
+
+  // Chat read-only access (ADM-12)
+  Future<List<ChatThread>> chatThreads();
+  Future<List<ChatMessage>> chatMessages(String threadId);
+
+  // Driver accounts (D6)
+  Future<void> createDriver(CreateDriverInput input);
+
+  // Audit trail (ADM-15)
+  Future<List<ActivityLog>> activityLog();
+}
+
+class CreateDriverInput {
+  final String firstName;
+  final String lastName;
+  final String email;
+  final String phone;
+  final String region;
+
+  const CreateDriverInput({
+    required this.firstName,
+    required this.lastName,
+    required this.email,
+    required this.phone,
+    required this.region,
+  });
+}

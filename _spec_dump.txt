@@ -1,0 +1,441 @@
+=== ActivityLogListItemDto ===
+  id: type=string format=uuid ref= items_ref= enum=[] nullable=False Log entry UUID
+  actorId: type=object format=uuid ref= items_ref= enum=[] nullable=False Acting user UUID (null for system actions)
+  actorRole: type=object format= ref= items_ref= enum=[] nullable=False Acting user role at the time (BUYER/SELLER/ADMIN/DRIVER)
+  action: type=string format= ref= items_ref= enum=[] nullable=False Action key, e.g. `report.created`
+  entityType: type=object format= ref= items_ref= enum=[] nullable=False Type of entity the action targeted, e.g. `report`
+  entityId: type=object format=uuid ref= items_ref= enum=[] nullable=False UUID of the entity the action targeted
+  metadata: type=object format= ref= items_ref= enum=[] nullable=False Structured action payload
+  ip: type=object format= ref= items_ref= enum=[] nullable=False Originating IP address, when captured
+  createdAt: type=string format=date-time ref= items_ref= enum=[] nullable=False When the action happened
+=== ActivityLogListDto ===
+  items: type=array format= ref= items_ref=#/components/schemas/ActivityLogListItemDto enum=[] nullable=False Page of audit log entries
+  total: type=number format= ref= items_ref= enum=[] nullable=False Total matching log entries
+  page: type=number format= ref= items_ref= enum=[] nullable=False Current page (1-based)
+  limit: type=number format= ref= items_ref= enum=[] nullable=False Items per page
+=== UserRole ===
+=== SignupDto ===
+  firstName: type=string format= ref= items_ref= enum=[] nullable=False First name
+  lastName: type=string format= ref= items_ref= enum=[] nullable=False Last name
+  email: type=string format= ref= items_ref= enum=[] nullable=False Email address (at least one of email or phone is required)
+  phone: type=string format= ref= items_ref= enum=[] nullable=False Phone number (at least one of email or phone is required)
+  password: type=string format= ref= items_ref= enum=[] nullable=False Password — at least 8 characters with upper, lower, digit and special character
+  role: type=? format= ref= items_ref= enum=[] nullable=False Account role (BUYER or SELLER for self-signup)
+  region: type=string format= ref= items_ref= enum=[] nullable=False Region / city
+  farmName: type=string format= ref= items_ref= enum=[] nullable=False Farm name (required when creating a seller profile)
+  mainCategoryId: type=number format= ref= items_ref= enum=[] nullable=False Main product category id (required when creating a seller profile)
+  businessLicense: type=string format= ref= items_ref= enum=[] nullable=False Business license number
+=== LoginDto ===
+  identifier: type=string format= ref= items_ref= enum=[] nullable=False Email address or phone number
+  password: type=string format= ref= items_ref= enum=[] nullable=False Account password
+=== RefreshTokenDto ===
+  refreshToken: type=string format= ref= items_ref= enum=[] nullable=False Refresh token issued at login (or by the previous refresh)
+=== ResendVerificationDto ===
+  email: type=string format= ref= items_ref= enum=[] nullable=False Email address to resend the verification link to
+=== ForgotPasswordDto ===
+  email: type=string format= ref= items_ref= enum=[] nullable=False Registered email address
+=== ResetPasswordDto ===
+  token: type=string format= ref= items_ref= enum=[] nullable=False Signed reset token from the password-reset email
+  newPassword: type=string format= ref= items_ref= enum=[] nullable=False New password — at least 8 characters with upper, lower, digit and special charac
+=== VerificationPurpose ===
+=== RequestOtpDto ===
+  target: type=string format= ref= items_ref= enum=[] nullable=False Email address or phone number the one-time code is sent to
+  purpose: type=? format= ref= items_ref= enum=[] nullable=False What the code will be used for
+=== VerifyOtpDto ===
+  target: type=string format= ref= items_ref= enum=[] nullable=False Email address or phone number the one-time code was sent to
+  code: type=string format= ref= items_ref= enum=[] nullable=False Six-digit code received on the target
+  purpose: type=? format= ref= items_ref= enum=[] nullable=False Purpose the code was requested for
+=== UpdateProfileDto ===
+  firstName: type=string format= ref= items_ref= enum=[] nullable=False First name
+  lastName: type=string format= ref= items_ref= enum=[] nullable=False Last name
+  phone: type=string format= ref= items_ref= enum=[] nullable=False Phone number
+  region: type=string format= ref= items_ref= enum=[] nullable=False Region / city
+  latitude: type=number format= ref= items_ref= enum=[] nullable=False Latitude (WGS84)
+  longitude: type=number format= ref= items_ref= enum=[] nullable=False Longitude (WGS84)
+=== NotificationType ===
+=== NotificationItemDto ===
+  id: type=string format=uuid ref= items_ref= enum=[] nullable=False Notification UUID
+  userId: type=string format=uuid ref= items_ref= enum=[] nullable=False Owner user UUID
+  type: type=? format= ref= items_ref= enum=[] nullable=False Notification category
+  title: type=string format= ref= items_ref= enum=[] nullable=False Notification title
+  body: type=string format= ref= items_ref= enum=[] nullable=False Notification body
+  data: type=object format= ref= items_ref= enum=[] nullable=False Structured payload
+  readAt: type=object format=date-time ref= items_ref= enum=[] nullable=False When the notification was read
+  createdAt: type=string format=date-time ref= items_ref= enum=[] nullable=False Creation timestamp
+=== NotificationListDto ===
+  items: type=array format= ref= items_ref=#/components/schemas/NotificationItemDto enum=[] nullable=False Page of notifications
+  total: type=number format= ref= items_ref= enum=[] nullable=False Total matching notifications
+  page: type=number format= ref= items_ref= enum=[] nullable=False Current page (1-based)
+  limit: type=number format= ref= items_ref= enum=[] nullable=False Items per page
+=== ProductCategoryDto ===
+  id: type=number format= ref= items_ref= enum=[] nullable=False Category id
+  name: type=string format= ref= items_ref= enum=[] nullable=False Category name
+=== ProductSellerProfileDto ===
+  farmName: type=string format= ref= items_ref= enum=[] nullable=False Farm name
+=== ProductSellerDto ===
+  id: type=string format=uuid ref= items_ref= enum=[] nullable=False Seller user id
+  firstName: type=string format= ref= items_ref= enum=[] nullable=False Seller first name
+  lastName: type=string format= ref= items_ref= enum=[] nullable=False Seller last name
+  sellerProfile: type=? format= ref= items_ref= enum=[] nullable=False Seller farm profile (null until the profile exists)
+=== ProductListItemDto ===
+  id: type=string format=uuid ref= items_ref= enum=[] nullable=False Product id
+  sellerId: type=string format=uuid ref= items_ref= enum=[] nullable=False Owner seller user id
+  categoryId: type=number format= ref= items_ref= enum=[] nullable=False Category id
+  name: type=string format= ref= items_ref= enum=[] nullable=False Product name
+  description: type=object format= ref= items_ref= enum=[] nullable=False Product description
+  pricePerKg: type=string format= ref= items_ref= enum=[] nullable=False Price per kilogram in FCFA
+  quantityKg: type=string format= ref= items_ref= enum=[] nullable=False Available quantity in kilograms
+  farmLatitude: type=object format= ref= items_ref= enum=[] nullable=False Farm latitude (WGS84)
+  farmLongitude: type=object format= ref= items_ref= enum=[] nullable=False Farm longitude (WGS84)
+  imageUrl: type=object format= ref= items_ref= enum=[] nullable=False Image URL
+  isActive: type=boolean format= ref= items_ref= enum=[] nullable=False Whether the product is listed
+  createdAt: type=string format=date-time ref= items_ref= enum=[] nullable=False Creation timestamp
+  updatedAt: type=string format=date-time ref= items_ref= enum=[] nullable=False Last update timestamp
+  category: type=? format= ref= items_ref= enum=[] nullable=False Category details
+  seller: type=? format= ref= items_ref= enum=[] nullable=False Seller summary
+=== ProductListDto ===
+  items: type=array format= ref= items_ref=#/components/schemas/ProductListItemDto enum=[] nullable=False Page of visible products
+  total: type=number format= ref= items_ref= enum=[] nullable=False Total matching products
+  page: type=number format= ref= items_ref= enum=[] nullable=False Current page (1-based)
+  limit: type=number format= ref= items_ref= enum=[] nullable=False Items per page
+=== CreateProductDto ===
+  categoryId: type=number format= ref= items_ref= enum=[] nullable=False Product category id
+  name: type=string format= ref= items_ref= enum=[] nullable=False Product name
+  description: type=string format= ref= items_ref= enum=[] nullable=False Product description
+  pricePerKg: type=string format= ref= items_ref= enum=[] nullable=False Price per kilogram in FCFA (numeric string)
+  quantityKg: type=string format= ref= items_ref= enum=[] nullable=False Available quantity in kilograms (numeric string)
+  farmLatitude: type=string format= ref= items_ref= enum=[] nullable=False Farm latitude (WGS84, numeric string)
+  farmLongitude: type=string format= ref= items_ref= enum=[] nullable=False Farm longitude (WGS84, numeric string)
+  imageUrl: type=string format= ref= items_ref= enum=[] nullable=False Initial image URL (also settable via the image upload endpoint)
+=== UpdateProductDto ===
+  categoryId: type=number format= ref= items_ref= enum=[] nullable=False Product category id
+  name: type=string format= ref= items_ref= enum=[] nullable=False Product name
+  description: type=string format= ref= items_ref= enum=[] nullable=False Product description
+  pricePerKg: type=string format= ref= items_ref= enum=[] nullable=False Price per kilogram in FCFA (numeric string)
+  quantityKg: type=string format= ref= items_ref= enum=[] nullable=False Available quantity in kilograms (numeric string)
+  farmLatitude: type=string format= ref= items_ref= enum=[] nullable=False Farm latitude (WGS84, numeric string)
+  farmLongitude: type=string format= ref= items_ref= enum=[] nullable=False Farm longitude (WGS84, numeric string)
+  imageUrl: type=string format= ref= items_ref= enum=[] nullable=False Initial image URL (also settable via the image upload endpoint)
+=== UpsertSellerProfileDto ===
+  farmName: type=string format= ref= items_ref= enum=[] nullable=False Farm name
+  mainCategoryId: type=number format= ref= items_ref= enum=[] nullable=False Main product category id
+  farmDescription: type=string format= ref= items_ref= enum=[] nullable=False Short farm description
+  businessLicense: type=string format= ref= items_ref= enum=[] nullable=False Business license number
+=== SellerApprovalStatus ===
+=== SellerProfileUserDto ===
+  id: type=string format=uuid ref= items_ref= enum=[] nullable=False User id
+  firstName: type=string format= ref= items_ref= enum=[] nullable=False First name
+  lastName: type=string format= ref= items_ref= enum=[] nullable=False Last name
+  email: type=string format= ref= items_ref= enum=[] nullable=False Email address
+  phone: type=string format= ref= items_ref= enum=[] nullable=False Phone number
+  role: type=string format= ref= items_ref= enum=[] nullable=False Account role
+=== SellerProfileMainCategoryDto ===
+  id: type=number format= ref= items_ref= enum=[] nullable=False Category id
+  name: type=string format= ref= items_ref= enum=[] nullable=False Category name
+=== SellerProfileAdminItemDto ===
+  userId: type=string format=uuid ref= items_ref= enum=[] nullable=False Seller user id
+  farmName: type=string format= ref= items_ref= enum=[] nullable=False Farm name
+  farmDescription: type=object format= ref= items_ref= enum=[] nullable=False Farm description
+  mainCategoryId: type=number format= ref= items_ref= enum=[] nullable=False Main category id
+  businessLicense: type=object format= ref= items_ref= enum=[] nullable=False Business license number
+  nationalIdUrl: type=object format= ref= items_ref= enum=[] nullable=False Encrypted national ID document URL (read via the document endpoint)
+  selfieUrl: type=object format= ref= items_ref= enum=[] nullable=False Encrypted selfie document URL (read via the document endpoint)
+  approvalStatus: type=? format= ref= items_ref= enum=[] nullable=False Approval status
+  approvedBy: type=object format=uuid ref= items_ref= enum=[] nullable=False Admin who decided
+  approvedAt: type=object format=date-time ref= items_ref= enum=[] nullable=False When the decision was made
+  user: type=? format= ref= items_ref= enum=[] nullable=False Seller account
+  mainCategory: type=? format= ref= items_ref= enum=[] nullable=False Main category
+=== SellerProfileListDto ===
+  items: type=array format= ref= items_ref=#/components/schemas/SellerProfileAdminItemDto enum=[] nullable=False Page of seller profiles
+  total: type=number format= ref= items_ref= enum=[] nullable=False Total matching profiles
+  page: type=number format= ref= items_ref= enum=[] nullable=False Current page (1-based)
+  limit: type=number format= ref= items_ref= enum=[] nullable=False Items per page
+=== CreateAddressDto ===
+  label: type=string format= ref= items_ref= enum=[] nullable=False Address label (e.g. "Home", "Office")
+  recipientName: type=string format= ref= items_ref= enum=[] nullable=False Recipient full name
+  phone: type=string format= ref= items_ref= enum=[] nullable=False Recipient phone number
+  region: type=string format= ref= items_ref= enum=[] nullable=False Region / city
+  addressLine: type=string format= ref= items_ref= enum=[] nullable=False Street address line
+  latitude: type=number format= ref= items_ref= enum=[] nullable=False Latitude (WGS84)
+  longitude: type=number format= ref= items_ref= enum=[] nullable=False Longitude (WGS84)
+  isDefault: type=boolean format= ref= items_ref= enum=[] nullable=False Mark as the default delivery address (clears other defaults)
+=== UpdateAddressDto ===
+  label: type=string format= ref= items_ref= enum=[] nullable=False Address label (e.g. "Home", "Office")
+  recipientName: type=string format= ref= items_ref= enum=[] nullable=False Recipient full name
+  phone: type=string format= ref= items_ref= enum=[] nullable=False Recipient phone number
+  region: type=string format= ref= items_ref= enum=[] nullable=False Region / city
+  addressLine: type=string format= ref= items_ref= enum=[] nullable=False Street address line
+  latitude: type=number format= ref= items_ref= enum=[] nullable=False Latitude (WGS84)
+  longitude: type=number format= ref= items_ref= enum=[] nullable=False Longitude (WGS84)
+  isDefault: type=boolean format= ref= items_ref= enum=[] nullable=False Mark as the default delivery address (clears other defaults)
+=== OrderItemInputDto ===
+  productId: type=string format=uuid ref= items_ref= enum=[] nullable=False Product id
+  quantityKg: type=string format= ref= items_ref= enum=[] nullable=False Quantity in kilograms (positive numeric string)
+=== CreateOrderDto ===
+  deliveryAddressId: type=string format=uuid ref= items_ref= enum=[] nullable=False Saved delivery address id (uuid)
+  items: type=array format= ref= items_ref=#/components/schemas/OrderItemInputDto enum=[] nullable=False Order line items. Products are grouped by seller server-side — the response cont
+=== OrderStatus ===
+=== PaymentStatus ===
+=== OrderItemListItemDto ===
+  orderId: type=string format=uuid ref= items_ref= enum=[] nullable=False Order id
+  productId: type=string format=uuid ref= items_ref= enum=[] nullable=False Product id
+  productName: type=string format= ref= items_ref= enum=[] nullable=False Product name snapshot
+  unitPrice: type=string format= ref= items_ref= enum=[] nullable=False Unit price snapshot (FCFA/kg)
+  quantityKg: type=string format= ref= items_ref= enum=[] nullable=False Quantity snapshot (kg)
+  lineTotal: type=string format= ref= items_ref= enum=[] nullable=False Line total (FCFA)
+=== OrderListItemDto ===
+  id: type=string format=uuid ref= items_ref= enum=[] nullable=False Order id
+  buyerId: type=string format=uuid ref= items_ref= enum=[] nullable=False Buyer user id
+  sellerId: type=string format=uuid ref= items_ref= enum=[] nullable=False Seller user id
+  status: type=? format= ref= items_ref= enum=[] nullable=False Order status
+  paymentStatus: type=? format= ref= items_ref= enum=[] nullable=False Payment status
+  subtotal: type=string format= ref= items_ref= enum=[] nullable=False Subtotal (FCFA)
+  deliveryFee: type=string format= ref= items_ref= enum=[] nullable=False Delivery fee (FCFA)
+  totalAmount: type=string format= ref= items_ref= enum=[] nullable=False Total amount (FCFA)
+  deliveryAddressId: type=object format=uuid ref= items_ref= enum=[] nullable=False Delivery address id
+  placedAt: type=string format=date-time ref= items_ref= enum=[] nullable=False Placement timestamp
+  confirmedAt: type=object format=date-time ref= items_ref= enum=[] nullable=False Confirmation timestamp
+  shippedAt: type=object format=date-time ref= items_ref= enum=[] nullable=False Shipment timestamp
+  deliveredAt: type=object format=date-time ref= items_ref= enum=[] nullable=False Delivery timestamp
+  cancelledAt: type=object format=date-time ref= items_ref= enum=[] nullable=False Cancellation timestamp
+  items: type=array format= ref= items_ref=#/components/schemas/OrderItemListItemDto enum=[] nullable=False Order line items
+=== OrderListDto ===
+  items: type=array format= ref= items_ref=#/components/schemas/OrderListItemDto enum=[] nullable=False Page of orders
+  total: type=number format= ref= items_ref= enum=[] nullable=False Total matching orders
+  page: type=number format= ref= items_ref= enum=[] nullable=False Current page (1-based)
+  limit: type=number format= ref= items_ref= enum=[] nullable=False Items per page
+=== UpdateOrderStatusDto ===
+  status: type=? format= ref= items_ref= enum=[] nullable=False Target status. Valid transitions: PENDING→CONFIRMED, CONFIRMED→SHIPPED, SHIPPED→
+=== SendMessageDto ===
+  messageType: type=string format= ref= items_ref= enum=['TEXT', 'IMAGE', 'VOICE'] nullable=False Message type
+  content: type=string format= ref= items_ref= enum=[] nullable=False Text content (required for TEXT messages)
+  fileUrl: type=string format= ref= items_ref= enum=[] nullable=False URL of an uploaded image/voice file (see `POST /chat/threads/:threadId/attachmen
+=== AdminRole ===
+=== AdminListItemDto ===
+  id: type=string format=uuid ref= items_ref= enum=[] nullable=False User id
+  firstName: type=string format= ref= items_ref= enum=[] nullable=False First name
+  lastName: type=string format= ref= items_ref= enum=[] nullable=False Last name
+  email: type=string format= ref= items_ref= enum=[] nullable=False Email (unique)
+  adminRole: type=? format= ref= items_ref= enum=[] nullable=True Admin sub-role (null until assigned)
+  createdAt: type=string format=date-time ref= items_ref= enum=[] nullable=False Creation timestamp
+=== AdminListDto ===
+  items: type=array format= ref= items_ref=#/components/schemas/AdminListItemDto enum=[] nullable=False Page of admins
+  total: type=number format= ref= items_ref= enum=[] nullable=False Total matching admins
+  page: type=number format= ref= items_ref= enum=[] nullable=False Current page (1-based)
+  limit: type=number format= ref= items_ref= enum=[] nullable=False Items per page
+=== CreateAdminDto ===
+  firstName: type=string format= ref= items_ref= enum=[] nullable=False Admin first name
+  lastName: type=string format= ref= items_ref= enum=[] nullable=False Admin last name
+  email: type=string format= ref= items_ref= enum=[] nullable=False Admin email (unique)
+  password: type=string format= ref= items_ref= enum=[] nullable=False Initial password (stored as a bcrypt hash, 10 rounds)
+  adminRole: type=? format= ref= items_ref= enum=[] nullable=False Admin sub-role. Defaults to SUPER_ADMIN.
+=== UpdateAdminRoleDto ===
+  adminRole: type=? format= ref= items_ref= enum=[] nullable=False New admin sub-role
+=== UpdatePlatformConfigDto ===
+  value: type=string format= ref= items_ref= enum=[] nullable=False New value for the key (stored as text; callers parse per key, e.g. `0.05`, `2000
+  description: type=string format= ref= items_ref= enum=[] nullable=False Human-readable description of the setting
+=== WalletResponseDto ===
+  id: type=string format=uuid ref= items_ref= enum=[] nullable=False Wallet UUID
+  userId: type=string format=uuid ref= items_ref= enum=[] nullable=False Owner user UUID
+  balance: type=string format= ref= items_ref= enum=[] nullable=False Available (withdrawable) balance in FCFA
+  escrowBalance: type=string format= ref= items_ref= enum=[] nullable=False Funds held in escrow (awaiting delivery) in FCFA
+  currency: type=string format= ref= items_ref= enum=[] nullable=False Currency code
+  updatedAt: type=string format=date-time ref= items_ref= enum=[] nullable=False Last wallet update
+  transactionCount: type=number format= ref= items_ref= enum=[] nullable=False Total ledger entries on this wallet
+=== TransactionType ===
+=== TransactionStatus ===
+=== TransactionItemDto ===
+  id: type=string format=uuid ref= items_ref= enum=[] nullable=False Transaction UUID
+  walletId: type=string format=uuid ref= items_ref= enum=[] nullable=False Wallet UUID
+  orderId: type=object format=uuid ref= items_ref= enum=[] nullable=False Order UUID this ledger row belongs to
+  type: type=? format= ref= items_ref= enum=[] nullable=False Ledger movement kind
+  amount: type=string format= ref= items_ref= enum=[] nullable=False Movement amount in FCFA
+  balanceAfter: type=string format= ref= items_ref= enum=[] nullable=False Wallet balance snapshot after the movement (FCFA)
+  reference: type=object format= ref= items_ref= enum=[] nullable=False External provider reference (payments/withdrawals)
+  status: type=? format= ref= items_ref= enum=[] nullable=False Settlement status
+  createdAt: type=string format=date-time ref= items_ref= enum=[] nullable=False Creation timestamp
+=== TransactionListDto ===
+  items: type=array format= ref= items_ref=#/components/schemas/TransactionItemDto enum=[] nullable=False Page of ledger rows
+  total: type=number format= ref= items_ref= enum=[] nullable=False Total matching ledger rows
+  page: type=number format= ref= items_ref= enum=[] nullable=False Current page (1-based)
+  limit: type=number format= ref= items_ref= enum=[] nullable=False Items per page
+=== PaymentChannel ===
+=== InitiatePaymentDto ===
+  channel: type=? format= ref= items_ref= enum=[] nullable=False Mobile-money channel to pay with
+=== PaymentResultDto ===
+  orderId: type=string format=uuid ref= items_ref= enum=[] nullable=False Order UUID paid
+  channel: type=? format= ref= items_ref= enum=[] nullable=False Channel used
+  reference: type=string format= ref= items_ref= enum=[] nullable=False Provider reference for reconciliation
+  status: type=string format= ref= items_ref= enum=[] nullable=False Settlement status (stubs always settle immediately)
+  idempotent: type=boolean format= ref= items_ref= enum=[] nullable=False True when the webhook was a duplicate delivery
+=== PaymentWebhookDto ===
+  reference: type=string format= ref= items_ref= enum=[] nullable=False Provider payment reference (as returned by initiate)
+  status: type=string format= ref= items_ref= enum=[] nullable=False Provider settlement status (ignored by the stub)
+=== PaymentStatusDto ===
+  orderId: type=string format=uuid ref= items_ref= enum=[] nullable=False Order UUID
+  paymentStatus: type=? format= ref= items_ref= enum=[] nullable=False Current payment lifecycle state
+  transaction: type=object format= ref= items_ref= enum=[] nullable=False The ESCROW_HOLD ledger row, when a payment was recorded
+=== WithdrawalChannel ===
+=== RequestWithdrawalDto ===
+  amount: type=string format= ref= items_ref= enum=[] nullable=False Amount to withdraw in FCFA (decimal string)
+  channel: type=? format= ref= items_ref= enum=[] nullable=False Mobile-money channel to receive the payout
+  accountReference: type=string format= ref= items_ref= enum=[] nullable=False Mobile-money account number receiving the payout
+  target: type=string format= ref= items_ref= enum=[] nullable=False Email or phone the OTP was sent to (must match the code request target)
+  otpCode: type=string format= ref= items_ref= enum=[] nullable=False Six-digit one-time code. Request it first via POST /auth/otp/request { target, p
+=== WithdrawalStatus ===
+=== WithdrawalItemDto ===
+  id: type=string format=uuid ref= items_ref= enum=[] nullable=False Withdrawal UUID
+  walletId: type=string format=uuid ref= items_ref= enum=[] nullable=False Wallet UUID
+  userId: type=string format=uuid ref= items_ref= enum=[] nullable=False Requester user UUID
+  amount: type=string format= ref= items_ref= enum=[] nullable=False Amount requested in FCFA
+  channel: type=? format= ref= items_ref= enum=[] nullable=False Payout channel
+  accountReference: type=string format= ref= items_ref= enum=[] nullable=False Mobile-money account receiving the payout (decrypted in responses — stored encry
+  status: type=? format= ref= items_ref= enum=[] nullable=False Lifecycle state
+  requestedAt: type=string format=date-time ref= items_ref= enum=[] nullable=False Request timestamp
+  processedAt: type=object format=date-time ref= items_ref= enum=[] nullable=False When an admin processed/rejected it
+  processedBy: type=object format=uuid ref= items_ref= enum=[] nullable=False Admin user UUID who processed it
+=== WithdrawalListDto ===
+  items: type=array format= ref= items_ref=#/components/schemas/WithdrawalItemDto enum=[] nullable=False Page of withdrawals
+  total: type=number format= ref= items_ref= enum=[] nullable=False Total matching withdrawals
+  page: type=number format= ref= items_ref= enum=[] nullable=False Current page (1-based)
+  limit: type=number format= ref= items_ref= enum=[] nullable=False Items per page
+=== ProcessWithdrawalDto ===
+  approve: type=boolean format= ref= items_ref= enum=[] nullable=False `true` approves and pays out; `false` rejects and refunds
+=== AssignDeliveryDto ===
+  orderId: type=string format=uuid ref= items_ref= enum=[] nullable=False Order to deliver
+  driverId: type=string format=uuid ref= items_ref= enum=[] nullable=False Driver user id (user with role DRIVER)
+=== DeliveryListItemDto ===
+  id: type=string format=uuid ref= items_ref= enum=[] nullable=False Delivery id
+  orderId: type=string format=uuid ref= items_ref= enum=[] nullable=False Order id
+  driverId: type=string format=uuid ref= items_ref= enum=[] nullable=False Assigned driver user id
+  assignedAt: type=string format=date-time ref= items_ref= enum=[] nullable=False Assignment timestamp
+  pickupConfirmedAt: type=object format=date-time ref= items_ref= enum=[] nullable=False When the driver confirmed pickup
+  deliveredAt: type=object format=date-time ref= items_ref= enum=[] nullable=False When the delivery was completed
+  currentLatitude: type=object format= ref= items_ref= enum=[] nullable=False Current latitude (WGS84)
+  currentLongitude: type=object format= ref= items_ref= enum=[] nullable=False Current longitude (WGS84)
+  locationUpdatedAt: type=object format=date-time ref= items_ref= enum=[] nullable=False Last location update timestamp
+=== DeliveryListDto ===
+  items: type=array format= ref= items_ref=#/components/schemas/DeliveryListItemDto enum=[] nullable=False Page of deliveries
+  total: type=number format= ref= items_ref= enum=[] nullable=False Total matching deliveries
+  page: type=number format= ref= items_ref= enum=[] nullable=False Current page (1-based)
+  limit: type=number format= ref= items_ref= enum=[] nullable=False Items per page
+=== ConfirmDeliveryDto ===
+  code: type=string format= ref= items_ref= enum=[] nullable=False 6-digit confirmation code shared with the buyer when the driver completes the de
+=== CreateDriverDto ===
+  firstName: type=string format= ref= items_ref= enum=[] nullable=False Driver first name
+  lastName: type=string format= ref= items_ref= enum=[] nullable=False Driver last name
+  email: type=string format= ref= items_ref= enum=[] nullable=False Driver email (unique)
+  phone: type=string format= ref= items_ref= enum=[] nullable=False Driver phone number
+  password: type=string format= ref= items_ref= enum=[] nullable=False Initial password (stored as a bcrypt hash, 10 rounds)
+=== DriverListItemDto ===
+  id: type=string format=uuid ref= items_ref= enum=[] nullable=False User id
+  firstName: type=string format= ref= items_ref= enum=[] nullable=False First name
+  lastName: type=string format= ref= items_ref= enum=[] nullable=False Last name
+  email: type=string format= ref= items_ref= enum=[] nullable=False Email (unique)
+  phone: type=string format= ref= items_ref= enum=[] nullable=False Phone number
+  role: type=? format= ref= items_ref= enum=[] nullable=False User role
+  region: type=string format= ref= items_ref= enum=[] nullable=False Region
+  emailVerified: type=boolean format= ref= items_ref= enum=[] nullable=False Email verified flag
+  createdAt: type=string format=date-time ref= items_ref= enum=[] nullable=False Creation timestamp
+  updatedAt: type=string format=date-time ref= items_ref= enum=[] nullable=False Last update timestamp
+=== DriverListDto ===
+  items: type=array format= ref= items_ref=#/components/schemas/DriverListItemDto enum=[] nullable=False Page of drivers
+  total: type=number format= ref= items_ref= enum=[] nullable=False Total matching drivers
+  page: type=number format= ref= items_ref= enum=[] nullable=False Current page (1-based)
+  limit: type=number format= ref= items_ref= enum=[] nullable=False Items per page
+=== ReceiptCopyRole ===
+=== ReceiptStatus ===
+=== ReceiptOrderSummaryDto ===
+  id: type=string format=uuid ref= items_ref= enum=[] nullable=False Order UUID
+  status: type=? format= ref= items_ref= enum=[] nullable=False Order lifecycle state
+  totalAmount: type=string format= ref= items_ref= enum=[] nullable=False Order total (FCFA)
+  deliveryFee: type=string format= ref= items_ref= enum=[] nullable=False Delivery fee (FCFA)
+  placedAt: type=string format=date-time ref= items_ref= enum=[] nullable=False When the order was placed
+  buyer: type=object format= ref= items_ref= enum=[] nullable=False Buyer summary (id + name)
+  seller: type=object format= ref= items_ref= enum=[] nullable=False Seller summary (id + name)
+=== ReceiptSummaryDto ===
+  id: type=string format=uuid ref= items_ref= enum=[] nullable=False Receipt UUID
+  receiptNumber: type=string format= ref= items_ref= enum=[] nullable=False Unique receipt number
+  orderId: type=string format=uuid ref= items_ref= enum=[] nullable=False Order UUID
+  amount: type=string format= ref= items_ref= enum=[] nullable=False Total amount charged (FCFA)
+  deliveryFee: type=string format= ref= items_ref= enum=[] nullable=False Delivery fee (FCFA)
+  commission: type=string format= ref= items_ref= enum=[] nullable=False Platform commission (FCFA)
+  status: type=? format= ref= items_ref= enum=[] nullable=False Receipt lifecycle state
+  issuedAt: type=string format=date-time ref= items_ref= enum=[] nullable=False Issue timestamp
+  order: type=? format= ref=#/components/schemas/ReceiptOrderSummaryDto items_ref= enum=[] nullable=False
+=== ReceiptListItemDto ===
+  id: type=string format=uuid ref= items_ref= enum=[] nullable=False Receipt copy UUID
+  receiptId: type=string format=uuid ref= items_ref= enum=[] nullable=False Receipt UUID
+  recipientUserId: type=string format=uuid ref= items_ref= enum=[] nullable=False Recipient user UUID
+  recipientRole: type=? format= ref= items_ref= enum=[] nullable=False Which party this copy belongs to
+  deliveredAt: type=string format=date-time ref= items_ref= enum=[] nullable=False When the copy was delivered
+  receipt: type=? format= ref=#/components/schemas/ReceiptSummaryDto items_ref= enum=[] nullable=False
+=== ReceiptListDto ===
+  items: type=array format= ref= items_ref=#/components/schemas/ReceiptListItemDto enum=[] nullable=False Page of receipt copies
+  total: type=number format= ref= items_ref= enum=[] nullable=False Total matching copies
+  page: type=number format= ref= items_ref= enum=[] nullable=False Current page (1-based)
+  limit: type=number format= ref= items_ref= enum=[] nullable=False Items per page
+=== CreateRatingDto ===
+  orderId: type=string format=uuid ref= items_ref= enum=[] nullable=False Order being rated (must be delivered and owned by the buyer)
+  rating: type=number format= ref= items_ref= enum=[] nullable=False Star rating from 1 to 5
+  reviewText: type=string format= ref= items_ref= enum=[] nullable=False Optional written review
+=== CreateTicketDto ===
+  subject: type=string format= ref= items_ref= enum=[] nullable=False Short summary of the issue
+  description: type=string format= ref= items_ref= enum=[] nullable=False Full description of the issue
+=== TicketStatus ===
+=== TicketUserSummaryDto ===
+  id: type=string format=uuid ref= items_ref= enum=[] nullable=False User UUID
+  firstName: type=string format= ref= items_ref= enum=[] nullable=False First name
+  lastName: type=string format= ref= items_ref= enum=[] nullable=False Last name
+  email: type=string format= ref= items_ref= enum=[] nullable=False Email address
+=== TicketListItemDto ===
+  id: type=string format=uuid ref= items_ref= enum=[] nullable=False Ticket UUID
+  userId: type=string format=uuid ref= items_ref= enum=[] nullable=False Owner user UUID
+  subject: type=string format= ref= items_ref= enum=[] nullable=False Issue summary
+  description: type=string format= ref= items_ref= enum=[] nullable=False Issue description
+  status: type=? format= ref= items_ref= enum=[] nullable=False Lifecycle state
+  assignedAdminId: type=object format=uuid ref= items_ref= enum=[] nullable=False Admin user UUID currently assigned
+  createdAt: type=string format=date-time ref= items_ref= enum=[] nullable=False Opening timestamp
+  resolvedAt: type=object format=date-time ref= items_ref= enum=[] nullable=False When the ticket was resolved
+  user: type=? format= ref=#/components/schemas/TicketUserSummaryDto items_ref= enum=[] nullable=False
+  assignedAdmin: type=object format= ref= items_ref= enum=[] nullable=False Assigned admin summary (admin lists only)
+=== TicketListDto ===
+  items: type=array format= ref= items_ref=#/components/schemas/TicketListItemDto enum=[] nullable=False Page of tickets
+  total: type=number format= ref= items_ref= enum=[] nullable=False Total matching tickets
+  page: type=number format= ref= items_ref= enum=[] nullable=False Current page (1-based)
+  limit: type=number format= ref= items_ref= enum=[] nullable=False Items per page
+=== ReportTargetType ===
+=== CreateReportDto ===
+  reportedId: type=string format=uuid ref= items_ref= enum=[] nullable=False UUID of the user being reported (never yourself)
+  targetType: type=? format= ref= items_ref= enum=[] nullable=False What is being flagged: a profile, a chat message or an order
+  targetId: type=string format=uuid ref= items_ref= enum=[] nullable=False UUID of the flagged entity (user id for PROFILE, chat message id for CHAT, order
+  reason: type=string format= ref= items_ref= enum=[] nullable=False Short reason for the report
+  details: type=string format= ref= items_ref= enum=[] nullable=False Optional supporting details
+=== ReportStatus ===
+=== ReportUserSummaryDto ===
+  id: type=string format=uuid ref= items_ref= enum=[] nullable=False User UUID
+  firstName: type=string format= ref= items_ref= enum=[] nullable=False First name
+  lastName: type=string format= ref= items_ref= enum=[] nullable=False Last name
+  email: type=string format= ref= items_ref= enum=[] nullable=False Email address
+=== ReportListItemDto ===
+  id: type=string format=uuid ref= items_ref= enum=[] nullable=False Report UUID
+  reporterId: type=string format=uuid ref= items_ref= enum=[] nullable=False Reporter user UUID
+  reportedId: type=string format=uuid ref= items_ref= enum=[] nullable=False Reported user UUID
+  targetType: type=? format= ref= items_ref= enum=[] nullable=False What kind of entity was flagged
+  targetId: type=string format=uuid ref= items_ref= enum=[] nullable=False UUID of the flagged entity
+  reason: type=string format= ref= items_ref= enum=[] nullable=False Reason given by the reporter
+  details: type=object format= ref= items_ref= enum=[] nullable=False Optional supporting details
+  status: type=? format= ref= items_ref= enum=[] nullable=False Lifecycle state
+  handledBy: type=object format=uuid ref= items_ref= enum=[] nullable=False Admin user UUID who handled it
+  createdAt: type=string format=date-time ref= items_ref= enum=[] nullable=False Report timestamp
+  resolvedAt: type=object format=date-time ref= items_ref= enum=[] nullable=False When an ACTIONED report was resolved
+  reported: type=? format= ref=#/components/schemas/ReportUserSummaryDto items_ref= enum=[] nullable=False
+  reporter: type=? format= ref=#/components/schemas/ReportUserSummaryDto items_ref= enum=[] nullable=False
+  handledByUser: type=object format= ref= items_ref= enum=[] nullable=False Handling admin summary (admin lists only)
+=== ReportListDto ===
+  items: type=array format= ref= items_ref=#/components/schemas/ReportListItemDto enum=[] nullable=False Page of reports
+  total: type=number format= ref= items_ref= enum=[] nullable=False Total matching reports
+  page: type=number format= ref= items_ref= enum=[] nullable=False Current page (1-based)
+  limit: type=number format= ref= items_ref= enum=[] nullable=False Items per page
+=== HandleReportDto ===
+  status: type=? format= ref= items_ref= enum=[] nullable=False Outcome of the review. REVIEWED = reviewed only; ACTIONED = action taken (record

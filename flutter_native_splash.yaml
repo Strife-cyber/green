@@ -1,0 +1,15 @@
+# Native launch screen — generated with `dart run flutter_native_splash:create`.
+#
+# The launch screen reuses the logo's own cream canvas so the app opens with no
+# white flash and the logo blends in seamlessly (no background removal needed).
+# One cream configuration is used for both light and dark system themes — the
+# logo only looks right on its cream background.
+
+flutter_native_splash:
+  color: "#EAD7BD"
+  image: assets/logo.png
+
+  android_12:
+    color: "#EAD7BD"
+    image: assets/logo.png
+    icon_background_color: "#EAD7BD"
