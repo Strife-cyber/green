@@ -2,9 +2,12 @@ import '../models/activity_log.dart';
 import '../models/admin_stats.dart';
 import '../models/chat.dart';
 import '../models/delivery.dart';
+import '../models/enums.dart';
+import '../models/order.dart';
 import '../models/report.dart';
 import '../models/seller_profile.dart';
 import '../models/support_ticket.dart';
+import '../models/user.dart';
 import '../models/wallet.dart';
 import '../models/withdrawal.dart';
 
@@ -37,9 +40,18 @@ abstract class AdminRepository {
 
   // Driver accounts (D6)
   Future<void> createDriver(CreateDriverInput input);
+  Future<List<User>> drivers();
+
+  // Orders (admin) — for the delivery-assignment picker.
+  Future<List<Order>> orders({OrderStatus? status});
 
   // Audit trail (ADM-15)
   Future<List<ActivityLog>> activityLog();
+
+  // Category management (ADM-16) — the public list is `GET /categories`.
+  Future<void> createCategory(String name);
+  Future<void> renameCategory(int id, String name);
+  Future<void> deleteCategory(int id);
 }
 
 class CreateDriverInput {

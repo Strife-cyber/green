@@ -34,6 +34,16 @@ class NotificationController extends AsyncNotifier<List<AppNotification>> {
       createdAt: n.createdAt,
     );
   }
+
+  /// Re-fetches the list (pull-to-refresh / notification open).
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+    try {
+      await future;
+    } catch (_) {
+      // The error is surfaced through the AsyncValue's ErrorView.
+    }
+  }
 }
 
 final notificationControllerProvider =

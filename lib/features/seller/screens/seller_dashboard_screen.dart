@@ -9,7 +9,7 @@ import '../../../core/utils/money.dart';
 import '../../../data/models/seller_analytics.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/amount_text.dart';
-import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/language_action.dart';
 import '../../../shared/widgets/quick_actions.dart';
 import '../../../shared/widgets/stat_card.dart';
@@ -30,12 +30,14 @@ class SellerDashboardScreen extends ConsumerWidget {
         title: Text(context.t.navDashboard),
         actions: const [LanguageAction()],
       ),
-      body: AsyncView<SellerAnalytics>(
+      body: RefreshableAsyncView<SellerAnalytics>(
         value: analytics,
+        onRefresh: () => ref.read(sellerDashboardControllerProvider.notifier).refresh(),
         onRetry: () => ref.invalidate(sellerDashboardControllerProvider),
         builder: (data) {
           final theme = Theme.of(context);
           return ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
             children: [
               // Secondary actions live here — the bottom bar stays at 4.

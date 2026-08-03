@@ -5,8 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../data/models/chat.dart';
-import '../../../shared/widgets/async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../../../theme/app_colors.dart';
 import '../../auth/controllers/auth_controller.dart';
@@ -20,19 +20,19 @@ class ChatThreadList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final threads = ref.watch(chatThreadListControllerProvider);
-    return AsyncView<List<ChatThread>>(
+    return RefreshableAsyncView<List<ChatThread>>(
       value: threads,
+      onRefresh: () => ref.read(chatThreadListControllerProvider.notifier).refresh(),
       onRetry: () => ref.read(chatThreadListControllerProvider.notifier).refresh(),
+      empty: const EmptyState(
+        icon: Icons.chat_bubble_outline,
+        title: 'No conversations yet',
+        message: 'When you place an order, a chat thread is created with the seller.',
+      ),
       builder: (data) {
-        if (data.isEmpty) {
-          return const EmptyState(
-            icon: Icons.chat_bubble_outline,
-            title: 'No conversations yet',
-            message: 'When you place an order, a chat thread is created with the seller.',
-          );
-        }
         final currentUserId = ref.watch(authControllerProvider).valueOrNull?.user?.id;
         return ListView.separated(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           itemCount: data.length,
           separatorBuilder: (_, _) => const SizedBox(height: 12),
@@ -48,7 +48,12 @@ class ChatThreadList extends ConsumerWidget {
                 ),
                 subtitle: Text('Order ${orderReference(thread.orderId)}'),
                 trailing: const Icon(Icons.chevron_right, color: AppColors.tanDark),
-                onTap: () => context.push(AppRoutes.chat(thread.id)),
+                onTap: () async {
+                  await context.push(AppRoutes.chat(thread.id));
+                  if (context.mounted) {
+                    ref.invalidate(chatThreadListControllerProvider);
+                  }
+                },
               ),
             );
           },

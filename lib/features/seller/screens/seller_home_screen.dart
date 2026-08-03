@@ -7,6 +7,10 @@ import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/app_shell.dart';
 import '../../../theme/app_colors.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../controllers/seller_dashboard_controller.dart';
+import '../controllers/seller_order_list_controller.dart';
+import '../controllers/seller_product_list_controller.dart';
+import '../controllers/seller_profile_controller.dart';
 import 'seller_dashboard_screen.dart';
 import 'seller_orders_screen.dart';
 import 'seller_products_screen.dart';
@@ -33,6 +37,16 @@ class _SellerHomeScreenState extends ConsumerState<SellerHomeScreen> {
     if (profile?.approvalStatus == SellerApprovalStatus.pending) {
       _showPendingBanner();
     }
+    // Auto-refresh the active tab's data whenever the user switches tabs.
+    ref.listen(sellerTabProvider, (previous, next) {
+      if (previous == next) return;
+      switch (next) {
+        case 0: ref.invalidate(sellerDashboardControllerProvider); break;
+        case 1: ref.invalidate(sellerProductListControllerProvider); break;
+        case 2: ref.invalidate(sellerOrderListControllerProvider); break;
+        case 3: ref.invalidate(sellerProfileControllerProvider); break;
+      }
+    });
     return AppShell(
       tabProvider: sellerTabProvider,
       persistKey: 'seller',

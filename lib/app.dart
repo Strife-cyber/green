@@ -26,12 +26,16 @@ class GreenApp extends ConsumerWidget {
       ..attach(ref.read(deviceTokenRepositoryProvider))
       ..onDeepLink = () => _onDeepLink(ref);
 
-    // Register the FCM token once the session is restored / logged in, and
-    // dispatch any deep link that arrived before auth was known.
+    // Mirror auth into PushService: registering the FCM token requires a JWT,
+    // so it only happens while a session exists (setter fires on login).
+    PushService.instance.isAuthenticated =
+        ref.read(authControllerProvider).valueOrNull?.user != null;
+
+    // Dispatch any deep link that arrived before auth was known.
     ref.listen<AsyncValue<AuthState>>(authControllerProvider, (_, next) {
       final user = next.valueOrNull?.user;
+      PushService.instance.isAuthenticated = user != null;
       if (user == null) return;
-      PushService.instance.registerToken();
       _dispatchPendingDeepLink(ref, user.role);
     });
 
@@ -42,6 +46,8 @@ class GreenApp extends ConsumerWidget {
         scaffoldMessengerKey: PushService.instance.scaffoldMessengerKey,
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
+        // Force light mode for now — dark mode comes later.
+        themeMode: ThemeMode.light,
         locale: locale.flutterLocale,
         supportedLocales: L10n.flutterLocales,
         localizationsDelegates: const [

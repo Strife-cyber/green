@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/endpoints.dart';
 import '../../../data/mock/mock_data.dart';
 import '../../../data/models/seller_profile.dart';
-import '../../../shared/widgets/async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/image_network.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../../../theme/app_colors.dart';
+import '../../auth/controllers/auth_controller.dart';
 import '../controllers/admin_sellers_controller.dart';
 
 /// Pending seller applications awaiting the admin approval gate (AUTH-07).
@@ -33,21 +35,22 @@ class AdminSellersBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sellers = ref.watch(adminSellersControllerProvider);
-    return AsyncView<List<SellerProfile>>(
+    return RefreshableAsyncView<List<SellerProfile>>(
       value: sellers,
+      onRefresh: () async => ref.invalidate(adminSellersControllerProvider),
       onRetry: () => ref.invalidate(adminSellersControllerProvider),
-      builder: (list) => list.isEmpty
-          ? const EmptyState(
-              icon: Icons.storefront_outlined,
-              title: 'No pending sellers',
-              message: 'All seller applications have been reviewed.',
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: list.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) => _SellerCard(seller: list[index]),
-            ),
+      empty: const EmptyState(
+        icon: Icons.storefront_outlined,
+        title: 'No pending sellers',
+        message: 'All seller applications have been reviewed.',
+      ),
+      builder: (list) => ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        itemCount: list.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (context, index) => _SellerCard(seller: list[index]),
+      ),
     );
   }
 }
@@ -82,6 +85,9 @@ class _SellerCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final categoryName = _categoryName;
+    // Documents are decrypt-on-read endpoints that require the admin's JWT.
+    final accessToken =
+        ref.read(authControllerProvider).valueOrNull?.session?.accessToken ?? '';
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -118,9 +124,21 @@ class _SellerCard extends ConsumerWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  _IdentityImage(label: 'National ID', url: seller.nationalIdUrl),
+                  _IdentityImage(
+                    label: 'National ID',
+                    userId: seller.userId,
+                    kind: 'nationalId',
+                    token: accessToken,
+                    hasDoc: seller.nationalIdUrl != null,
+                  ),
                   const SizedBox(width: 12),
-                  _IdentityImage(label: 'Selfie', url: seller.selfieUrl),
+                  _IdentityImage(
+                    label: 'Selfie',
+                    userId: seller.userId,
+                    kind: 'selfie',
+                    token: accessToken,
+                    hasDoc: seller.selfieUrl != null,
+                  ),
                 ],
               ),
             ],
@@ -149,38 +167,134 @@ class _SellerCard extends ConsumerWidget {
   }
 }
 
-/// A labelled identity document image with an `ImageNetwork` fallback when the
-/// URL is empty (uploads are stubbed until the backend serves them).
+/// A labelled identity document image. Documents are encrypted at rest and
+/// served only through the authenticated decrypt-on-read endpoint
+/// (`GET /admin/seller-profiles/:userId/documents/:kind`), so the stored
+/// `nationalIdUrl`/`selfieUrl` metadata is used only to decide whether the
+/// document exists — the image itself needs the admin's Bearer token.
 class _IdentityImage extends StatelessWidget {
   final String label;
-  final String? url;
+  final String userId;
+  final String kind;
+  final String token;
+  final bool hasDoc;
 
-  const _IdentityImage({required this.label, this.url});
+  const _IdentityImage({
+    required this.label,
+    required this.userId,
+    required this.kind,
+    required this.token,
+    required this.hasDoc,
+  });
+
+  String get _url => (hasDoc && token.isNotEmpty)
+      ? Endpoints.adminSellerDocuments
+          .replaceAll('{userId}', Uri.encodeComponent(userId))
+          .replaceAll('{kind}', kind)
+      : '';
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasUrl = url != null && url!.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 96,
-          height: 72,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: hasUrl
-                ? ImageNetwork(url: url, width: 96, height: 72)
-                : Container(
-                    color: AppColors.backgroundElevated,
-                    alignment: Alignment.center,
-                    child: const Icon(Icons.badge_outlined, color: AppColors.tanDark),
+        GestureDetector(
+          onTap: _url.isEmpty ? null : () => _open(context),
+          child: SizedBox(
+            width: 96,
+            height: 72,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: _url.isEmpty
+                      ? Container(
+                          color: AppColors.backgroundElevated,
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.badge_outlined, color: AppColors.tanDark),
+                        )
+                      : ImageNetwork(
+                          url: _url,
+                          width: 96,
+                          height: 72,
+                          headers: {'Authorization': 'Bearer $token'},
+                        ),
+                ),
+                if (_url.isNotEmpty)
+                  const Positioned(
+                    right: 4,
+                    bottom: 4,
+                    child: Icon(
+                      Icons.zoom_in,
+                      size: 16,
+                      color: Colors.white,
+                      shadows: [Shadow(blurRadius: 4, color: Colors.black54)],
+                    ),
                   ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 4),
         Text(label, style: theme.textTheme.labelSmall?.copyWith(color: AppColors.tanDark)),
       ],
+    );
+  }
+
+  /// Opens the document fullscreen (pinch-zoomable) for review — served by the
+  /// same authenticated endpoint as the thumbnail.
+  void _open(BuildContext context) {
+    if (_url.isEmpty) return;
+    showDialog<void>(
+      context: context,
+      builder: (context) => Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: InteractiveViewer(
+                maxScale: 5,
+                child: SizedBox.expand(
+                  child: ImageNetwork(
+                    url: _url,
+                    headers: {'Authorization': 'Bearer $token'},
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        label,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        tooltip: 'Close',
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

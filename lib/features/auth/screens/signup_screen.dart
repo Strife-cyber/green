@@ -5,9 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/utils/cameroon.dart';
 import '../../../core/utils/validators.dart';
-import '../../../data/mock/mock_data.dart';
+import '../../../data/models/category.dart';
 import '../../../data/models/enums.dart';
 import '../../../data/repositories/auth_repository.dart';
+import '../../../data/repositories/providers.dart';
 import '../../../shared/widgets/form_text_field.dart';
 import '../../../shared/widgets/password_strength_bar.dart';
 import '../../../shared/widgets/photo_picker.dart';
@@ -105,9 +106,44 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     }
   }
 
+  /// The main-category dropdown, fed by the backend's real categories. While
+  /// loading / on error / when none exist it renders a disabled field with a
+  /// hint, so the submitted `mainCategoryId` always references a real category.
+  Widget _categoryField(AsyncValue<List<Category>> categories) =>
+      categories.when(
+        loading: () => _buildCategoryDropdown(const [], hint: 'Loading categories…'),
+        error: (_, _) => _buildCategoryDropdown(const [], hint: 'Could not load categories'),
+        data: (list) => list.isEmpty
+            ? _buildCategoryDropdown(const [], hint: 'No categories available yet')
+            : _buildCategoryDropdown(list),
+      );
+
+  Widget _buildCategoryDropdown(List<Category> items, {String? hint}) {
+    final hasValue = items.any((c) => c.id == _mainCategoryId);
+    return DropdownButtonFormField<int>(
+      initialValue: hasValue ? _mainCategoryId : null,
+      decoration: InputDecoration(
+        labelText: 'Main product category',
+        hintText: hint,
+        prefixIcon: const Icon(Icons.category_outlined),
+      ),
+      items: [
+        for (final c in items)
+          DropdownMenuItem(value: c.id, child: Text(c.name)),
+      ],
+      onChanged: (items.isEmpty || _submitting)
+          ? null
+          : (v) => setState(() => _mainCategoryId = v),
+      validator: (v) => v == null ? 'Choose a category.' : null,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Real categories from the backend — never mock IDs (a hardcoded
+    // `mainCategoryId` that doesn't exist in the DB fails signup with 409).
+    final categories = ref.watch(categoriesProvider);
     return AuthShell(
       title: 'Create account',
       subtitle: 'Join the farm-to-table marketplace',
@@ -186,19 +222,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   validator: (v) => validateRequired(v, 'Farm name'),
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<int>(
-                  initialValue: _mainCategoryId,
-                  decoration: const InputDecoration(
-                    labelText: 'Main product category',
-                    prefixIcon: Icon(Icons.category_outlined),
-                  ),
-                  items: [
-                    for (final c in MockData.categories)
-                      DropdownMenuItem(value: c.id, child: Text(c.name)),
-                  ],
-                  onChanged: _submitting ? null : (v) => setState(() => _mainCategoryId = v),
-                  validator: (v) => v == null ? 'Choose a category.' : null,
-                ),
+                _categoryField(categories),
                 const SizedBox(height: 16),
                 FormTextField(
                   controller: _license,

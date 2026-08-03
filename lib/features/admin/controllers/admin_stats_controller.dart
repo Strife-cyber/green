@@ -7,6 +7,16 @@ import '../../../data/repositories/providers.dart';
 class AdminStatsController extends AsyncNotifier<AdminStats> {
   @override
   Future<AdminStats> build() => ref.watch(adminRepositoryProvider).stats();
+
+  /// Re-fetches the stats (pull-to-refresh / tab activation).
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+    try {
+      await future;
+    } catch (_) {
+      // The error is surfaced through the AsyncValue's ErrorView.
+    }
+  }
 }
 
 final adminStatsControllerProvider =

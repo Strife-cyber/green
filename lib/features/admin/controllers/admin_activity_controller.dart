@@ -7,6 +7,16 @@ import '../../../data/repositories/providers.dart';
 class AdminActivityController extends AsyncNotifier<List<ActivityLog>> {
   @override
   Future<List<ActivityLog>> build() => ref.watch(adminRepositoryProvider).activityLog();
+
+  /// Re-fetches the trail (pull-to-refresh / tab activation).
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+    try {
+      await future;
+    } catch (_) {
+      // The error is surfaced through the AsyncValue's ErrorView.
+    }
+  }
 }
 
 final adminActivityControllerProvider =

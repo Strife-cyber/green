@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../data/models/activity_log.dart';
-import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../../../theme/app_colors.dart';
@@ -32,21 +32,22 @@ class AdminActivityBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final log = ref.watch(adminActivityControllerProvider);
-    return AsyncView<List<ActivityLog>>(
+    return RefreshableAsyncView<List<ActivityLog>>(
       value: log,
+      onRefresh: () => ref.read(adminActivityControllerProvider.notifier).refresh(),
       onRetry: () => ref.invalidate(adminActivityControllerProvider),
-      builder: (list) => list.isEmpty
-          ? const EmptyState(
-              icon: Icons.history,
-              title: 'No activity yet',
-              message: 'Audit events will appear here.',
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: list.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) => _ActivityTile(event: list[index]),
-            ),
+      empty: const EmptyState(
+        icon: Icons.history,
+        title: 'No activity yet',
+        message: 'Audit events will appear here.',
+      ),
+      builder: (list) => ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        itemCount: list.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (context, index) => _ActivityTile(event: list[index]),
+      ),
     );
   }
 }

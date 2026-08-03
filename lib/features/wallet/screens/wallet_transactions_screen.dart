@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/money.dart';
 import '../../../data/models/wallet_transaction.dart';
-import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../theme/app_colors.dart';
 import '../controllers/ledger_controller.dart';
@@ -21,24 +21,22 @@ class WalletTransactionsScreen extends ConsumerWidget {
         automaticallyImplyLeading: false,
         leading: Navigator.canPop(context) ? const BackButton() : null,
         title: const Text('Transactions')),
-      body: AsyncView<List<WalletTransaction>>(
+      body: RefreshableAsyncView<List<WalletTransaction>>(
         value: ledger,
+        onRefresh: () => ref.read(ledgerControllerProvider.notifier).refresh(),
         onRetry: () => ref.invalidate(ledgerControllerProvider),
-        builder: (items) {
-          if (items.isEmpty) {
-            return const EmptyState(
-              icon: Icons.receipt_long_outlined,
-              title: 'No transactions yet',
-              message: 'Your wallet activity will appear here.',
-            );
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: items.length,
-            separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (context, index) => _TransactionTile(tx: items[index]),
-          );
-        },
+        empty: const EmptyState(
+          icon: Icons.receipt_long_outlined,
+          title: 'No transactions yet',
+          message: 'Your wallet activity will appear here.',
+        ),
+        builder: (items) => ListView.separated(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          itemCount: items.length,
+          separatorBuilder: (_, _) => const Divider(height: 1),
+          itemBuilder: (context, index) => _TransactionTile(tx: items[index]),
+        ),
       ),
     );
   }

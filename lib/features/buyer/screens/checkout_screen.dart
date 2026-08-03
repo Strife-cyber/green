@@ -9,6 +9,7 @@ import '../../../shared/widgets/async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../theme/app_colors.dart';
 import '../controllers/address_controller.dart';
+import '../controllers/buyer_order_list_controller.dart';
 import '../controllers/cart_controller.dart';
 import '../controllers/checkout_controller.dart';
 
@@ -142,6 +143,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         );
     if (orderId == null || !mounted) return;
     ref.read(cartControllerProvider.notifier).clear();
+    // The new order won't show on the Orders tab unless the list refetches.
+    ref.invalidate(buyerOrderListControllerProvider);
     context.pushReplacement(AppRoutes.payment(orderId));
   }
 }

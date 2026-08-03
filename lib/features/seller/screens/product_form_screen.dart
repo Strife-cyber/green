@@ -13,9 +13,6 @@ import '../../../shared/widgets/form_text_field.dart';
 import '../../../shared/widgets/photo_picker.dart';
 import '../controllers/product_form_controller.dart';
 
-/// Categories for the product form dropdown (BUY-03).
-final categoriesProvider = FutureProvider<List<Category>>((ref) => ref.watch(categoryRepositoryProvider).list());
-
 /// Create (`id == null`) or edit (`id != null`) a product (SELL-01).
 class ProductFormScreen extends ConsumerStatefulWidget {
   final String? id;

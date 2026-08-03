@@ -22,6 +22,16 @@ class SellerProductListController extends AsyncNotifier<List<Product>> {
       state = AsyncData([for (final p in current) if (p.id != id) p]);
     }
   }
+
+  /// Re-fetches the list (pull-to-refresh / tab activation).
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+    try {
+      await future;
+    } catch (_) {
+      // The error is surfaced through the AsyncValue's ErrorView.
+    }
+  }
 }
 
 final sellerProductListControllerProvider =

@@ -89,7 +89,50 @@ class AuthController extends AsyncNotifier<AuthState> {
   Future<void> signup(SignupInput input) async {
     final session = await ref.read(authRepositoryProvider).signup(input);
     await ref.read(tokenStorageProvider).saveSession(session);
+    // Sellers: signup carries only farmName + category. Push the description to
+    // the profile and upload the identity documents afterwards (best-effort —
+    // a failed upload must not undo a successful signup).
+    if (input.isSeller) {
+      await _onboardSeller(input);
+    }
     state = AsyncData(AuthState.authenticated(session));
+  }
+
+  /// Best-effort post-signup seller onboarding — the staging `SignupDto`
+  /// rejects `farmDescription` and document URLs, which live on the seller
+  /// profile endpoints instead. Never throws.
+  Future<void> _onboardSeller(SignupInput input) async {
+    final profile = ref.read(sellerProfileRepositoryProvider);
+    final farmName = input.farmName;
+    final categoryId = input.mainCategoryId;
+    if (farmName != null && categoryId != null) {
+      try {
+        await profile.update(
+          farmName: farmName,
+          mainCategoryId: categoryId,
+          farmDescription: input.farmDescription,
+          businessLicense: input.businessLicense,
+        );
+      } catch (_) {
+        // Profile already created by signup; the description is best-effort.
+      }
+    }
+    final nationalId = input.nationalIdUrl;
+    if (nationalId != null && nationalId.isNotEmpty) {
+      try {
+        await profile.uploadNationalId(nationalId);
+      } catch (_) {
+        // Documents can be re-uploaded later from the profile screen.
+      }
+    }
+    final selfie = input.selfieUrl;
+    if (selfie != null && selfie.isNotEmpty) {
+      try {
+        await profile.uploadSelfie(selfie);
+      } catch (_) {
+        // Documents can be re-uploaded later from the profile screen.
+      }
+    }
   }
 
   Future<void> logout() async {

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
 import '../../../data/models/product.dart';
 import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/product_card.dart';
 import '../../../theme/app_colors.dart';
@@ -26,8 +27,12 @@ class WishlistScreen extends ConsumerWidget {
         automaticallyImplyLeading: false,
         leading: Navigator.canPop(context) ? const BackButton() : null,
         title: const Text('Wishlist')),
-      body: AsyncView<Set<String>>(
+      body: RefreshableAsyncView<Set<String>>(
         value: saved,
+        onRefresh: () async {
+          ref.invalidate(wishlistControllerProvider);
+          ref.invalidate(productCatalogProvider);
+        },
         onRetry: () => ref.invalidate(wishlistControllerProvider),
         builder: (savedIds) => AsyncView<List<Product>>(
           value: catalog,
@@ -38,13 +43,16 @@ class WishlistScreen extends ConsumerWidget {
                 if (savedIds.contains(product.id)) product,
             ];
             if (items.isEmpty) {
-              return const EmptyState(
-                icon: Icons.favorite_border,
-                title: 'Your wishlist is empty',
-                message: 'Tap the heart on any product to save it here.',
+              return RefreshableAsyncView.pullable(
+                const EmptyState(
+                  icon: Icons.favorite_border,
+                  title: 'Your wishlist is empty',
+                  message: 'Tap the heart on any product to save it here.',
+                ),
               );
             }
             return GridView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,

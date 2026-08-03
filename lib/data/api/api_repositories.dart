@@ -139,15 +139,14 @@ class ApiAuthRepository implements AuthRepository {
       'role': input.role.apiValue,
       'region': input.region,
     };
+    // Only the SignupDto fields are sent here. farmDescription and the identity
+    // documents are NOT part of signup — they go to /seller-profiles/me after
+    // signup (see AuthController.signup → _onboardSeller), and the documents
+    // are uploaded as multipart, never sent as URLs.
     if (input.isSeller) {
       if (input.farmName != null) data['farmName'] = input.farmName;
       if (input.mainCategoryId != null) data['mainCategoryId'] = input.mainCategoryId;
       if (input.businessLicense != null) data['businessLicense'] = input.businessLicense;
-      if (input.farmDescription != null) data['farmDescription'] = input.farmDescription;
-      if (input.farmLatitude != null) data['farmLatitude'] = input.farmLatitude;
-      if (input.farmLongitude != null) data['farmLongitude'] = input.farmLongitude;
-      if (input.nationalIdUrl != null) data['nationalIdUrl'] = input.nationalIdUrl;
-      if (input.selfieUrl != null) data['selfieUrl'] = input.selfieUrl;
     }
     try {
       final res = await _dio.post(Endpoints.signup, data: data);
@@ -973,6 +972,48 @@ class ApiSellerProfileRepository implements SellerProfileRepository {
       _fail(e);
     }
   }
+
+  @override
+  Future<void> update({
+    required String farmName,
+    required int mainCategoryId,
+    String? farmDescription,
+    String? businessLicense,
+  }) async {
+    try {
+      await _dio.patch(Endpoints.sellerProfileMe, data: {
+        'farmName': farmName,
+        'mainCategoryId': mainCategoryId,
+        if (farmDescription != null && farmDescription.isNotEmpty)
+          'farmDescription': farmDescription,
+        if (businessLicense != null && businessLicense.isNotEmpty)
+          'businessLicense': businessLicense,
+      });
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
+
+  Future<String> _uploadDocument(String endpoint, String filePath) async {
+    try {
+      final form = FormData.fromMap({
+        'file': await MultipartFile.fromFile(filePath),
+      });
+      final res = await _dio.post(endpoint, data: form);
+      final up = _unwrap(res.data);
+      return up is Map<String, dynamic> ? (up['url'] as String? ?? '') : '';
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
+
+  @override
+  Future<String> uploadNationalId(String filePath) =>
+      _uploadDocument(Endpoints.sellerProfileNationalId, filePath);
+
+  @override
+  Future<String> uploadSelfie(String filePath) =>
+      _uploadDocument(Endpoints.sellerProfileSelfie, filePath);
 }
 
 /// ────────────────────────────────────────────────────────────────────────────
@@ -1198,10 +1239,64 @@ class ApiAdminRepository implements AdminRepository {
   }
 
   @override
+  Future<List<User>> drivers() async {
+    try {
+      final res = await _dio.get(Endpoints.adminDrivers);
+      return _page(_unwrap(res.data), User.fromJson).items;
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
+
+  @override
+  Future<List<Order>> orders({OrderStatus? status}) async {
+    try {
+      final res = await _dio.get(
+        Endpoints.orders,
+        queryParameters: {if (status != null) 'status': status.apiValue},
+      );
+      return _page(_unwrap(res.data), Order.fromJson).items;
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
+
+  @override
   Future<List<ActivityLog>> activityLog() async {
     try {
       final res = await _dio.get(Endpoints.activityLogs);
       return _page(_unwrap(res.data), ActivityLog.fromJson).items;
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
+
+  // Categories (ADM-16)
+  @override
+  Future<void> createCategory(String name) async {
+    try {
+      await _dio.post(Endpoints.adminCategories, data: {'name': name});
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
+
+  @override
+  Future<void> renameCategory(int id, String name) async {
+    try {
+      await _dio.patch(
+        _sub(Endpoints.adminCategory, 'id', id.toString()),
+        data: {'name': name},
+      );
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
+
+  @override
+  Future<void> deleteCategory(int id) async {
+    try {
+      await _dio.delete(_sub(Endpoints.adminCategory, 'id', id.toString()));
     } on DioException catch (e) {
       _fail(e);
     }

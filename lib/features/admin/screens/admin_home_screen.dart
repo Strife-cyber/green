@@ -8,7 +8,7 @@ import '../../../core/utils/money.dart';
 import '../../../data/models/admin_stats.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/app_shell.dart';
-import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/language_action.dart';
 import '../../../shared/widgets/language_selector.dart';
 import '../../../shared/widgets/quick_actions.dart';
@@ -16,7 +16,9 @@ import '../../../shared/widgets/stat_card.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../../../theme/app_colors.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../controllers/admin_sellers_controller.dart';
 import '../controllers/admin_stats_controller.dart';
+import '../controllers/admin_withdrawals_controller.dart';
 import 'admin_sellers_screen.dart';
 import 'admin_withdrawals_screen.dart';
 
@@ -30,6 +32,16 @@ class AdminHomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.t;
+    // Auto-refresh the active tab's data whenever the user switches tabs.
+    ref.listen(adminTabProvider, (previous, next) {
+      if (previous == next) return;
+      switch (next) {
+        case 0: ref.invalidate(adminStatsControllerProvider); break;
+        case 1: ref.invalidate(adminSellersControllerProvider); break;
+        case 2: ref.invalidate(adminWithdrawalsControllerProvider); break;
+        // 3 = Profile — nothing to refetch.
+      }
+    });
     return AppShell(
       tabProvider: adminTabProvider,
       persistKey: 'admin',
@@ -134,10 +146,12 @@ class _OverviewTab extends ConsumerWidget {
         title: Text(t.adminConsole),
         actions: const [LanguageAction()],
       ),
-      body: AsyncView<AdminStats>(
+      body: RefreshableAsyncView<AdminStats>(
         value: stats,
+        onRefresh: () => ref.read(adminStatsControllerProvider.notifier).refresh(),
         onRetry: () => ref.invalidate(adminStatsControllerProvider),
         builder: (s) => ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
           children: [
             // Every secondary module lives here — the bottom bar stays at 4.
@@ -172,6 +186,16 @@ class _OverviewTab extends ConsumerWidget {
                   icon: Icons.person_add_alt,
                   label: t.newDriver,
                   onTap: () => context.push(AppRoutes.adminCreateDriver),
+                ),
+                QuickAction(
+                  icon: Icons.category_outlined,
+                  label: 'Categories',
+                  onTap: () => context.push(AppRoutes.adminCategories),
+                ),
+                QuickAction(
+                  icon: Icons.emoji_transportation_outlined,
+                  label: 'Drivers',
+                  onTap: () => context.push(AppRoutes.adminDrivers),
                 ),
               ],
             ),

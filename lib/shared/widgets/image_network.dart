@@ -7,12 +7,15 @@ import '../../theme/app_colors.dart';
 ///
 /// Relative API URLs (e.g. `/uploads/products/….jpg`) are resolved against the
 /// backend base before loading, so uploaded images work out of the box.
+/// [headers] forwards to `Image.network` — needed for endpoints that require
+/// an `Authorization` header (e.g. the decrypt-on-read KYC document routes).
 class ImageNetwork extends StatelessWidget {
   final String? url;
   final double? width;
   final double? height;
   final BoxFit fit;
   final BorderRadius? borderRadius;
+  final Map<String, String>? headers;
 
   const ImageNetwork({
     super.key,
@@ -21,6 +24,7 @@ class ImageNetwork extends StatelessWidget {
     this.height,
     this.fit = BoxFit.cover,
     this.borderRadius,
+    this.headers,
   });
 
   @override
@@ -42,6 +46,7 @@ class ImageNetwork extends StatelessWidget {
         width: width,
         height: height,
         fit: fit,
+        headers: headers,
         errorBuilder: (_, _, _) => placeholder,
         loadingBuilder: (context, child, progress) =>
             progress == null ? child : placeholder,

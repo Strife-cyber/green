@@ -5,7 +5,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/utils/validators.dart';
 import '../../../data/models/enums.dart';
 import '../../../data/models/support_ticket.dart';
-import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/form_text_field.dart';
 import '../../../shared/widgets/status_badge.dart';
@@ -116,21 +116,22 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
         automaticallyImplyLeading: false,
         leading: Navigator.canPop(context) ? const BackButton() : null,
         title: const Text('Support')),
-      body: AsyncView<List<SupportTicket>>(
+      body: RefreshableAsyncView<List<SupportTicket>>(
         value: tickets,
+        onRefresh: () async => ref.invalidate(supportControllerProvider),
         onRetry: () => ref.invalidate(supportControllerProvider),
-        builder: (list) => list.isEmpty
-            ? const EmptyState(
-                icon: Icons.support_agent_outlined,
-                title: 'No tickets yet',
-                message: 'Questions or issues? Open a ticket and we will get back to you.',
-              )
-            : ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: list.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 12),
-                itemBuilder: (context, index) => _TicketCard(ticket: list[index]),
-              ),
+        empty: const EmptyState(
+          icon: Icons.support_agent_outlined,
+          title: 'No tickets yet',
+          message: 'Questions or issues? Open a ticket and we will get back to you.',
+        ),
+        builder: (list) => ListView.separated(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          itemCount: list.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemBuilder: (context, index) => _TicketCard(ticket: list[index]),
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openNewTicket,

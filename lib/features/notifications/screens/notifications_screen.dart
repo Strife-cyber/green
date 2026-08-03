@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../data/models/app_notification.dart';
 import '../../../data/models/enums.dart';
-import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../theme/app_colors.dart';
 import '../controllers/notification_controller.dart';
@@ -30,20 +30,21 @@ class NotificationsScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: AsyncView<List<AppNotification>>(
+      body: RefreshableAsyncView<List<AppNotification>>(
         value: notifications,
+        onRefresh: () => ref.read(notificationControllerProvider.notifier).refresh(),
         onRetry: () => ref.invalidate(notificationControllerProvider),
-        builder: (list) => list.isEmpty
-            ? const EmptyState(
-                icon: Icons.notifications_none,
-                title: 'No notifications',
-                message: 'You are all caught up.',
-              )
-            : ListView.separated(
-                itemCount: list.length,
-                separatorBuilder: (_, _) => const Divider(height: 1),
-                itemBuilder: (context, index) => _NotificationTile(notification: list[index]),
-              ),
+        empty: const EmptyState(
+          icon: Icons.notifications_none,
+          title: 'No notifications',
+          message: 'You are all caught up.',
+        ),
+        builder: (list) => ListView.separated(
+          physics: const AlwaysScrollableScrollPhysics(),
+          itemCount: list.length,
+          separatorBuilder: (_, _) => const Divider(height: 1),
+          itemBuilder: (context, index) => _NotificationTile(notification: list[index]),
+        ),
       ),
     );
   }

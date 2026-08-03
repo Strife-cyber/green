@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../data/models/withdrawal.dart';
 import '../../../shared/widgets/amount_text.dart';
-import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../controllers/admin_withdrawals_controller.dart';
 
@@ -31,21 +31,22 @@ class AdminWithdrawalsBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final withdrawals = ref.watch(adminWithdrawalsControllerProvider);
-    return AsyncView<List<Withdrawal>>(
+    return RefreshableAsyncView<List<Withdrawal>>(
       value: withdrawals,
+      onRefresh: () async => ref.invalidate(adminWithdrawalsControllerProvider),
       onRetry: () => ref.invalidate(adminWithdrawalsControllerProvider),
-      builder: (list) => list.isEmpty
-          ? const EmptyState(
-              icon: Icons.request_quote_outlined,
-              title: 'No pending withdrawals',
-              message: 'Withdrawal requests will appear here for processing.',
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: list.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) => _WithdrawalCard(withdrawal: list[index]),
-            ),
+      empty: const EmptyState(
+        icon: Icons.request_quote_outlined,
+        title: 'No pending withdrawals',
+        message: 'Withdrawal requests will appear here for processing.',
+      ),
+      builder: (list) => ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        itemCount: list.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (context, index) => _WithdrawalCard(withdrawal: list[index]),
+      ),
     );
   }
 }

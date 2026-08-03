@@ -38,10 +38,22 @@ class PushService {
   DeviceTokenRepository? _repo;
   bool _fcmReady = false;
   bool _listening = false;
+  bool _isAuthenticated = false;
   Map<String, dynamic>? _pendingData;
   String? _activeBannerMessageId;
 
   bool get isReady => _fcmReady;
+
+  /// Whether a user is logged in — set by `GreenApp` on every auth change.
+  /// Device tokens may only be registered while authenticated (the backend
+  /// rejects unauthenticated registrations with 401), so this also triggers
+  /// registration on the logged-out → logged-in transition.
+  bool get isAuthenticated => _isAuthenticated;
+  set isAuthenticated(bool value) {
+    if (_isAuthenticated == value) return;
+    _isAuthenticated = value;
+    if (value) unawaited(registerToken());
+  }
 
   /// Initializes Firebase and registers the background handler. Idempotent;
   /// called from `main()` before `runApp`. Every failure is swallowed so
@@ -84,6 +96,7 @@ class PushService {
     final repo = _repo;
     final messaging = _messaging;
     if (!_fcmReady || messaging == null || repo == null) return;
+    if (!_isAuthenticated) return; // No JWT to send — the backend would 401.
     try {
       final token = await messaging.getToken();
       if (token == null || token.isEmpty) return;
@@ -155,7 +168,7 @@ class PushService {
 
   Future<void> _onTokenRefresh(String token) async {
     final repo = _repo;
-    if (!_fcmReady || repo == null) return;
+    if (!_fcmReady || repo == null || !_isAuthenticated) return;
     try {
       await repo.register(token, DevicePlatform.fcm);
     } catch (e) {

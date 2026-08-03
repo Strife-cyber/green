@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../data/models/enums.dart';
 import '../../features/admin/screens/admin_chat_screen.dart';
 import '../../features/admin/screens/admin_activity_screen.dart';
+import '../../features/admin/screens/admin_categories_screen.dart';
 import '../../features/admin/screens/admin_create_driver_screen.dart';
 import '../../features/admin/screens/admin_deliveries_screen.dart';
+import '../../features/admin/screens/admin_drivers_screen.dart';
 import '../../features/admin/screens/admin_home_screen.dart';
 import '../../features/admin/screens/admin_reports_screen.dart';
 import '../../features/admin/screens/admin_sellers_screen.dart';
@@ -97,6 +99,8 @@ abstract final class AppRoutes {
   static const String adminReports = '/admin/reports';
   static const String adminCreateDriver = '/admin/create-driver';
   static const String adminActivity = '/admin/activity';
+  static const String adminCategories = '/admin/categories';
+  static const String adminDrivers = '/admin/drivers';
 
   // Shared
   static const String chatThreads = '/chat';
@@ -219,6 +223,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/admin/chat/:threadId', builder: (_, s) => AdminChatScreen(threadId: s.pathParameters['threadId']!)),
       GoRoute(path: AppRoutes.adminCreateDriver, builder: (_, _) => const AdminCreateDriverScreen()),
       GoRoute(path: AppRoutes.adminActivity, builder: (_, _) => const AdminActivityScreen()),
+      GoRoute(path: AppRoutes.adminCategories, builder: (_, _) => const AdminCategoriesScreen()),
+      GoRoute(path: AppRoutes.adminDrivers, builder: (_, _) => const AdminDriversScreen()),
 
       // ---- shared ----
       GoRoute(path: AppRoutes.chatThreads, builder: (_, _) => const ChatThreadsScreen()),

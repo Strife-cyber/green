@@ -5,6 +5,7 @@ import '../mock/mock_auth_repository.dart';
 import '../mock/mock_repositories.dart';
 import '../mock/mock_store.dart';
 import '../../core/network/api_client.dart';
+import '../models/category.dart';
 import 'address_repository.dart';
 import 'admin_repository.dart';
 import 'analytics_repository.dart';
@@ -51,6 +52,12 @@ final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
   if (ref.watch(useMocksProvider)) return MockCategoryRepository(ref.watch(mockStoreProvider));
   return ApiCategoryRepository(ref.watch(apiClientProvider));
 });
+
+/// Lazily-fetched product categories (BUY-03) — shared by the catalog filter,
+/// the product form and the sign-up category dropdown.
+final categoriesProvider = FutureProvider<List<Category>>(
+  (ref) => ref.watch(categoryRepositoryProvider).list(),
+);
 
 final productRepositoryProvider = Provider<ProductRepository>((ref) {
   if (ref.watch(useMocksProvider)) return MockProductRepository(ref.watch(mockStoreProvider));

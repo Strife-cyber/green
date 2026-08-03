@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket/web_socket.dart';
@@ -11,6 +12,10 @@ import 'core/notifications/push_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Auto-load environment overrides (.env) so AppConfig resolves staging/local
+  // without any --dart-define flags. isOptional keeps desktop/web/tests safe
+  // when the file isn't bundled.
+  await dotenv.load(fileName: '.env', isOptional: true);
   // Warm the SharedPreferences cache so LocalStore and the locale controller
   // resolve immediately after the first frame.
   await SharedPreferences.getInstance();

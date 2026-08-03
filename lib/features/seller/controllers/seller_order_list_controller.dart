@@ -9,6 +9,16 @@ class SellerOrderListController extends AsyncNotifier<List<Order>> {
   Future<List<Order>> build() async {
     return ref.watch(orderRepositoryProvider).sellerOrders();
   }
+
+  /// Re-fetches the list (pull-to-refresh / tab activation).
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+    try {
+      await future;
+    } catch (_) {
+      // The error is surfaced through the AsyncValue's ErrorView.
+    }
+  }
 }
 
 final sellerOrderListControllerProvider =

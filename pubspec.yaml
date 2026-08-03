@@ -63,6 +63,7 @@ dependencies:
   geocoding: ^4.0.0
   firebase_core: ^4.12.1
   firebase_messaging: ^16.4.3
+  flutter_dotenv: ^6.0.1
 
 dev_dependencies:
   flutter_test:
@@ -99,6 +100,10 @@ flutter:
   # Application brand assets (logo, icons, images).
   assets:
     - assets/logo.png
+    # Environment overrides — auto-loaded by flutter_dotenv in main(); keep it
+    # gitignored (a teammate must copy .env.example → .env or the build fails
+    # because the asset entry requires the file to exist).
+    - .env
 
   # Brand typeface — Quicksand (SIL OFL), instantiated static weights so the
   # app stays fully offline and light. License: assets/fonts/OFL.txt.

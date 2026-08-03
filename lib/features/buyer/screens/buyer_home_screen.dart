@@ -5,10 +5,11 @@ import '../../../core/router/nav_providers.dart';
 import '../../../data/models/product.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/app_shell.dart';
-import '../../../shared/widgets/async_view.dart';
 import '../../../shared/widgets/category_chips.dart';
 import '../../../shared/widgets/debounced_search_bar.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
+import '../controllers/buyer_order_list_controller.dart';
 import '../controllers/cart_controller.dart';
 import '../controllers/product_list_controller.dart';
 import '../widgets/product_grid.dart';
@@ -26,6 +27,15 @@ class BuyerHomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.t;
     final cartCount = ref.watch(cartControllerProvider).itemCount;
+    // Auto-refresh the active tab's data whenever the user switches tabs.
+    ref.listen(buyerTabProvider, (previous, next) {
+      if (previous == next) return;
+      switch (next) {
+        case 0: ref.invalidate(productListControllerProvider); break;
+        case 2: ref.invalidate(buyerOrderListControllerProvider); break;
+        // 1 = Cart (local state), 3 = Profile — nothing to refetch.
+      }
+    });
     return AppShell(
       tabProvider: buyerTabProvider,
       persistKey: 'buyer',
@@ -87,15 +97,12 @@ class _HomeFeed extends ConsumerWidget {
           ),
           const SizedBox(height: 4),
           Expanded(
-            child: AsyncView<List<Product>>(
+            child: RefreshableAsyncView<List<Product>>(
               value: products,
+              onRefresh: () => ref.read(productListControllerProvider.notifier).refresh(),
               onRetry: () => ref.invalidate(productListControllerProvider),
-              builder: (items) {
-                if (items.isEmpty) {
-                  return EmptyState(icon: Icons.search_off, title: t.search, message: t.empty);
-                }
-                return ProductGrid(products: items);
-              },
+              empty: EmptyState(icon: Icons.search_off, title: t.search, message: t.empty),
+              builder: (items) => ProductGrid(products: items),
             ),
           ),
         ],

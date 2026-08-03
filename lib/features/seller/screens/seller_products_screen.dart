@@ -6,7 +6,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../data/models/product.dart';
 import '../../../shared/widgets/amount_text.dart';
-import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/image_network.dart';
 import '../../../theme/app_colors.dart';
@@ -57,28 +57,26 @@ class SellerProductsScreen extends ConsumerWidget {
         title: const Text('My Products')),
       body: Stack(
         children: [
-          AsyncView<List<Product>>(
+          RefreshableAsyncView<List<Product>>(
             value: products,
+            onRefresh: () => ref.read(sellerProductListControllerProvider.notifier).refresh(),
             onRetry: () => ref.invalidate(sellerProductListControllerProvider),
-            builder: (items) {
-              if (items.isEmpty) {
-                return const EmptyState(
-                  icon: Icons.inventory_2_outlined,
-                  title: 'No products yet',
-                  message: 'Tap + to add your first product.',
-                );
-              }
-              return ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-                itemCount: items.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 12),
-                itemBuilder: (context, index) => _ProductTile(
-                  product: items[index],
-                  onTap: () => _openEdit(context, ref, items[index]),
-                  onDelete: () => _confirmDelete(context, ref, items[index]),
-                ),
-              );
-            },
+            empty: const EmptyState(
+              icon: Icons.inventory_2_outlined,
+              title: 'No products yet',
+              message: 'Tap + to add your first product.',
+            ),
+            builder: (items) => ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+              itemCount: items.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
+              itemBuilder: (context, index) => _ProductTile(
+                product: items[index],
+                onTap: () => _openEdit(context, ref, items[index]),
+                onDelete: () => _confirmDelete(context, ref, items[index]),
+              ),
+            ),
           ),
           Positioned(
             bottom: 92,

@@ -664,6 +664,28 @@ class MockSellerProfileRepository implements SellerProfileRepository {
     await _delay();
     return MockData.sellerProfile;
   }
+
+  @override
+  Future<void> update({
+    required String farmName,
+    required int mainCategoryId,
+    String? farmDescription,
+    String? businessLicense,
+  }) async {
+    await _delay(); // No-op — profile data is already seeded in the mock.
+  }
+
+  @override
+  Future<String> uploadNationalId(String filePath) async {
+    await _delay();
+    return 'mock://national-id';
+  }
+
+  @override
+  Future<String> uploadSelfie(String filePath) async {
+    await _delay();
+    return 'mock://selfie';
+  }
 }
 
 class MockUserRepository implements UserRepository {
@@ -812,9 +834,41 @@ class MockAdminRepository implements AdminRepository {
   }
 
   @override
+  Future<List<User>> drivers() async {
+    await _delay();
+    return const [
+      User(id: 'u-driver-1', firstName: 'Jean', lastName: 'Kamdem', email: 'driver@greenish.cm', phone: '655000100', role: UserRole.driver, region: 'Littoral', emailVerified: true),
+      User(id: 'u-driver-2', firstName: 'Serge', lastName: 'Tchoua', email: 'driver2@greenish.cm', phone: '655000101', role: UserRole.driver, region: 'Centre', emailVerified: true),
+    ];
+  }
+
+  @override
+  Future<List<Order>> orders({OrderStatus? status}) async {
+    await _delay();
+    // Mock mode doesn't seed orders for the admin picker.
+    return const [];
+  }
+
+  @override
   Future<List<ActivityLog>> activityLog() async {
     await _delay();
     return seedActivityLog;
+  }
+
+  // Categories (ADM-16) — the mock store already ships a seeded category list.
+  @override
+  Future<void> createCategory(String name) async {
+    await _delay();
+  }
+
+  @override
+  Future<void> renameCategory(int id, String name) async {
+    await _delay();
+  }
+
+  @override
+  Future<void> deleteCategory(int id) async {
+    await _delay();
   }
 }
 

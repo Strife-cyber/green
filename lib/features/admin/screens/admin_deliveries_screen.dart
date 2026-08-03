@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/utils/formatters.dart';
 import '../../../data/models/delivery.dart';
-import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../controllers/admin_deliveries_controller.dart';
@@ -32,21 +32,22 @@ class AdminDeliveriesBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final deliveries = ref.watch(adminDeliveriesControllerProvider);
-    return AsyncView<List<Delivery>>(
+    return RefreshableAsyncView<List<Delivery>>(
       value: deliveries,
+      onRefresh: () => ref.read(adminDeliveriesControllerProvider.notifier).refresh(),
       onRetry: () => ref.invalidate(adminDeliveriesControllerProvider),
-      builder: (list) => list.isEmpty
-          ? const EmptyState(
-              icon: Icons.local_shipping_outlined,
-              title: 'No active deliveries',
-              message: 'Deliveries on the road will appear here.',
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: list.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) => _DeliveryCard(delivery: list[index]),
-            ),
+      empty: const EmptyState(
+        icon: Icons.local_shipping_outlined,
+        title: 'No active deliveries',
+        message: 'Deliveries on the road will appear here.',
+      ),
+      builder: (list) => ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        itemCount: list.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (context, index) => _DeliveryCard(delivery: list[index]),
+      ),
     );
   }
 }

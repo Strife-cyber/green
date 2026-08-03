@@ -9,6 +9,16 @@ class SellerDashboardController extends AsyncNotifier<SellerAnalytics> {
   Future<SellerAnalytics> build() async {
     return ref.watch(analyticsRepositoryProvider).sellerDashboard();
   }
+
+  /// Re-fetches the dashboard (pull-to-refresh / tab activation).
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+    try {
+      await future;
+    } catch (_) {
+      // The error is surfaced through the AsyncValue's ErrorView.
+    }
+  }
 }
 
 final sellerDashboardControllerProvider =

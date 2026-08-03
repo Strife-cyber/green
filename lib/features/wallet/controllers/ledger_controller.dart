@@ -9,6 +9,16 @@ class LedgerController extends AsyncNotifier<List<WalletTransaction>> {
   Future<List<WalletTransaction>> build() async {
     return ref.watch(walletRepositoryProvider).transactions();
   }
+
+  /// Re-fetches the ledger (pull-to-refresh / after a payment).
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+    try {
+      await future;
+    } catch (_) {
+      // The error is surfaced through the AsyncValue's ErrorView.
+    }
+  }
 }
 
 final ledgerControllerProvider =

@@ -67,6 +67,16 @@ class ProductListController extends AsyncNotifier<List<Product>> {
       // The error is surfaced through the AsyncValue for the grid's ErrorView.
     }
   }
+
+  /// Re-fetches the catalog (pull-to-refresh / tab activation).
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+    try {
+      await future;
+    } catch (_) {
+      // The error is surfaced through the AsyncValue for the grid's ErrorView.
+    }
+  }
 }
 
 final productListControllerProvider =

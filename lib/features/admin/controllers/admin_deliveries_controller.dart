@@ -8,6 +8,16 @@ import '../../../data/repositories/providers.dart';
 class AdminDeliveriesController extends AsyncNotifier<List<Delivery>> {
   @override
   Future<List<Delivery>> build() => ref.watch(adminRepositoryProvider).activeDeliveries();
+
+  /// Re-fetches the list (pull-to-refresh / tab activation).
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+    try {
+      await future;
+    } catch (_) {
+      // The error is surfaced through the AsyncValue's ErrorView.
+    }
+  }
 }
 
 final adminDeliveriesControllerProvider =

@@ -7,8 +7,8 @@ import 'package:intl/intl.dart';
 import '../../../core/router/app_router.dart';
 import '../../../data/models/order.dart';
 import '../../../shared/widgets/amount_text.dart';
-import '../../../shared/widgets/async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../../../theme/app_colors.dart';
 import '../controllers/buyer_order_list_controller.dart';
@@ -27,24 +27,30 @@ class BuyerOrdersScreen extends ConsumerWidget {
         automaticallyImplyLeading: false,
         leading: Navigator.canPop(context) ? const BackButton() : null,
         title: const Text('My Orders')),
-      body: AsyncView<List<Order>>(
+      body: RefreshableAsyncView<List<Order>>(
         value: orders,
+        onRefresh: () => ref.read(buyerOrderListControllerProvider.notifier).refresh(),
         onRetry: () => ref.invalidate(buyerOrderListControllerProvider),
-        builder: (items) {
-          if (items.isEmpty) {
-            return const EmptyState(
-              icon: Icons.receipt_long_outlined,
-              title: 'No orders yet',
-              message: 'Your orders will appear here once you check out.',
-            );
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: items.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (context, index) => _OrderCard(order: items[index]),
-          );
-        },
+        empty: const EmptyState(
+          icon: Icons.receipt_long_outlined,
+          title: 'No orders yet',
+          message: 'Your orders will appear here once you check out.',
+        ),
+        builder: (items) => ListView.separated(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          itemCount: items.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemBuilder: (context, index) => _OrderCard(
+            order: items[index],
+            onTap: () async {
+              await context.push(AppRoutes.orderDetail(items[index].id));
+              if (context.mounted) {
+                ref.invalidate(buyerOrderListControllerProvider);
+              }
+            },
+          ),
+        ),
       ),
     );
   }
@@ -52,8 +58,9 @@ class BuyerOrdersScreen extends ConsumerWidget {
 
 class _OrderCard extends StatelessWidget {
   final Order order;
+  final VoidCallback onTap;
 
-  const _OrderCard({required this.order});
+  const _OrderCard({required this.order, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +68,7 @@ class _OrderCard extends StatelessWidget {
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => context.push(AppRoutes.orderDetail(order.id)),
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(

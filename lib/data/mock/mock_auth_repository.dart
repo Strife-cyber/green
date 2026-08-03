@@ -60,8 +60,6 @@ class MockAuthRepository implements AuthRepository {
               mainCategoryId: input.mainCategoryId,
               businessLicense: input.businessLicense,
               farmDescription: input.farmDescription,
-              farmLatitude: input.farmLatitude,
-              farmLongitude: input.farmLongitude,
               nationalIdUrl: input.nationalIdUrl,
               selfieUrl: input.selfieUrl,
             )

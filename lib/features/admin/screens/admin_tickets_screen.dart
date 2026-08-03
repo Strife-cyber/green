@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/enums.dart';
 import '../../../data/models/support_ticket.dart';
-import '../../../shared/widgets/async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../../../theme/app_colors.dart';
 import '../controllers/admin_tickets_controller.dart';
@@ -32,21 +32,22 @@ class AdminTicketsBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tickets = ref.watch(adminTicketsControllerProvider);
-    return AsyncView<List<SupportTicket>>(
+    return RefreshableAsyncView<List<SupportTicket>>(
       value: tickets,
+      onRefresh: () async => ref.invalidate(adminTicketsControllerProvider),
       onRetry: () => ref.invalidate(adminTicketsControllerProvider),
-      builder: (list) => list.isEmpty
-          ? const EmptyState(
-              icon: Icons.support_agent_outlined,
-              title: 'No tickets',
-              message: 'Support tickets will appear here.',
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: list.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) => _TicketCard(ticket: list[index]),
-            ),
+      empty: const EmptyState(
+        icon: Icons.support_agent_outlined,
+        title: 'No tickets',
+        message: 'Support tickets will appear here.',
+      ),
+      builder: (list) => ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        itemCount: list.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (context, index) => _TicketCard(ticket: list[index]),
+      ),
     );
   }
 }

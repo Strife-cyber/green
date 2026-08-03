@@ -8,7 +8,7 @@ import '../../../core/utils/validators.dart';
 import '../../../data/models/address.dart';
 import '../../../data/repositories/address_repository.dart';
 import '../../../shared/widgets/address_autocomplete_field.dart';
-import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/form_text_field.dart';
 import '../../../theme/app_colors.dart';
@@ -34,34 +34,32 @@ class AddressesScreen extends ConsumerWidget {
         icon: const Icon(Icons.add),
         label: const Text('Add address'),
       ),
-      body: AsyncView<List<Address>>(
+      body: RefreshableAsyncView<List<Address>>(
         value: addresses,
+        onRefresh: () async => ref.invalidate(addressControllerProvider),
         onRetry: () => ref.invalidate(addressControllerProvider),
-        builder: (items) {
-          if (items.isEmpty) {
-            return const EmptyState(
-              icon: Icons.location_on_outlined,
-              title: 'No saved addresses',
-              message: 'Add an address to speed up checkout.',
+        empty: const EmptyState(
+          icon: Icons.location_on_outlined,
+          title: 'No saved addresses',
+          message: 'Add an address to speed up checkout.',
+        ),
+        builder: (items) => ListView.separated(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          itemCount: items.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final address = items[index];
+            return _AddressTile(
+              address: address,
+              onEdit: () => _showForm(context, controller, address: address),
+              onDelete: () => _confirmDelete(context, controller, address),
+              onSetDefault: address.isDefault
+                  ? null
+                  : () => controller.setDefault(address.id),
             );
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: items.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final address = items[index];
-              return _AddressTile(
-                address: address,
-                onEdit: () => _showForm(context, controller, address: address),
-                onDelete: () => _confirmDelete(context, controller, address),
-                onSetDefault: address.isDefault
-                    ? null
-                    : () => controller.setDefault(address.id),
-              );
-            },
-          );
-        },
+          },
+        ),
       ),
     );
   }

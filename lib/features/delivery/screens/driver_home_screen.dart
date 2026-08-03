@@ -7,14 +7,15 @@ import '../../../core/router/nav_providers.dart';
 import '../../../data/models/delivery.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/app_shell.dart';
-import '../../../shared/widgets/async_view.dart';
 import '../../../shared/widgets/language_action.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/language_selector.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../../../theme/app_colors.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../../chat/controllers/chat_thread_list_controller.dart';
 import '../../chat/widgets/chat_thread_list.dart';
 import '../controllers/driver_delivery_list_controller.dart';
 
@@ -25,6 +26,15 @@ class DriverHomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.t;
+    // Auto-refresh the active tab's data whenever the user switches tabs.
+    ref.listen(driverTabProvider, (previous, next) {
+      if (previous == next) return;
+      switch (next) {
+        case 0: ref.invalidate(driverDeliveryListControllerProvider); break;
+        case 1: ref.invalidate(chatThreadListControllerProvider); break;
+        // 2 = Profile — nothing to refetch.
+      }
+    });
     return AppShell(
       tabProvider: driverTabProvider,
       persistKey: 'driver',
@@ -69,42 +79,41 @@ class _DeliveriesTab extends ConsumerWidget {
         title: Text(t.navDeliveries),
         actions: const [LanguageAction()],
       ),
-      body: AsyncView<List<Delivery>>(
+      body: RefreshableAsyncView<List<Delivery>>(
         value: deliveries,
+        onRefresh: () => ref.read(driverDeliveryListControllerProvider.notifier).refresh(),
         onRetry: () => ref.read(driverDeliveryListControllerProvider.notifier).refresh(),
-        builder: (data) {
-          if (data.isEmpty) {
-            return EmptyState(
-              icon: Icons.local_shipping_outlined,
-              title: t.noDeliveries,
-              message: t.deliveriesHint,
+        empty: EmptyState(
+          icon: Icons.local_shipping_outlined,
+          title: t.noDeliveries,
+          message: t.deliveriesHint,
+        ),
+        builder: (data) => ListView.separated(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          itemCount: data.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final delivery = data[index];
+            return Card(
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                title: Text(
+                  '${t.orderPrefix}${delivery.orderId}',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                subtitle: Text(delivery.driverName ?? t.roleDriver),
+                trailing: _statusBadge(delivery),
+                onTap: () async {
+                  await context.push(AppRoutes.driverDelivery(delivery.id));
+                  if (context.mounted) {
+                    ref.invalidate(driverDeliveryListControllerProvider);
+                  }
+                },
+              ),
             );
-          }
-          return RefreshIndicator(
-            onRefresh: () => ref.read(driverDeliveryListControllerProvider.notifier).refresh(),
-            child: ListView.separated(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              itemCount: data.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final delivery = data[index];
-                return Card(
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    title: Text(
-                      '${t.orderPrefix}${delivery.orderId}',
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    subtitle: Text(delivery.driverName ?? t.roleDriver),
-                    trailing: _statusBadge(delivery),
-                    onTap: () => context.push(AppRoutes.driverDelivery(delivery.id)),
-                  ),
-                );
-              },
-            ),
-          );
-        },
+          },
+        ),
       ),
     );
   }

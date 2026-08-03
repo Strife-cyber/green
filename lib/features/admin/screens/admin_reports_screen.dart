@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/enums.dart';
 import '../../../data/models/report.dart';
-import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../../../theme/app_colors.dart';
@@ -32,21 +32,22 @@ class AdminReportsBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final reports = ref.watch(adminReportsControllerProvider);
-    return AsyncView<List<Report>>(
+    return RefreshableAsyncView<List<Report>>(
       value: reports,
+      onRefresh: () async => ref.invalidate(adminReportsControllerProvider),
       onRetry: () => ref.invalidate(adminReportsControllerProvider),
-      builder: (list) => list.isEmpty
-          ? const EmptyState(
-              icon: Icons.flag_outlined,
-              title: 'No reports',
-              message: 'User reports will appear here for review.',
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: list.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) => _ReportCard(report: list[index]),
-            ),
+      empty: const EmptyState(
+        icon: Icons.flag_outlined,
+        title: 'No reports',
+        message: 'User reports will appear here for review.',
+      ),
+      builder: (list) => ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        itemCount: list.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (context, index) => _ReportCard(report: list[index]),
+      ),
     );
   }
 }

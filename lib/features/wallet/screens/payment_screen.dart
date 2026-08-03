@@ -9,7 +9,9 @@ import '../../../data/repositories/providers.dart';
 import '../../../shared/widgets/amount_text.dart';
 import '../../../shared/widgets/async_view.dart';
 import '../../../theme/app_colors.dart';
+import '../../buyer/controllers/buyer_order_list_controller.dart';
 import '../controllers/payment_controller.dart';
+import '../controllers/wallet_controller.dart';
 import '../services/wallet_pin_service.dart';
 import '../widgets/wallet_pin_dialogs.dart';
 
@@ -54,7 +56,15 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     final body = switch (payment) {
       PaymentIdle() => _buildCheckout(theme, order),
       PaymentInitiating() => const _PaymentLoading(),
-      PaymentSuccess(:final result) => _PaymentSuccessView(result: result),
+      PaymentSuccess(:final result) => _PaymentSuccessView(
+            result: result,
+            onDone: () {
+              // Fresh data when the buyer lands on the Orders tab / wallet.
+              ref.invalidate(buyerOrderListControllerProvider);
+              ref.invalidate(walletControllerProvider);
+              context.go(AppRoutes.buyerOrders);
+            },
+          ),
       PaymentFailure(:final message) => _PaymentError(message: message, onRetry: _pay),
     };
 
@@ -140,8 +150,9 @@ class _PaymentLoading extends StatelessWidget {
 
 class _PaymentSuccessView extends StatelessWidget {
   final PaymentResult result;
+  final VoidCallback onDone;
 
-  const _PaymentSuccessView({required this.result});
+  const _PaymentSuccessView({required this.result, required this.onDone});
 
   @override
   Widget build(BuildContext context) {
@@ -160,7 +171,7 @@ class _PaymentSuccessView extends StatelessWidget {
               Text('Reference: ${result.reference}', style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.tanDark)),
             const SizedBox(height: 24),
             FilledButton(
-              onPressed: () => context.go(AppRoutes.buyerOrders),
+              onPressed: onDone,
               style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14)),
               child: const Text('Done'),
             ),

@@ -42,13 +42,13 @@ class SignupInput {
   final String region;
   final String password;
 
-  // Seller-only.
+  // Seller-only. Farm coordinates are not part of the signup contract — they
+  // are captured later on the seller profile (the region dropdown stands in at
+  // sign-up). Identity documents are local file paths uploaded after signup.
   final String? farmName;
   final int? mainCategoryId;
   final String? businessLicense;
   final String? farmDescription;
-  final double? farmLatitude;
-  final double? farmLongitude;
   final String? nationalIdUrl;
   final String? selfieUrl;
 
@@ -64,8 +64,6 @@ class SignupInput {
     this.mainCategoryId,
     this.businessLicense,
     this.farmDescription,
-    this.farmLatitude,
-    this.farmLongitude,
     this.nationalIdUrl,
     this.selfieUrl,
   });

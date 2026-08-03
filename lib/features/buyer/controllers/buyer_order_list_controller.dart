@@ -16,6 +16,16 @@ class BuyerOrderListController extends AsyncNotifier<List<Order>> {
         if (order.buyerId == userId) order,
     ];
   }
+
+  /// Re-fetches the list (pull-to-refresh / tab activation).
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+    try {
+      await future;
+    } catch (_) {
+      // The error is surfaced through the AsyncValue's ErrorView.
+    }
+  }
 }
 
 final buyerOrderListControllerProvider =

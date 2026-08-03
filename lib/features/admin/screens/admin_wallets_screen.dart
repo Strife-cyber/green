@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/wallet.dart';
 import '../../../shared/widgets/amount_text.dart';
-import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../controllers/admin_wallets_controller.dart';
@@ -31,21 +31,22 @@ class AdminWalletsBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wallets = ref.watch(adminWalletsControllerProvider);
-    return AsyncView<List<Wallet>>(
+    return RefreshableAsyncView<List<Wallet>>(
       value: wallets,
+      onRefresh: () => ref.read(adminWalletsControllerProvider.notifier).refresh(),
       onRetry: () => ref.invalidate(adminWalletsControllerProvider),
-      builder: (list) => list.isEmpty
-          ? const EmptyState(
-              icon: Icons.account_balance_wallet_outlined,
-              title: 'No wallets',
-              message: 'No user wallets have been created yet.',
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: list.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) => _WalletCard(wallet: list[index]),
-            ),
+      empty: const EmptyState(
+        icon: Icons.account_balance_wallet_outlined,
+        title: 'No wallets',
+        message: 'No user wallets have been created yet.',
+      ),
+      builder: (list) => ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        itemCount: list.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (context, index) => _WalletCard(wallet: list[index]),
+      ),
     );
   }
 }

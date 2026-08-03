@@ -126,6 +126,8 @@ abstract final class Endpoints {
 
   // ---- admin ----
   static String get adminStats => '$base/admin/stats';
+  static String get adminCategories => '$base/admin/categories';
+  static String get adminCategory => '$base/admin/categories/{id}';
   static String get adminSellerProfiles => '$base/admin/seller-profiles';
   static String get adminSellerProfile => '$base/admin/seller-profiles/{userId}';
   static String get approveSeller => '$base/admin/seller-profiles/{userId}/approve';

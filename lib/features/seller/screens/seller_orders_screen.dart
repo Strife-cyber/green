@@ -6,7 +6,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../data/models/order.dart';
 import '../../../shared/widgets/amount_text.dart';
-import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../../../theme/app_colors.dart';
@@ -24,30 +24,28 @@ class SellerOrdersScreen extends ConsumerWidget {
         automaticallyImplyLeading: false,
         leading: Navigator.canPop(context) ? const BackButton() : null,
         title: const Text('Orders')),
-      body: AsyncView<List<Order>>(
+      body: RefreshableAsyncView<List<Order>>(
         value: orders,
+        onRefresh: () => ref.read(sellerOrderListControllerProvider.notifier).refresh(),
         onRetry: () => ref.invalidate(sellerOrderListControllerProvider),
-        builder: (items) {
-          if (items.isEmpty) {
-            return const EmptyState(
-              icon: Icons.receipt_long_outlined,
-              title: 'No orders yet',
-              message: 'New orders will appear here.',
-            );
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: items.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (context, index) => _OrderCard(
-              order: items[index],
-              onTap: () async {
-                await context.push(AppRoutes.sellerOrderDetail(items[index].id));
-                ref.invalidate(sellerOrderListControllerProvider);
-              },
-            ),
-          );
-        },
+        empty: const EmptyState(
+          icon: Icons.receipt_long_outlined,
+          title: 'No orders yet',
+          message: 'New orders will appear here.',
+        ),
+        builder: (items) => ListView.separated(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          itemCount: items.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemBuilder: (context, index) => _OrderCard(
+            order: items[index],
+            onTap: () async {
+              await context.push(AppRoutes.sellerOrderDetail(items[index].id));
+              ref.invalidate(sellerOrderListControllerProvider);
+            },
+          ),
+        ),
       ),
     );
   }

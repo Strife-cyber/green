@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
 import '../../../data/models/wallet.dart';
 import '../../../shared/widgets/amount_text.dart';
-import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../theme/app_colors.dart';
 import '../controllers/wallet_controller.dart';
 
@@ -21,12 +21,14 @@ class WalletScreen extends ConsumerWidget {
         automaticallyImplyLeading: false,
         leading: Navigator.canPop(context) ? const BackButton() : null,
         title: const Text('Wallet')),
-      body: AsyncView<Wallet>(
+      body: RefreshableAsyncView<Wallet>(
         value: wallet,
+        onRefresh: () => ref.read(walletControllerProvider.notifier).refresh(),
         onRetry: () => ref.invalidate(walletControllerProvider),
         builder: (data) {
           final theme = Theme.of(context);
           return ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
             children: [
               Card(
