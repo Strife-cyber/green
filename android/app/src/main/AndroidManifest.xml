@@ -1,5 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Android 13+ runtime notification permission (FCM push). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- Required to reach the dev backend over plain HTTP (voice notes use the
          platform MediaPlayer, which enforces the cleartext policy — unlike
          Dart's HTTP). Switch the API to HTTPS before release, then remove. -->
@@ -35,6 +37,16 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- FCM default notification icon + accent color (see docs/FCM_FRONTEND.md).
+             The small icon is a white monochrome mask (Android renders it as an
+             alpha mask, so a color logo would blob). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_greenish" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_icon_color" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

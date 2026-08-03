@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/notifications/push_service.dart';
 import '../../../core/storage/token_storage.dart';
 import '../../../data/models/auth.dart';
 import '../../../data/models/seller_profile.dart';
@@ -93,6 +94,15 @@ class AuthController extends AsyncNotifier<AuthState> {
 
   Future<void> logout() async {
     final tokens = ref.read(tokenStorageProvider);
+    // Deregister the FCM token while the access token is still valid — the
+    // DELETE needs the JWT, which clearSession()/server logout would revoke.
+    if (PushService.instance.isReady) {
+      try {
+        await PushService.instance.deregisterToken();
+      } catch (_) {
+        // Best-effort; never block logout.
+      }
+    }
     final refreshToken = await tokens.readRefreshToken();
     if (refreshToken != null) {
       try {

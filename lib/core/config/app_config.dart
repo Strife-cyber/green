@@ -31,7 +31,7 @@ abstract final class AppConfig {
     if (override.isNotEmpty) return override;
     return switch (environment) {
       AppEnvironment.production => 'https://api.greenish.cm',
-      AppEnvironment.staging => 'https://api-staging.greenish.cm',
+      AppEnvironment.staging => 'https://green.strife-cyber.org',
       AppEnvironment.local => localHost,
     };
   }

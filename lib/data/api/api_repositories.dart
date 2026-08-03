@@ -35,6 +35,7 @@ import '../repositories/auth_repository.dart';
 import '../repositories/category_repository.dart';
 import '../repositories/chat_repository.dart';
 import '../repositories/delivery_repository.dart';
+import '../repositories/device_token_repository.dart';
 import '../repositories/notification_repository.dart';
 import '../repositories/order_repository.dart';
 import '../repositories/payment_repository.dart';
@@ -1201,6 +1202,35 @@ class ApiAdminRepository implements AdminRepository {
     try {
       final res = await _dio.get(Endpoints.activityLogs);
       return _page(_unwrap(res.data), ActivityLog.fromJson).items;
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
+}
+
+/// ────────────────────────────────────────────────────────────────────────────
+/// Device tokens (FCM push registration)
+/// ────────────────────────────────────────────────────────────────────────────
+class ApiDeviceTokenRepository implements DeviceTokenRepository {
+  final Dio _dio;
+  ApiDeviceTokenRepository(this._dio);
+
+  @override
+  Future<void> register(String token, DevicePlatform platform) async {
+    try {
+      await _dio.post(
+        Endpoints.deviceTokens,
+        data: {'token': token, 'platform': platform.apiValue},
+      );
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
+
+  @override
+  Future<void> remove(String token) async {
+    try {
+      await _dio.delete(Endpoints.deviceTokens, data: {'token': token});
     } on DioException catch (e) {
       _fail(e);
     }

@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#ECDAC0</color>
+    <!-- FCM notification accent color (brand green — AppColors.green). -->
+    <color name="notification_icon_color">#2E7D32</color>
 </resources>

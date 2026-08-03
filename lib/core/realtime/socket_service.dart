@@ -36,7 +36,14 @@ class SocketService {
   /// disconnect immediately — callers should connect with the current JWT.
   void connect({required String token, String namespace = chatNamespace}) {
     final existing = _sockets.remove(namespace);
-    existing?.dispose();
+    // Disposing a socket whose connection already dropped races the library's
+    // internal close and throws WebSocketConnectionClosed. The async half is
+    // filtered at the app boundary (main.dart); guard the sync half here.
+    try {
+      existing?.dispose();
+    } catch (_) {
+      // Already closed or mid-close — the reference is dropped either way.
+    }
     final base = AppConfig.wsBaseUrl;
     final url = namespace.isEmpty ? base : '$base$namespace';
     final socket = io.io(
@@ -85,9 +92,15 @@ class SocketService {
   }
 
   void disconnect([String namespace = chatNamespace]) {
-    _sockets.remove(namespace)?.dispose();
+    try {
+      _sockets.remove(namespace)?.dispose();
+    } catch (_) {
+      // Socket was already closed — nothing left to tear down.
+    }
     final controllers = _controllers.remove(namespace);
-    controllers?.values.forEach((c) => c.close());
+    controllers?.values.forEach((c) {
+      if (!c.isClosed) c.close();
+    });
   }
 
   /// Sends an event (e.g. `join`, `message:send`, `message:read`,

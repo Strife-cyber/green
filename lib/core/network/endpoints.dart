@@ -29,6 +29,9 @@ abstract final class Endpoints {
   static String get notifications => '$base/notifications';
   static String get notificationRead => '$base/notifications/{id}/read';
 
+  // ---- device tokens (FCM push registration) ----
+  static String get deviceTokens => '$base/device-tokens';
+
   // ---- categories ----
   static String get categories => '$base/categories';
 

@@ -300,7 +300,13 @@ enum NotificationType {
       );
 }
 
-enum DevicePlatform { fcm, apns }
+/// Push-device platform. The API expects uppercase values (`FCM` / `APNS`).
+enum DevicePlatform {
+  fcm,
+  apns;
+
+  String get apiValue => name.toUpperCase();
+}
 
 // ---- support & reports -----------------------------------------------------
 

@@ -26,6 +26,7 @@ import '../repositories/analytics_repository.dart';
 import '../repositories/category_repository.dart';
 import '../repositories/chat_repository.dart';
 import '../repositories/delivery_repository.dart';
+import '../repositories/device_token_repository.dart';
 import '../repositories/notification_repository.dart';
 import '../repositories/order_repository.dart';
 import '../repositories/payment_repository.dart';
@@ -814,6 +815,23 @@ class MockAdminRepository implements AdminRepository {
   Future<List<ActivityLog>> activityLog() async {
     await _delay();
     return seedActivityLog;
+  }
+}
+
+// ---- device tokens (push) --------------------------------------------------
+
+class MockDeviceTokenRepository implements DeviceTokenRepository {
+  final MockStore store;
+  MockDeviceTokenRepository(this.store);
+
+  @override
+  Future<void> register(String token, DevicePlatform platform) async {
+    await _delay(); // No-op — real tokens live on the backend.
+  }
+
+  @override
+  Future<void> remove(String token) async {
+    await _delay();
   }
 }
 

@@ -12,6 +12,7 @@ import 'auth_repository.dart';
 import 'category_repository.dart';
 import 'chat_repository.dart';
 import 'delivery_repository.dart';
+import 'device_token_repository.dart';
 import 'notification_repository.dart';
 import 'order_repository.dart';
 import 'payment_repository.dart';
@@ -104,6 +105,11 @@ final chatRepositoryProvider = Provider<ChatRepository>((ref) {
 final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
   if (ref.watch(useMocksProvider)) return MockNotificationRepository(ref.watch(mockStoreProvider));
   return ApiNotificationRepository(ref.watch(apiClientProvider));
+});
+
+final deviceTokenRepositoryProvider = Provider<DeviceTokenRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockDeviceTokenRepository(ref.watch(mockStoreProvider));
+  return ApiDeviceTokenRepository(ref.watch(apiClientProvider));
 });
 
 final receiptRepositoryProvider = Provider<ReceiptRepository>((ref) {
