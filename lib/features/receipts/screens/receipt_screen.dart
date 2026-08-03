@@ -50,7 +50,10 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
     final order = ref.watch(receiptOrderProvider(widget.orderId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Receipt')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: const Text('Receipt')),
       body: AsyncView<Receipt>(
         value: receipt,
         onRetry: () => ref.invalidate(receiptControllerProvider(widget.orderId)),
@@ -143,7 +146,7 @@ class _OrderSummary extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(child: Text('Order ${order.id}', style: theme.textTheme.titleMedium)),
+            Expanded(child: Text('Order ${orderReference(order.id)}', style: theme.textTheme.titleMedium)),
             StatusBadge.order(order.status),
           ],
         ),

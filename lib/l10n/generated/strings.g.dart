@@ -4,9 +4,9 @@
 /// To regenerate, run: `dart run slang`
 ///
 /// Locales: 2
-/// Strings: 224 (112 per locale)
+/// Strings: 230 (115 per locale)
 ///
-/// Built on 2026-08-02 at 15:57 UTC
+/// Built on 2026-08-02 at 20:19 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -260,6 +260,9 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
 	String get statTotalOrders => 'Total orders';
 	String get orderPrefix => 'Order #';
 	String get navMore => 'More';
+	String get addToCart => 'Add to cart';
+	String get quantity => 'Quantity';
+	String addedToCart({required Object name, required Object kg}) => '${name} added to cart (${kg} kg)';
 }
 
 // Path: <root>
@@ -400,6 +403,9 @@ class _StringsFr extends Translations {
 	@override String get statTotalOrders => 'Total commandes';
 	@override String get orderPrefix => 'Commande #';
 	@override String get navMore => 'Plus';
+	@override String get addToCart => 'Ajouter au panier';
+	@override String get quantity => 'Quantité';
+	@override String addedToCart({required Object name, required Object kg}) => '${name} ajouté au panier (${kg} kg)';
 }
 
 /// Flat map(s) containing all translations.
@@ -520,6 +526,9 @@ extension on Translations {
 			case 'statTotalOrders': return 'Total orders';
 			case 'orderPrefix': return 'Order #';
 			case 'navMore': return 'More';
+			case 'addToCart': return 'Add to cart';
+			case 'quantity': return 'Quantity';
+			case 'addedToCart': return ({required Object name, required Object kg}) => '${name} added to cart (${kg} kg)';
 			default: return null;
 		}
 	}
@@ -640,6 +649,9 @@ extension on _StringsFr {
 			case 'statTotalOrders': return 'Total commandes';
 			case 'orderPrefix': return 'Commande #';
 			case 'navMore': return 'Plus';
+			case 'addToCart': return 'Ajouter au panier';
+			case 'quantity': return 'Quantité';
+			case 'addedToCart': return ({required Object name, required Object kg}) => '${name} ajouté au panier (${kg} kg)';
 			default: return null;
 		}
 	}

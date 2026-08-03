@@ -19,7 +19,10 @@ class AdminChatScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final messages = ref.watch(adminChatControllerProvider(threadId));
     return Scaffold(
-      appBar: AppBar(title: const Text('Chat')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: const Text('Chat')),
       body: AsyncView<List<ChatMessage>>(
         value: messages,
         onRetry: () => ref.invalidate(adminChatControllerProvider(threadId)),

@@ -51,7 +51,10 @@ class SellerProductsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final products = ref.watch(sellerProductListControllerProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('My Products')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: const Text('My Products')),
       body: Stack(
         children: [
           AsyncView<List<Product>>(

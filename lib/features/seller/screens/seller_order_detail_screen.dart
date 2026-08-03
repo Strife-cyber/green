@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../core/router/app_router.dart';
+import '../../chat/chat_actions.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../data/models/enums.dart';
 import '../../../data/models/order.dart';
@@ -23,7 +22,10 @@ class SellerOrderDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final orderAsync = ref.watch(sellerOrderDetailControllerProvider(id));
     return Scaffold(
-      appBar: AppBar(title: const Text('Order')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: const Text('Order')),
       body: AsyncView<Order>(
         value: orderAsync,
         onRetry: () => ref.invalidate(sellerOrderDetailControllerProvider(id)),
@@ -66,14 +68,14 @@ class SellerOrderDetailScreen extends ConsumerWidget {
   }
 }
 
-class _OrderDetailContent extends StatelessWidget {
+class _OrderDetailContent extends ConsumerWidget {
   final Order order;
   final void Function(OrderStatus status) onStatus;
 
   const _OrderDetailContent({required this.order, required this.onStatus});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -87,7 +89,7 @@ class _OrderDetailContent extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('#${order.id}', style: theme.textTheme.titleMedium),
+                    Text(orderReference(order.id), style: theme.textTheme.titleMedium),
                     StatusBadge.order(order.status),
                   ],
                 ),
@@ -148,7 +150,7 @@ class _OrderDetailContent extends StatelessWidget {
         ..._actionButtons(context),
         const SizedBox(height: 16),
         OutlinedButton.icon(
-          onPressed: () => context.push(AppRoutes.chat(order.id)),
+          onPressed: () => openChatForOrder(context, ref, order.id),
           icon: const Icon(Icons.chat_outlined),
           label: const Text('Chat with buyer'),
         ),

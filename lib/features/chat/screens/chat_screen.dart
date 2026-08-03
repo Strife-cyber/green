@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:record/record.dart';
 
+import '../../../core/network/media_url.dart';
 import '../../../data/models/chat.dart';
 import '../../../data/models/enums.dart';
 import '../../../data/repositories/providers.dart';
@@ -88,6 +89,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
         title: const Text('Chat'),
         actions: [
           if (otherParticipantId != null)
@@ -106,7 +109,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
       body: Column(
         children: [
-          Expanded(child: _messages(state, currentUserId)),
+          // WhatsApp-style light chat backdrop behind the message list.
+          Expanded(
+            child: Container(
+              color: const Color(0xFFE8E2D4),
+              child: _messages(state, currentUserId),
+            ),
+          ),
           _composerBar(state),
         ],
       ),
@@ -266,13 +275,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Future<void> _playVoice(ChatMessage message) async {
-    final filePath = message.fileUrl;
-    if (filePath == null || filePath.isEmpty) return;
+    final url = message.fileUrl;
+    if (url == null || url.isEmpty) return;
     try {
       final player = AudioPlayer();
       await _player?.dispose();
       _player = player;
-      await player.play(DeviceFileSource(filePath));
+      // Voice files come back as relative paths (`/uploads/chat/…`) — resolve
+      // them to an absolute URL and stream over the network.
+      await player.play(UrlSource(resolveMediaUrl(url)));
     } catch (_) {
       // Audio playback unavailable (e.g. tests / missing file) — ignore.
     }
@@ -304,37 +315,68 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bubbleColor = isMine ? AppColors.green : AppColors.backgroundElevated;
-    final textColor = isMine ? Colors.white : AppColors.ink;
-    return Align(
-      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: bubbleColor,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: Radius.circular(isMine ? 16 : 4),
-            bottomRight: Radius.circular(isMine ? 4 : 16),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _content(context, theme, textColor),
-            const SizedBox(height: 4),
-            Text(
-              _time(message.sentAt),
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: isMine ? Colors.white70 : AppColors.tanDark,
-                fontSize: 10,
-              ),
+    // WhatsApp-style: my bubbles are green-tinted, the other party's are white.
+    final bubbleColor = isMine ? AppColors.greenContainer : Colors.white;
+    final textColor = AppColors.ink;
+    final timeColor = isMine ? const Color(0xFF4B5D46) : AppColors.tanDark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      child: Row(
+        mainAxisAlignment: isMine ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Flexible(
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.72),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: bubbleColor,
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(12),
+                      topRight: const Radius.circular(12),
+                      bottomLeft: Radius.circular(isMine ? 12 : 2),
+                      bottomRight: Radius.circular(isMine ? 2 : 12),
+                    ),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _content(context, theme, textColor),
+                      const SizedBox(height: 2),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_time(message.sentAt), style: theme.textTheme.labelSmall?.copyWith(fontSize: 10, color: timeColor)),
+                          if (isMine) ...[
+                            const SizedBox(width: 4),
+                            Icon(Icons.done_all, size: 14, color: timeColor),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                // WhatsApp-style tail on the outer bottom corner.
+                Positioned(
+                  bottom: 0,
+                  left: isMine ? null : -5,
+                  right: isMine ? -5 : null,
+                  child: Transform.rotate(
+                    angle: isMine ? 0.785398 : -0.785398,
+                    child: Container(width: 10, height: 10, color: bubbleColor),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

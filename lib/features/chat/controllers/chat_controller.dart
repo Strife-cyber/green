@@ -7,6 +7,7 @@ import '../../../data/models/chat.dart';
 import '../../../data/models/enums.dart';
 import '../../../data/repositories/chat_repository.dart';
 import '../../../data/repositories/providers.dart';
+import '../../auth/controllers/auth_controller.dart';
 
 /// Messages and composer state for a single chat thread (CHAT-02/03).
 class ChatState {
@@ -47,12 +48,20 @@ class ChatController extends FamilyNotifier<ChatState, String> {
   ChatState build(String threadId) {
     _disposed = false;
     final socket = ref.read(socketServiceProvider);
-    _socketSub = socket.events('chat.messageCreated').listen(_onMessageCreated);
+    final token = ref.read(authControllerProvider).valueOrNull?.session?.accessToken;
+    // Join the thread room so the server streams live messages to this socket
+    // (auto re-joined on reconnect).
+    socket.connect(token: token ?? '', namespace: SocketService.chatNamespace);
+    socket.joinRoom(SocketService.chatNamespace, {'threadId': threadId});
+    _socketSub = socket
+        .events('message:created', namespace: SocketService.chatNamespace)
+        .listen(_onMessageCreated);
     ref.onDispose(() {
       _disposed = true;
       _socketSub?.cancel();
     });
     unawaited(_load());
+    unawaited(markRead());
     return const ChatState(loading: true);
   }
 
@@ -113,8 +122,14 @@ class ChatController extends FamilyNotifier<ChatState, String> {
     }
   }
 
-  /// Best-effort read receipt; never throws.
+  /// Best-effort read receipt: tells the server (and the other party) the
+  /// thread was opened. Never throws.
   Future<void> markRead() async {
+    ref.read(socketServiceProvider).emit(
+          'message:read',
+          {'threadId': arg},
+          namespace: SocketService.chatNamespace,
+        );
     try {
       await ref.read(chatRepositoryProvider).markRead(arg);
     } catch (_) {

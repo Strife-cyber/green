@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../core/network/media_url.dart';
 import '../../theme/app_colors.dart';
 
 /// Network image with a branded placeholder/error fallback.
+///
+/// Relative API URLs (e.g. `/uploads/products/….jpg`) are resolved against the
+/// backend base before loading, so uploaded images work out of the box.
 class ImageNetwork extends StatelessWidget {
   final String? url;
   final double? width;
@@ -34,7 +38,7 @@ class ImageNetwork extends StatelessWidget {
       image = placeholder;
     } else {
       image = Image.network(
-        url!,
+        resolveMediaUrl(url),
         width: width,
         height: height,
         fit: fit,

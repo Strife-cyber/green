@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "921846706296",
+    "project_id": "green-a22a7",
+    "storage_bucket": "green-a22a7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:921846706296:android:6c47eca2bf9aa09b757d8d",
+        "android_client_info": {
+          "package_name": "com.example.green"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyATumktVDVlMIHj9Vq0ZeB018KC6aNhHKc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -15,7 +15,10 @@ class AdminWithdrawalsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Withdrawals')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: const Text('Withdrawals')),
       body: const AdminWithdrawalsBody(),
     );
   }

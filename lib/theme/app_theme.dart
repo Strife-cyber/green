@@ -134,23 +134,35 @@ abstract final class AppTheme {
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: isLight ? AppColors.ink : scheme.surfaceContainerHigh,
-        contentTextStyle: TextStyle(color: scheme.onSurface),
+        // The light-mode bar is dark ink, so the text must be white — never
+        // the dark onSurface colour (it was unreadable).
+        contentTextStyle: TextStyle(color: Colors.white),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
-      // Typography inherits Material's ramp but is tinted with brand ink and
-      // a green headline accent.
+      // Typography: every style is pinned to Quicksand explicitly (not left to
+      // inheritance) so no Text widget can silently fall back to Roboto.
       textTheme: base.textTheme
-          .apply(bodyColor: ink, displayColor: ink)
+          .apply(
+            fontFamily: _fontFamily,
+            bodyColor: ink,
+            displayColor: ink,
+          )
           .copyWith(
             headlineMedium: TextStyle(
+              fontFamily: _fontFamily,
               color: AppColors.greenDark,
               fontWeight: FontWeight.w700,
             ),
             headlineSmall: TextStyle(
+              fontFamily: _fontFamily,
               color: AppColors.greenDark,
               fontWeight: FontWeight.w700,
             ),
           ),
+      // Tooltips, chips, inputs and snackbars also inherit the brand typeface.
+      tooltipTheme: TooltipThemeData(
+        textStyle: TextStyle(fontFamily: _fontFamily, fontSize: 13),
+      ),
     );
   }
 }

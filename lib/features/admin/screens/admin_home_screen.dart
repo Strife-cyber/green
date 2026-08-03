@@ -9,6 +9,8 @@ import '../../../data/models/admin_stats.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/app_shell.dart';
 import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/language_action.dart';
+import '../../../shared/widgets/language_selector.dart';
 import '../../../shared/widgets/quick_actions.dart';
 import '../../../shared/widgets/stat_card.dart';
 import '../../../shared/widgets/user_avatar.dart';
@@ -50,7 +52,10 @@ class _AdminTab extends StatelessWidget {
   const _AdminTab({required this.title, required this.child});
 
   @override
-  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text(title)), body: child);
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: Text(title)), body: child);
 }
 
 class _ProfileTab extends ConsumerWidget {
@@ -63,7 +68,10 @@ class _ProfileTab extends ConsumerWidget {
     final user = ref.watch(authControllerProvider).valueOrNull?.user;
     final name = user?.fullName ?? t.roleAdmin;
     return Scaffold(
-      appBar: AppBar(title: Text(t.navProfile)),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: Text(t.navProfile)),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
@@ -81,7 +89,21 @@ class _ProfileTab extends ConsumerWidget {
           Center(
             child: Text(t.roleAdmin, style: theme.textTheme.bodySmall?.copyWith(color: AppColors.tanDark)),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(t.language, style: theme.textTheme.titleSmall),
+                  const SizedBox(height: 12),
+                  const LanguageSelector(),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           FilledButton.icon(
             onPressed: () => _logout(context, ref),
             icon: const Icon(Icons.logout),
@@ -106,12 +128,17 @@ class _OverviewTab extends ConsumerWidget {
     final t = context.t;
     final stats = ref.watch(adminStatsControllerProvider);
     return Scaffold(
-      appBar: AppBar(title: Text(t.adminConsole)),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: Text(t.adminConsole),
+        actions: const [LanguageAction()],
+      ),
       body: AsyncView<AdminStats>(
         value: stats,
         onRetry: () => ref.invalidate(adminStatsControllerProvider),
         builder: (s) => ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
           children: [
             // Every secondary module lives here — the bottom bar stays at 4.
             QuickActionsSection(

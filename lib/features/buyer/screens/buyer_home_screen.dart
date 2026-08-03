@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../core/router/app_router.dart';
 import '../../../core/router/nav_providers.dart';
 import '../../../data/models/product.dart';
 import '../../../l10n/l10n_ext.dart';
@@ -11,7 +9,6 @@ import '../../../shared/widgets/async_view.dart';
 import '../../../shared/widgets/category_chips.dart';
 import '../../../shared/widgets/debounced_search_bar.dart';
 import '../../../shared/widgets/empty_state.dart';
-import '../../../shared/widgets/quick_actions.dart';
 import '../controllers/cart_controller.dart';
 import '../controllers/product_list_controller.dart';
 import '../widgets/product_grid.dart';
@@ -60,36 +57,13 @@ class _HomeFeed extends ConsumerWidget {
     final categories = ref.watch(categoryListProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(t.appTitle)),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: Text(t.appTitle)
+      ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: QuickActionsSection(
-              actions: [
-                QuickAction(
-                  icon: Icons.search,
-                  label: t.qaSearch,
-                  onTap: () => context.push(AppRoutes.buyerSearch),
-                ),
-                QuickAction(
-                  icon: Icons.shopping_cart_outlined,
-                  label: t.navCart,
-                  onTap: () => ref.read(buyerTabProvider.notifier).state = 1,
-                ),
-                QuickAction(
-                  icon: Icons.receipt_long_outlined,
-                  label: t.qaOrders,
-                  onTap: () => ref.read(buyerTabProvider.notifier).state = 2,
-                ),
-                QuickAction(
-                  icon: Icons.help_outline,
-                  label: t.qaSupport,
-                  onTap: () => context.push(AppRoutes.support),
-                ),
-              ],
-            ),
-          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: DebouncedSearchBar(

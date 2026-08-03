@@ -23,6 +23,35 @@ enum UserRole {
         (r) => r.name == value.toLowerCase(),
         orElse: () => UserRole.buyer,
       );
+
+  /// The API enum value sent in request bodies (e.g. signup).
+  String get apiValue => name.toUpperCase();
+}
+
+/// users.admin_role — the admin sub-role (SUPER_ADMIN can manage other admins).
+enum AdminRole {
+  superAdmin,
+  finance,
+  support,
+  compliance;
+
+  String get label => switch (this) {
+        superAdmin => 'Super Admin',
+        finance => 'Finance',
+        support => 'Support',
+        compliance => 'Compliance',
+      };
+
+  /// API values are uppercase (`SUPER_ADMIN`) — match case-insensitively.
+  static AdminRole? fromApi(String? value) {
+    if (value == null || value.isEmpty) return null;
+    return AdminRole.values.firstWhere(
+      (r) => r.name == value.toLowerCase(),
+      orElse: () => AdminRole.superAdmin,
+    );
+  }
+
+  String get apiValue => name.toUpperCase();
 }
 
 /// seller_profiles.approval_status — the admin approval gate (AUTH-07).
@@ -37,8 +66,13 @@ enum SellerApprovalStatus {
         rejected => 'Rejected',
       };
 
-  static SellerApprovalStatus fromApi(String value) => SellerApprovalStatus.values
-      .firstWhere((s) => s.name == value, orElse: () => SellerApprovalStatus.pending);
+  /// API values are uppercase (`APPROVED`) — match case-insensitively.
+  static SellerApprovalStatus fromApi(String value) => SellerApprovalStatus
+      .values
+      .firstWhere(
+        (s) => s.name == value.toLowerCase(),
+        orElse: () => SellerApprovalStatus.pending,
+      );
 }
 
 // ---- catalog ---------------------------------------------------------------
@@ -73,8 +107,14 @@ enum OrderStatus {
         cancelled => 'Cancelled',
       };
 
+  /// API values are uppercase (`CONFIRMED`) — match case-insensitively.
   static OrderStatus fromApi(String value) =>
-      OrderStatus.values.firstWhere((s) => s.name == value, orElse: () => OrderStatus.pending);
+      OrderStatus.values.firstWhere(
+        (s) => s.name == value.toLowerCase(),
+        orElse: () => OrderStatus.pending,
+      );
+
+  String get apiValue => name.toUpperCase();
 }
 
 /// orders.payment_status (PAY-04).
@@ -93,9 +133,13 @@ enum PaymentStatus {
         refunded => 'Refunded',
       };
 
-  static PaymentStatus fromApi(String value) => switch (value) {
+  /// API values are uppercase (`ESCROW_HELD`) — match case-insensitively.
+  static PaymentStatus fromApi(String value) => switch (value.toLowerCase()) {
         'escrow_held' => PaymentStatus.escrowHeld,
-        _ => PaymentStatus.values.firstWhere((s) => s.name == value, orElse: () => PaymentStatus.unpaid),
+        _ => PaymentStatus.values.firstWhere(
+            (s) => s.name == value.toLowerCase(),
+            orElse: () => PaymentStatus.unpaid,
+          ),
       };
 }
 
@@ -124,13 +168,18 @@ enum TransactionType {
         escrowHold || commission || withdrawal => false,
       };
 
-  static TransactionType fromApi(String value) => switch (value) {
+  /// API values are uppercase (`ESCROW_HOLD`) — match case-insensitively.
+  static TransactionType fromApi(String value) => switch (value.toLowerCase()) {
         'payment_in' => TransactionType.paymentIn,
         'escrow_hold' => TransactionType.escrowHold,
         'escrow_release' => TransactionType.escrowRelease,
-        _ => TransactionType.values
-            .firstWhere((t) => t.name == value, orElse: () => TransactionType.paymentIn),
+        _ => TransactionType.values.firstWhere(
+            (t) => t.name == value.toLowerCase(),
+            orElse: () => TransactionType.paymentIn,
+          ),
       };
+
+  String get apiValue => name.toUpperCase();
 }
 
 enum TransactionStatus {
@@ -138,8 +187,15 @@ enum TransactionStatus {
   reconciled,
   failed;
 
-  static TransactionStatus fromApi(String value) =>
-      TransactionStatus.values.firstWhere((s) => s.name == value, orElse: () => TransactionStatus.pending);
+  /// API values are `PENDING` / `SUCCESS` / `FAILED` — map case-insensitively.
+  static TransactionStatus fromApi(String value) => switch (value.toLowerCase()) {
+        'success' => TransactionStatus.reconciled,
+        'failed' => TransactionStatus.failed,
+        _ => TransactionStatus.values.firstWhere(
+            (s) => s.name == value.toLowerCase(),
+            orElse: () => TransactionStatus.pending,
+          ),
+      };
 }
 
 /// withdrawals.channel (D4).
@@ -152,10 +208,16 @@ enum WithdrawalChannel {
         orangeMoney => 'Orange Money',
       };
 
-  static WithdrawalChannel fromApi(String value) => switch (value) {
+  /// API values are uppercase (`MTN_MOMO`) — match case-insensitively.
+  static WithdrawalChannel fromApi(String value) => switch (value.toLowerCase()) {
         'mtn_momo' => WithdrawalChannel.mtnMomo,
         'orange_money' => WithdrawalChannel.orangeMoney,
         _ => WithdrawalChannel.mtnMomo,
+      };
+
+  String get apiValue => switch (this) {
+        mtnMomo => 'MTN_MOMO',
+        orangeMoney => 'ORANGE_MONEY',
       };
 }
 
@@ -170,15 +232,39 @@ enum WithdrawalStatus {
         rejected => 'Rejected',
       };
 
-  static WithdrawalStatus fromApi(String value) =>
-      WithdrawalStatus.values.firstWhere((s) => s.name == value, orElse: () => WithdrawalStatus.pending);
+  /// API values are uppercase (`PROCESSED`) — match case-insensitively.
+  static WithdrawalStatus fromApi(String value) => WithdrawalStatus.values
+      .firstWhere(
+        (s) => s.name == value.toLowerCase(),
+        orElse: () => WithdrawalStatus.pending,
+      );
 }
 
 // ---- receipts --------------------------------------------------------------
 
-enum ReceiptStatus { issued }
+/// Receipt lifecycle (REC-01/02). API sends `ISSUED` / `VOIDED`.
+enum ReceiptStatus {
+  issued,
+  voided;
 
-enum ReceiptCopyRole { buyer, seller, admin }
+  static ReceiptStatus fromApi(String value) => ReceiptStatus.values.firstWhere(
+        (s) => s.name == value.toLowerCase(),
+        orElse: () => ReceiptStatus.issued,
+      );
+}
+
+enum ReceiptCopyRole {
+  buyer,
+  seller,
+  admin;
+
+  /// API values are uppercase (`BUYER`) — match case-insensitively.
+  static ReceiptCopyRole fromApi(String value) => ReceiptCopyRole.values
+      .firstWhere(
+        (r) => r.name == value.toLowerCase(),
+        orElse: () => ReceiptCopyRole.buyer,
+      );
+}
 
 // ---- chat ------------------------------------------------------------------
 
@@ -187,13 +273,32 @@ enum MessageType {
   image,
   voice;
 
+  /// API values are uppercase (`IMAGE`) — match case-insensitively.
   static MessageType fromApi(String value) =>
-      MessageType.values.firstWhere((m) => m.name == value, orElse: () => MessageType.text);
+      MessageType.values.firstWhere(
+        (m) => m.name == value.toLowerCase(),
+        orElse: () => MessageType.text,
+      );
+
+  String get apiValue => name.toUpperCase();
 }
 
 // ---- notifications ---------------------------------------------------------
 
-enum NotificationType { order, payment, delivery, chat, admin }
+/// Notification category. API sends uppercase values (`ORDER`, `PAYMENT`, …).
+enum NotificationType {
+  order,
+  payment,
+  delivery,
+  chat,
+  admin;
+
+  static NotificationType fromApi(String value) =>
+      NotificationType.values.firstWhere(
+        (t) => t.name == value.toLowerCase(),
+        orElse: () => NotificationType.order,
+      );
+}
 
 enum DevicePlatform { fcm, apns }
 
@@ -210,17 +315,38 @@ enum TicketStatus {
         resolved => 'Resolved',
       };
 
+  /// API values are uppercase (`ASSIGNED`) — match case-insensitively.
   static TicketStatus fromApi(String value) =>
-      TicketStatus.values.firstWhere((s) => s.name == value, orElse: () => TicketStatus.open);
+      TicketStatus.values.firstWhere(
+        (s) => s.name == value.toLowerCase(),
+        orElse: () => TicketStatus.open,
+      );
 }
 
-enum ReportTargetType { profile, chat, order }
+enum ReportTargetType {
+  profile,
+  chat,
+  order;
+
+  /// API values are uppercase (`PROFILE`) — match case-insensitively.
+  static ReportTargetType fromApi(String value) => ReportTargetType.values
+      .firstWhere(
+        (t) => t.name == value.toLowerCase(),
+        orElse: () => ReportTargetType.profile,
+      );
+
+  String get apiValue => name.toUpperCase();
+}
 
 enum ReportStatus {
   open,
   reviewed,
   actioned;
 
+  /// API values are uppercase (`ACTIONED`) — match case-insensitively.
   static ReportStatus fromApi(String value) =>
-      ReportStatus.values.firstWhere((s) => s.name == value, orElse: () => ReportStatus.open);
+      ReportStatus.values.firstWhere(
+        (s) => s.name == value.toLowerCase(),
+        orElse: () => ReportStatus.open,
+      );
 }

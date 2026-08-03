@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/router/app_router.dart';
 import '../../../data/models/product.dart';
 import '../../../shared/widgets/product_card.dart';
+import 'product_sheet.dart';
 
-/// A two-column grid of [ProductCard]s. Tapping a card pushes the product
-/// detail route by default; pass [onTap] to override.
-class ProductGrid extends StatelessWidget {
+/// A two-column grid of [ProductCard]s. Tapping a card opens the product in a
+/// draggable bottom sheet (see [showProductSheet]); pass [onTap] to override.
+class ProductGrid extends ConsumerWidget {
   final List<Product> products;
   final void Function(Product)? onTap;
 
   const ProductGrid({super.key, required this.products, this.onTap});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -29,7 +29,7 @@ class ProductGrid extends StatelessWidget {
         return ProductCard(
           product: product,
           onTap: onTap == null
-              ? () => context.push(AppRoutes.productDetail(product.id))
+              ? () => showProductSheet(context, ref, product)
               : () => onTap!(product),
         );
       },

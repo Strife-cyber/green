@@ -16,7 +16,10 @@ class AdminDeliveriesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Deliveries')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: const Text('Deliveries')),
       body: const AdminDeliveriesBody(),
     );
   }
@@ -74,7 +77,7 @@ class _DeliveryCard extends StatelessWidget {
                         delivery.driverName ?? 'Unassigned driver',
                         style: theme.textTheme.titleMedium,
                       ),
-                      Text('Order ${delivery.orderId}', style: theme.textTheme.bodySmall),
+                      Text('Order ${orderReference(delivery.orderId)}', style: theme.textTheme.bodySmall),
                     ],
                   ),
                 ),

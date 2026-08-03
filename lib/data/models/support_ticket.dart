@@ -22,14 +22,15 @@ class SupportTicket {
     this.resolvedAt,
   });
 
+  /// Parses the backend `TicketListItemDto` — camelCase, `status` uppercase.
   factory SupportTicket.fromJson(Map<String, dynamic> json) => SupportTicket(
         id: json['id'] as String,
-        userId: json['user_id'] as String? ?? '',
+        userId: json['userId'] as String? ?? json['user_id'] as String? ?? '',
         subject: json['subject'] as String? ?? '',
         description: json['description'] as String? ?? '',
         status: TicketStatus.fromApi(json['status'] as String? ?? 'open'),
-        assignedAdminId: json['assigned_admin_id'] as String?,
-        createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'] as String) : null,
-        resolvedAt: json['resolved_at'] != null ? DateTime.tryParse(json['resolved_at'] as String) : null,
+        assignedAdminId: json['assignedAdminId'] as String? ?? json['assigned_admin_id'] as String?,
+        createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'] as String) : null,
+        resolvedAt: json['resolvedAt'] != null ? DateTime.tryParse(json['resolvedAt'] as String) : null,
       );
 }

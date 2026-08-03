@@ -20,7 +20,10 @@ class SellerOrdersScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final orders = ref.watch(sellerOrderListControllerProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Orders')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: const Text('Orders')),
       body: AsyncView<List<Order>>(
         value: orders,
         onRetry: () => ref.invalidate(sellerOrderListControllerProvider),
@@ -71,7 +74,7 @@ class _OrderCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('#${order.id}', style: theme.textTheme.titleSmall),
+                    Text(orderReference(order.id), style: theme.textTheme.titleSmall),
                     if (order.placedAt != null) ...[
                       const SizedBox(height: 2),
                       Text(

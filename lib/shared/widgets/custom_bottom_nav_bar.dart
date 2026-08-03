@@ -56,6 +56,7 @@ class CustomBottomNavBar extends StatelessWidget {
 
     final pillDecoration = BoxDecoration(
       color: theme.colorScheme.surface,
+      border: Border.all(color: Colors.black.withValues(alpha: 0.8), width: 1),
       borderRadius: BorderRadius.circular(100),
       boxShadow: [
         BoxShadow(

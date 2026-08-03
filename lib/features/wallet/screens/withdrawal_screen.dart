@@ -70,7 +70,10 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Withdraw')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: const Text('Withdraw')),
       body: Form(
         key: _formKey,
         child: ListView(

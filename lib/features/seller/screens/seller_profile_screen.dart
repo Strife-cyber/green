@@ -6,7 +6,9 @@ import '../../../core/router/app_router.dart';
 import '../../../data/models/enums.dart';
 import '../../../data/models/seller_profile.dart';
 import '../../../data/models/user.dart';
+import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/language_selector.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../../../theme/app_colors.dart';
@@ -22,7 +24,11 @@ class SellerProfileScreen extends ConsumerWidget {
     final user = ref.watch(authControllerProvider).valueOrNull?.user;
     final profile = ref.watch(sellerProfileControllerProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: Text(context.t.navProfile),
+      ),
       body: AsyncView<SellerProfile>(
         value: profile,
         onRetry: () => ref.invalidate(sellerProfileControllerProvider),
@@ -69,7 +75,7 @@ class _ProfileContent extends StatelessWidget {
     final displayName = user?.fullName ?? 'Seller';
     final email = user?.email;
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
       children: [
         Card(
           child: Padding(
@@ -98,19 +104,33 @@ class _ProfileContent extends StatelessWidget {
         Card(
           child: Column(
             children: [
-              _LinkTile(icon: Icons.account_balance_wallet_outlined, title: 'Wallet', onTap: () => context.push(AppRoutes.sellerWallet)),
+              _LinkTile(icon: Icons.account_balance_wallet_outlined, title: context.t.wallet, onTap: () => context.push(AppRoutes.sellerWallet)),
               const Divider(height: 1),
-              _LinkTile(icon: Icons.notifications_outlined, title: 'Notifications', onTap: () => context.push(AppRoutes.notifications)),
+              _LinkTile(icon: Icons.notifications_outlined, title: context.t.notifications, onTap: () => context.push(AppRoutes.notifications)),
               const Divider(height: 1),
-              _LinkTile(icon: Icons.support_agent_outlined, title: 'Support', onTap: () => context.push(AppRoutes.support)),
+              _LinkTile(icon: Icons.support_agent_outlined, title: context.t.support, onTap: () => context.push(AppRoutes.support)),
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(context.t.language, style: theme.textTheme.titleSmall),
+                const SizedBox(height: 12),
+                const LanguageSelector(),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
         OutlinedButton.icon(
           onPressed: onLogout,
           icon: const Icon(Icons.logout),
-          label: const Text('Log out'),
+          label: Text(context.t.logout),
           style: OutlinedButton.styleFrom(
             foregroundColor: const Color(0xFFB3261E),
             side: const BorderSide(color: Color(0xFFB3261E)),

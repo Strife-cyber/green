@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../core/utils/formatters.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/router/app_router.dart';
+import '../../chat/chat_actions.dart';
 import '../../../core/utils/money.dart';
 import '../../../data/models/enums.dart';
 import '../../../data/models/order.dart';
@@ -74,7 +76,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final order = ref.watch(orderDetailControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Order Details')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: const Text('Order Details')),
       body: AsyncView<Order>(
         value: order,
         onRetry: () =>
@@ -94,7 +99,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           children: [
             Expanded(
               child: Text(
-                order.sellerName ?? 'Order ${order.id}',
+                order.sellerName ?? 'Order ${orderReference(order.id)}',
                 style: theme.textTheme.titleMedium,
               ),
             ),
@@ -245,7 +250,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     }
     buttons.add(
       OutlinedButton.icon(
-        onPressed: () => context.push(AppRoutes.chat(order.id)),
+        onPressed: () => openChatForOrder(context, ref, order.id),
         icon: const Icon(Icons.chat_bubble_outline),
         label: const Text('Chat with seller'),
       ),

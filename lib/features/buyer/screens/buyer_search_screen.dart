@@ -19,7 +19,10 @@ class BuyerSearchScreen extends ConsumerWidget {
     final products = ref.watch(productListControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Search')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: const Text('Search')),
       body: Column(
         children: [
           Padding(

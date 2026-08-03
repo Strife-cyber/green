@@ -24,18 +24,17 @@ class Report {
     this.createdAt,
   });
 
+  /// Parses the backend `ReportListItemDto` — camelCase, `targetType`/`status`
+  /// uppercase.
   factory Report.fromJson(Map<String, dynamic> json) => Report(
         id: json['id'] as String,
-        reporterId: json['reporter_id'] as String? ?? '',
-        reportedId: json['reported_id'] as String? ?? '',
-        targetType: ReportTargetType.values.firstWhere(
-          (t) => t.name == (json['target_type'] as String? ?? 'profile'),
-          orElse: () => ReportTargetType.profile,
-        ),
-        targetId: json['target_id'] as String?,
+        reporterId: json['reporterId'] as String? ?? json['reporter_id'] as String? ?? '',
+        reportedId: json['reportedId'] as String? ?? json['reported_id'] as String? ?? '',
+        targetType: ReportTargetType.fromApi(json['targetType'] as String? ?? json['target_type'] as String? ?? 'profile'),
+        targetId: json['targetId'] as String? ?? json['target_id'] as String?,
         reason: json['reason'] as String? ?? '',
         details: json['details'] as String?,
         status: ReportStatus.fromApi(json['status'] as String? ?? 'open'),
-        createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'] as String) : null,
+        createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'] as String) : null,
       );
 }

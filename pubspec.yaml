@@ -57,6 +57,7 @@ dependencies:
   crypto: ^3.0.7
   slang: ^3.32.0
   slang_flutter: ^3.32.0
+  geocoding: ^4.0.0
 
 dev_dependencies:
   flutter_test:

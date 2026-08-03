@@ -15,7 +15,7 @@ final productCatalogProvider = FutureProvider<List<Product>>(
   (ref) async {
     final page = await ref
         .watch(productRepositoryProvider)
-        .list(page: 1, pageSize: 500);
+        .list(page: 1, pageSize: 100);
     return page.items;
   },
 );

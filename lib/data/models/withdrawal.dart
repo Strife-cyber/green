@@ -24,15 +24,26 @@ class Withdrawal {
     this.processedAt,
   });
 
+  /// Parses the backend `WithdrawalItemDto` — camelCase, amount as decimal
+  /// string, `channel`/`status` uppercase.
   factory Withdrawal.fromJson(Map<String, dynamic> json) => Withdrawal(
         id: json['id'] as String,
-        walletId: json['wallet_id'] as String? ?? '',
-        userId: json['user_id'] as String? ?? '',
-        amount: (json['amount'] as num?)?.round() ?? 0,
+        walletId: json['walletId'] as String? ?? json['wallet_id'] as String? ?? '',
+        userId: json['userId'] as String? ?? json['user_id'] as String? ?? '',
+        amount: _toInt(json['amount']),
         channel: WithdrawalChannel.fromApi(json['channel'] as String? ?? 'mtn_momo'),
-        accountReference: json['account_reference'] as String? ?? '',
+        accountReference: json['accountReference'] as String? ?? json['account_reference'] as String? ?? '',
         status: WithdrawalStatus.fromApi(json['status'] as String? ?? 'pending'),
-        requestedAt: json['requested_at'] != null ? DateTime.tryParse(json['requested_at'] as String) : null,
-        processedAt: json['processed_at'] != null ? DateTime.tryParse(json['processed_at'] as String) : null,
+        requestedAt: _dateOrNull(json['requestedAt'] ?? json['requested_at']),
+        processedAt: _dateOrNull(json['processedAt'] ?? json['processed_at']),
       );
+
+  static int _toInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.round();
+    return int.tryParse(value.toString()) ?? double.tryParse(value.toString())?.round() ?? 0;
+  }
+
+  static DateTime? _dateOrNull(dynamic value) =>
+      value == null ? null : DateTime.tryParse(value.toString());
 }

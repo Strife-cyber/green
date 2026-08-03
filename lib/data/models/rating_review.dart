@@ -20,12 +20,13 @@ class RatingReview {
 
   factory RatingReview.fromJson(Map<String, dynamic> json) => RatingReview(
         id: json['id'] as String,
-        orderId: json['order_id'] as String? ?? '',
-        buyerId: json['buyer_id'] as String? ?? '',
-        sellerId: json['seller_id'] as String? ?? '',
+        orderId: json['orderId'] as String? ?? json['order_id'] as String? ?? '',
+        buyerId: json['buyerId'] as String? ?? json['buyer_id'] as String? ?? '',
+        sellerId: json['sellerId'] as String? ?? json['seller_id'] as String? ?? '',
         rating: (json['rating'] as num?)?.round() ?? 5,
-        reviewText: json['review_text'] as String?,
-        createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ?? DateTime.now(),
+        reviewText: json['reviewText'] as String? ?? json['review_text'] as String?,
+        createdAt: DateTime.tryParse(json['createdAt'] as String? ?? json['created_at'] as String? ?? '') ??
+            DateTime.now(),
       );
 }
 
@@ -41,9 +42,17 @@ class SellerRatingSummary {
     required this.count,
   });
 
+  /// Parses the ratings summary — the live endpoint returns
+  /// `{ items, total, avg, count, page, limit }`.
   factory SellerRatingSummary.fromJson(Map<String, dynamic> json) => SellerRatingSummary(
-        sellerId: json['seller_id'] as String? ?? '',
-        average: (json['average'] as num?)?.toDouble() ?? 0,
+        sellerId: json['sellerId'] as String? ?? json['seller_id'] as String? ?? '',
+        average: _toDouble(json['avg'] ?? json['average']),
         count: (json['count'] as num?)?.toInt() ?? 0,
       );
+
+  static double _toDouble(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? 0;
+  }
 }

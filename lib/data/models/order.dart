@@ -39,25 +39,27 @@ class Order {
     this.deliveredAt,
   });
 
+  /// Parses the backend `OrderListItemDto` — camelCase, money as decimal
+  /// strings, status enums uppercase.
   factory Order.fromJson(Map<String, dynamic> json) => Order(
         id: json['id'] as String,
-        buyerId: json['buyer_id'] as String? ?? '',
-        sellerId: json['seller_id'] as String? ?? '',
-        sellerName: json['seller_name'] as String?,
+        buyerId: json['buyerId'] as String? ?? '',
+        sellerId: json['sellerId'] as String? ?? '',
+        sellerName: json['sellerName'] as String?,
         status: OrderStatus.fromApi(json['status'] as String? ?? 'pending'),
-        paymentStatus: PaymentStatus.fromApi(json['payment_status'] as String? ?? 'unpaid'),
+        paymentStatus: PaymentStatus.fromApi(json['paymentStatus'] as String? ?? 'unpaid'),
         subtotal: parseMoney(json['subtotal']?.toString()),
-        deliveryFee: parseMoney(json['delivery_fee']?.toString()),
-        totalAmount: parseMoney(json['total_amount']?.toString()),
-        deliveryAddressLabel: json['delivery_address_label'] as String?,
-        confirmationCode: json['confirmation_code'] as String?,
+        deliveryFee: parseMoney(json['deliveryFee']?.toString()),
+        totalAmount: parseMoney(json['totalAmount']?.toString()),
+        deliveryAddressLabel: json['deliveryAddressLabel'] as String?,
+        confirmationCode: json['confirmationCode'] as String?,
         items: [
           if (json['items'] is List)
             for (final it in json['items'] as List)
               if (it is Map<String, dynamic>) OrderItem.fromJson(it),
         ],
-        placedAt: json['placed_at'] != null ? DateTime.tryParse(json['placed_at'] as String) : null,
-        deliveredAt: json['delivered_at'] != null ? DateTime.tryParse(json['delivered_at'] as String) : null,
+        placedAt: json['placedAt'] != null ? DateTime.tryParse(json['placedAt'] as String) : null,
+        deliveredAt: json['deliveredAt'] != null ? DateTime.tryParse(json['deliveredAt'] as String) : null,
       );
 }
 
@@ -79,14 +81,22 @@ class OrderItem {
     required this.lineTotal,
   });
 
+  /// Parses the backend `OrderItemListItemDto` — camelCase, money/quantity as
+  /// decimal strings.
   factory OrderItem.fromJson(Map<String, dynamic> json) => OrderItem(
-        orderId: json['order_id'] as String? ?? '',
-        productId: json['product_id'] as String,
-        productName: json['product_name'] as String? ?? '',
-        unitPrice: parseMoney(json['unit_price']?.toString()),
-        quantityKg: (json['quantity_kg'] as num?)?.toDouble() ?? 0,
-        lineTotal: parseMoney(json['line_total']?.toString()),
+        orderId: json['orderId'] as String? ?? '',
+        productId: json['productId'] as String,
+        productName: json['productName'] as String? ?? '',
+        unitPrice: parseMoney(json['unitPrice']?.toString()),
+        quantityKg: _toDouble(json['quantityKg']),
+        lineTotal: parseMoney(json['lineTotal']?.toString()),
       );
+
+  static double _toDouble(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? 0;
+  }
 }
 
 /// Append-only audit of order status transitions (DEL-01).
@@ -107,9 +117,10 @@ class OrderStatusHistory {
 
   factory OrderStatusHistory.fromJson(Map<String, dynamic> json) => OrderStatusHistory(
         id: json['id'] as String,
-        orderId: json['order_id'] as String? ?? '',
+        orderId: json['orderId'] as String? ?? json['order_id'] as String? ?? '',
         status: OrderStatus.fromApi(json['status'] as String? ?? 'pending'),
-        changedAt: DateTime.tryParse(json['changed_at'] as String? ?? '') ?? DateTime.now(),
-        changedBy: json['changed_by'] as String?,
+        changedAt: DateTime.tryParse(json['changedAt'] as String? ?? json['changed_at'] as String? ?? '') ??
+            DateTime.now(),
+        changedBy: json['changedBy'] as String? ?? json['changed_by'] as String?,
       );
 }

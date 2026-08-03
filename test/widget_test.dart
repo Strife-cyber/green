@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:green/app.dart';
 import 'package:green/core/storage/token_storage.dart';
+import 'package:green/data/repositories/providers.dart';
+import 'package:green/features/buyer/screens/buyer_home_screen.dart';
 import 'package:green/shared/widgets/custom_bottom_nav_bar.dart';
 import 'package:green/shared/widgets/product_card.dart';
 
@@ -17,7 +19,11 @@ void main() {
     final storage = InMemoryTokenStorage();
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [tokenStorageProvider.overrideWithValue(storage)],
+        overrides: [
+          tokenStorageProvider.overrideWithValue(storage),
+          // Keep using the in-memory mocks — no real network in tests.
+          useMocksProvider.overrideWithValue(true),
+        ],
         child: const GreenApp(),
       ),
     );
@@ -44,6 +50,11 @@ void main() {
     // floating bottom nav are visible.
     expect(find.text('Trendy Green'), findsWidgets);
     expect(find.byType(CustomBottomNavBar), findsOneWidget);
+
+    // The home sits at the root of the router, so its headers never show a
+    // spurious back arrow (regression guard for the splash routing fix).
+    final homeEl = tester.element(find.byType(BuyerHomeScreen));
+    expect(Navigator.of(homeEl).canPop(), isFalse);
   });
 
   testWidgets('seller sign-up lands on the seller home',
@@ -51,7 +62,10 @@ void main() {
     final storage = InMemoryTokenStorage();
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [tokenStorageProvider.overrideWithValue(storage)],
+        overrides: [
+          tokenStorageProvider.overrideWithValue(storage),
+          useMocksProvider.overrideWithValue(true),
+        ],
         child: const GreenApp(),
       ),
     );
@@ -119,7 +133,10 @@ void main() {
     final storage = InMemoryTokenStorage();
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [tokenStorageProvider.overrideWithValue(storage)],
+        overrides: [
+          tokenStorageProvider.overrideWithValue(storage),
+          useMocksProvider.overrideWithValue(true),
+        ],
         child: const GreenApp(),
       ),
     );

@@ -10,7 +10,7 @@ class SellerProductListController extends AsyncNotifier<List<Product>> {
   Future<List<Product>> build() async {
     final userId = ref.watch(authControllerProvider).valueOrNull?.user?.id;
     if (userId == null) return const [];
-    final page = await ref.watch(productRepositoryProvider).list(page: 1, pageSize: 500);
+    final page = await ref.watch(productRepositoryProvider).list(page: 1, pageSize: 100);
     return [for (final p in page.items) if (p.sellerId == userId) p];
   }
 

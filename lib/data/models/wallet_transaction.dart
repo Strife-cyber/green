@@ -26,15 +26,24 @@ class WalletTransaction {
     required this.createdAt,
   });
 
+  /// Parses the backend `TransactionItemDto` — camelCase, amounts as decimal
+  /// strings, `type`/`status` uppercase.
   factory WalletTransaction.fromJson(Map<String, dynamic> json) => WalletTransaction(
         id: json['id'] as String,
-        walletId: json['wallet_id'] as String? ?? '',
-        orderId: json['order_id'] as String?,
+        walletId: json['walletId'] as String? ?? json['wallet_id'] as String? ?? '',
+        orderId: json['orderId'] as String? ?? json['order_id'] as String?,
         type: TransactionType.fromApi(json['type'] as String? ?? 'payment_in'),
-        status: TransactionStatus.fromApi(json['status'] as String? ?? 'reconciled'),
-        amount: (json['amount'] as num?)?.round() ?? 0,
-        balanceAfter: (json['balance_after'] as num?)?.round() ?? 0,
+        status: TransactionStatus.fromApi(json['status'] as String? ?? 'success'),
+        amount: _toInt(json['amount']),
+        balanceAfter: _toInt(json['balanceAfter'] ?? json['balance_after']),
         reference: json['reference'] as String?,
-        createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ?? DateTime.now(),
+        createdAt: DateTime.tryParse(json['createdAt'] as String? ?? json['created_at'] as String? ?? '') ??
+            DateTime.now(),
       );
+
+  static int _toInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.round();
+    return int.tryParse(value.toString()) ?? double.tryParse(value.toString())?.round() ?? 0;
+  }
 }

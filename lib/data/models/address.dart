@@ -22,15 +22,23 @@ class Address {
     this.isDefault = false,
   });
 
+  /// Parses the backend `CreateAddressDto` response — camelCase. Coordinates
+  /// are returned as decimal strings by the API.
   factory Address.fromJson(Map<String, dynamic> json) => Address(
         id: json['id'] as String,
         label: json['label'] as String? ?? '',
-        recipientName: json['recipient_name'] as String? ?? '',
+        recipientName: json['recipientName'] as String? ?? json['recipient_name'] as String? ?? '',
         phone: json['phone'] as String? ?? '',
         region: json['region'] as String? ?? '',
-        addressLine: json['address_line'] as String? ?? '',
-        latitude: (json['latitude'] as num?)?.toDouble(),
-        longitude: (json['longitude'] as num?)?.toDouble(),
-        isDefault: json['is_default'] as bool? ?? false,
+        addressLine: json['addressLine'] as String? ?? json['address_line'] as String? ?? '',
+        latitude: _toDoubleOrNull(json['latitude']),
+        longitude: _toDoubleOrNull(json['longitude']),
+        isDefault: json['isDefault'] as bool? ?? json['is_default'] as bool? ?? false,
       );
+
+  static double? _toDoubleOrNull(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString());
+  }
 }

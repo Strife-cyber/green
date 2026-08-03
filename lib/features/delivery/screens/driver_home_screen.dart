@@ -8,7 +8,9 @@ import '../../../data/models/delivery.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/app_shell.dart';
 import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/language_action.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/language_selector.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../../../theme/app_colors.dart';
@@ -36,7 +38,10 @@ class DriverHomeScreen extends ConsumerWidget {
           label: t.navChat,
           icon: Icons.chat_bubble_outline,
           page: Scaffold(
-            appBar: AppBar(title: Text(t.navChat)),
+            appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: Text(t.navChat)),
             body: const ChatThreadList(),
           ),
         ),
@@ -58,7 +63,12 @@ class _DeliveriesTab extends ConsumerWidget {
     final t = context.t;
     final deliveries = ref.watch(driverDeliveryListControllerProvider);
     return Scaffold(
-      appBar: AppBar(title: Text(t.navDeliveries)),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: Text(t.navDeliveries),
+        actions: const [LanguageAction()],
+      ),
       body: AsyncView<List<Delivery>>(
         value: deliveries,
         onRetry: () => ref.read(driverDeliveryListControllerProvider.notifier).refresh(),
@@ -120,7 +130,10 @@ class _ProfileTab extends ConsumerWidget {
     final user = ref.watch(authControllerProvider).valueOrNull?.user;
     final name = user?.fullName ?? t.roleDriver;
     return Scaffold(
-      appBar: AppBar(title: Text(t.navProfile)),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: Text(t.navProfile)),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
@@ -147,7 +160,21 @@ class _ProfileTab extends ConsumerWidget {
               style: theme.textTheme.bodySmall?.copyWith(color: AppColors.tanDark),
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(t.language, style: theme.textTheme.titleSmall),
+                  const SizedBox(height: 12),
+                  const LanguageSelector(),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           FilledButton.icon(
             onPressed: () => _logout(context, ref),
             icon: const Icon(Icons.logout),

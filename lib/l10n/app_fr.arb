@@ -111,5 +111,8 @@
   "statCommission": "Commission perçue",
   "statTotalOrders": "Total commandes",
   "orderPrefix": "Commande #",
-  "navMore": "Plus"
+  "navMore": "Plus",
+  "addToCart": "Ajouter au panier",
+  "quantity": "Quantité",
+  "addedToCart": "{name} ajouté au panier ({kg} kg)"
 }

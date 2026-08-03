@@ -10,6 +10,7 @@ import '../../../data/models/seller_analytics.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/amount_text.dart';
 import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/language_action.dart';
 import '../../../shared/widgets/quick_actions.dart';
 import '../../../shared/widgets/stat_card.dart';
 import '../../../theme/app_colors.dart';
@@ -23,14 +24,19 @@ class SellerDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final analytics = ref.watch(sellerDashboardControllerProvider);
     return Scaffold(
-      appBar: AppBar(title: Text(context.t.navDashboard)),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: Text(context.t.navDashboard),
+        actions: const [LanguageAction()],
+      ),
       body: AsyncView<SellerAnalytics>(
         value: analytics,
         onRetry: () => ref.invalidate(sellerDashboardControllerProvider),
         builder: (data) {
           final theme = Theme.of(context);
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
             children: [
               // Secondary actions live here — the bottom bar stays at 4.
               QuickActionsSection(

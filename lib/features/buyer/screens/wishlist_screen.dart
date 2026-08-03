@@ -22,7 +22,10 @@ class WishlistScreen extends ConsumerWidget {
     final catalog = ref.watch(productCatalogProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Wishlist')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: const Text('Wishlist')),
       body: AsyncView<Set<String>>(
         value: saved,
         onRetry: () => ref.invalidate(wishlistControllerProvider),

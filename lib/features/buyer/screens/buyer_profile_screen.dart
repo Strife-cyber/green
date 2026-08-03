@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
+import '../../../l10n/l10n_ext.dart';
+import '../../../shared/widgets/language_selector.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../../../theme/app_colors.dart';
 import '../../auth/controllers/auth_controller.dart';
@@ -20,9 +22,13 @@ class BuyerProfileScreen extends ConsumerWidget {
     final email = user?.email;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: Text(context.t.navProfile),
+      ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
         children: [
           Card(
             child: Padding(
@@ -46,34 +52,52 @@ class BuyerProfileScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           _ProfileLink(
             icon: Icons.favorite_border,
-            title: 'Wishlist',
+            title: context.t.wishlist,
             onTap: () => context.push(AppRoutes.wishlist),
           ),
+          const SizedBox(height: 4),
           _ProfileLink(
             icon: Icons.location_on_outlined,
-            title: 'Saved addresses',
+            title: context.t.savedAddresses,
             onTap: () => context.push(AppRoutes.addresses),
           ),
+          const SizedBox(height: 4),
           _ProfileLink(
             icon: Icons.receipt_long_outlined,
-            title: 'My orders',
+            title: context.t.myOrders,
             onTap: () => context.push(AppRoutes.buyerOrders),
           ),
+          const SizedBox(height: 4),
           _ProfileLink(
             icon: Icons.notifications_outlined,
-            title: 'Notifications',
+            title: context.t.notifications,
             onTap: () => context.push(AppRoutes.notifications),
           ),
+          const SizedBox(height: 4),
           _ProfileLink(
             icon: Icons.support_agent_outlined,
-            title: 'Support',
+            title: context.t.support,
             onTap: () => context.push(AppRoutes.support),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(context.t.language, style: theme.textTheme.titleSmall),
+                  const SizedBox(height: 12),
+                  const LanguageSelector(),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: 16),
           OutlinedButton.icon(
             onPressed: () => ref.read(authControllerProvider.notifier).logout(),
             icon: const Icon(Icons.logout),
-            label: const Text('Log out'),
+            label: Text(context.t.logout),
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFFB3261E),
               side: const BorderSide(color: Color(0xFFB3261E)),

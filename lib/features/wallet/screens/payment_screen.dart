@@ -59,7 +59,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     };
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Payment')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: const Text('Payment')),
       body: body,
     );
   }

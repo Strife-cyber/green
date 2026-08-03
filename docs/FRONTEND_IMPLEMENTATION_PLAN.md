@@ -5,7 +5,7 @@
 **Stack:** Flutter 3.44 / Dart 3.12 · Riverpod (state) · go_router (routing) · Dio (HTTP) · socket.io client (realtime)
 **Source of truth:** [REQUIREMENTS.md](../../docs/REQUIREMENTS.md) (52 rows) · [Backend Plan](../green-backend/docs/IMPLEMENTATION_PLAN.md) (NestJS, phases 0–5) · [DATABASE_DESIGN.md](../../docs/DATABASE_DESIGN.md) (23 models / 16 enums)
 
-> **How this is used:** the backend is being built in parallel and is **not yet operational**. The frontend is developed against **mock repositories** behind interfaces. When the backend ships, we flip a flag and the same screens/controllers talk to the real API. The Swagger spec then drives the repository implementations (see §10 Hand-off checklist).
+> **How this is used:** the backend is **LIVE** at `http://localhost:3000` (spec saved to `docs/api/openapi.json`). Repositories default to the real `Api…` (Dio) implementations; tests run against mocks via `useMocksProvider.overrideWithValue(true)`. §10 hand-off is complete (2026-08-02).
 
 ---
 
@@ -13,11 +13,11 @@
 
 | Area | Status |
 |---|---|
-| Theme | ✅ `lib/theme/` — `AppColors` (logo-derived cream/green/orange), `AppTheme` light+dark, Material 3 |
-| Typeface | ✅ Quicksand (SIL OFL), static weights 400–700 bundled in `assets/fonts/` |
-| Native splash | ✅ `flutter_native_splash` — cream `#EAD7BD` + logo (no white flash) |
-| In-app splash | ✅ `animated_splash_themes` `expand` style → home |
-| Logo asset | ✅ `assets/logo.png` (true PNG, 1024×1024), blends on cream |
+| Theme |  `lib/theme/` — `AppColors` (logo-derived cream/green/orange), `AppTheme` light+dark, Material 3 |
+| Typeface |  Quicksand (SIL OFL), static weights 400–700 bundled in `assets/fonts/` |
+| Native splash |  `flutter_native_splash` — cream `#EAD7BD` + logo (no white flash) |
+| In-app splash |  `animated_splash_themes` `expand` style → home |
+| Logo asset |  `assets/logo.png` (true PNG, 1024×1024), blends on cream |
 
 **Not started:** everything below. The legacy `flutter_app/` + `backend/` in the repo root is the old product being replaced — review its screens for UX reference only; **do not port its code** (no RBAC, in-memory cart, non-transactional orders).
 
@@ -55,7 +55,7 @@ Data          →  data/repositories + models            (interfaces → Mock | 
 lib/
 ├── main.dart                     # bootstrap: ProviderScope, init storage, runApp
 ├── app.dart                      # MaterialApp.router, theme wiring
-├── theme/                        # ✅ existing
+├── theme/                        #  existing
 ├── core/
 │   ├── network/
 │   │   ├── api_client.dart       # Dio + base URL + auth/retry interceptors
@@ -125,11 +125,11 @@ The provider wiring lives in `features/<domain>/controllers/providers.dart` and 
 
 ### 4.1 Network — `core/network/`
 
-- **`ApiClient`** — Dio instance with base URL from `--dart-define=API_BASE_URL`; interceptor order:
-  1. **Auth interceptor** — attach `Authorization: Bearer <token>`; on `401` → attempt refresh once → retry → else force logout.
-  2. **Envelope interceptor** — unwrap `{ data, meta, error }` (backend §2.3); map HTTP status + `error` to typed `ApiException` (`ApiException.network/unauthorized/forbidden/notFound/conflict/validation`).
-  3. **Logging interceptor** (debug only).
-- **`Endpoints`** — one constant per route, grouped by module. This file is the frontend mirror of the Swagger and is the main thing updated at hand-off.
+- **`AppConfig`** (`core/config/app_config.dart`) — environment switch. `--dart-define=APP_ENV=local|staging|production` (default `local`); `--dart-define=API_BASE_URL=…` overrides any. `local` is platform-aware: Android emulator → `10.0.2.2:3000`, else `localhost:3000`. Also exposes `wsBaseUrl` and `isLocal/isStaging/isProduction`.
+- **`ApiClient`** — Dio instance with `baseUrl: Endpoints.base` (→ `AppConfig.apiBaseUrl`); interceptor order:
+  1. **Auth interceptor** — attach `Authorization: Bearer <token>`.
+  2. **Logging interceptor** — logs method+URL+query+body (secrets redacted) → status+data → error; disable with `--dart-define=API_LOGGING=false`.
+- **`Endpoints`** — getters for every route, grouped by module, resolved from `AppConfig` at runtime (mirror of the Swagger; updated at hand-off).
 
 ### 4.2 Storage — `core/storage/`
 
@@ -305,7 +305,7 @@ Redirect logic (go_router `redirect`): auth gate + role shell selection. **Serve
 
 > Each phase = build screens + controllers against `Mock…Repository`, then the `Api…Repository` at hand-off. Exit criteria assume mocks + widget tests green.
 
-### Phase 0 — Foundation & Auth ✅
+### Phase 0 — Foundation & Auth 
 - [x] Add deps: `flutter_riverpod`, `go_router`, `dio`, `flutter_secure_storage`, `shared_preferences`, `intl`, `mocktail` (dev)
 - [x] `core/network` (ApiClient + interceptors + envelope parsing), `core/storage`, `core/router`, `core/utils` (money, validators, cameroon regions)
 - [x] Models: `User`, `AuthSession`, `SellerProfile`; enums `UserRole`, `SellerApprovalStatus`
@@ -315,7 +315,7 @@ Redirect logic (go_router `redirect`): auth gate + role shell selection. **Serve
 - [x] App bootstrap: `main.dart` ProviderScope + `app.dart` router + theme
 - [x] **Exit:** splash → login → role home; session survives restart; seller sees pending banner (AUTH-07)
 
-### Phase 1 ✅ — Shopping core (MVP)
+### Phase 1  — Shopping core (MVP)
 - [x] Models: `Category`, `Product`, `Address`, `Order`, `OrderItem`, `OrderStatusHistory`
 - [x] Repos: `Category`, `Product`, `Address` (basic), `Order` + mocks
 - [x] Buyer: home feed (grid + chips + search), product detail (qty selector), **persisted cart** (D-FE5), checkout (choose/save address), order history + actions, wishlist toggle
@@ -325,7 +325,7 @@ Redirect logic (go_router `redirect`): auth gate + role shell selection. **Serve
 - [x] Controllers: §7 buyer/seller/admin core set
 - [x] **Exit:** full browse→cart→checkout→history with mocks; seller CRUD + order actions; admin approval
 
-### Phase 2 ✅ — Payments, Wallet & Escrow
+### Phase 2  — Payments, Wallet & Escrow
 - [x] Models: `Wallet`, `WalletTransaction`, `Withdrawal`, `PlatformConfig`; money enums
 - [x] Repos: `Wallet`, `Payment`, `Withdrawal` + mocks (providers stubbed per backend §5.1)
 - [x] Wallet feature: balance + escrow view, ledger screen (`AmountText`, signed +/−), withdrawals (min 2000 FCFA, MoMo/Orange channels)
@@ -333,7 +333,7 @@ Redirect logic (go_router `redirect`): auth gate + role shell selection. **Serve
 - [x] Commission display (5% subtotal) on order/receipt once `PlatformConfig` available
 - [x] **Exit:** mock pay → escrow held; deliver → balance released minus commission; ledger + withdrawal request flow
 
-### Phase 3 ✅ — Logistics (driver + live tracking)
+### Phase 3  — Logistics (driver + live tracking)
 - [x] Models: `Delivery`; `RoleShell` driver variant; admin "create driver" (D6)
 - [x] Repos: `Delivery` + mock; `SocketService` (JWT handshake)
 - [x] Driver: assigned deliveries, pickup → deliver actions (DRV-02/04)
@@ -342,7 +342,7 @@ Redirect logic (go_router `redirect`): auth gate + role shell selection. **Serve
 - [x] Deps added: `socket_io_client`, `flutter_map`, `latlong2`, `geolocator`, `permission_handler`
 - [x] **Exit:** driver broadcasts position (mock + socket), buyer sees it live, deliver triggers order `delivered`
 
-### Phase 4 ✅ — Engagement (wishlist, ratings, addresses, chat)
+### Phase 4  — Engagement (wishlist, ratings, addresses, chat)
 - [x] Models: `WishlistItem`, `RatingReview`, `ChatThread`, `ChatMessage`; `MessageType`
 - [x] Repos: `Wishlist`, `Rating`, `Chat` + mocks; address full CRUD
 - [x] Wishlist screen + toggle (BUY-05); ratings/reviews after delivered order, one per order (BUY-11)
@@ -351,7 +351,7 @@ Redirect logic (go_router `redirect`): auth gate + role shell selection. **Serve
 - [x] Voice: `record` + `audioplayers`; image via `PhotoPicker`
 - [x] **Exit:** buyer↔seller chat in realtime on an order; rating recorded; addresses reusable at checkout
 
-### Phase 5 ✅ — Ops & Analytics
+### Phase 5  — Ops & Analytics
 - [x] Models: `Receipt`, `ReceiptCopy`, `SupportTicket`, `Report`, `AppNotification`, `DeviceToken`; remaining enums
 - [x] Repos: `Receipt`, `Support`, `Report`, `Notification`, `Admin` (full) + mocks
 - [x] Smart receipt view + PDF download (REC-01/04); three copies concept surfaced per role
@@ -379,19 +379,19 @@ Redirect logic (go_router `redirect`): auth gate + role shell selection. **Serve
 
 ## 9c. Addendum — Trust & Security checklist (AUTH-10, PAY-10, DEL-07, ADM-14/15)
 
-> Added 2026-08-02 (user security checklist). Status: ✅ exists / 🔜 in-flight / ⏳ pending.
+> Added 2026-08-02 (user security checklist). Status:  exists / 🔜 in-flight / ⏳ pending.
 
 | # | Feature | Req(s) | Status | Notes |
 |---|---|---|---|---|
-| 1 | **OTP verification** | AUTH-10 | ✅ | "Log in with a code" flow; demo code `123456`; real OTP via email/phone at hand-off |
-| 2 | **Seller verification + admin approval** | AUTH-09, AUTH-07, ADM-11 | ✅ | ID + selfie + farm description at signup; admin reviews them before Approve/Reject |
+| 1 | **OTP verification** | AUTH-10 |  | "Log in with a code" flow; demo code `123456`; real OTP via email/phone at hand-off |
+| 2 | **Seller verification + admin approval** | AUTH-09, AUTH-07, ADM-11 |  | ID + selfie + farm description at signup; admin reviews them before Approve/Reject |
 | 3 | **Admin roles** | ADM-14, D9 | ⏳ | Multiple admins now; sub-role gating once RBAC is server-side (backend) |
-| 4 | **Transaction records** | PAY-07 | ✅ | `WalletTransaction` + ledger screen + mock ledger |
-| 5 | **Wallet protection** | PAY-10 | ✅ | Wallet PIN (salted SHA-256 in secure storage); gated payment/withdrawal; moves server-side at hand-off |
-| 6 | **Delivery confirmation code** | DEL-07 | ✅ | 6-digit per-order code; driver must enter it to mark delivered; buyer sees it on tracking |
-| 7 | **Reporting system** | D8, ADM-07 | ✅ | Report dialog (profile/chat/order) + admin review queue |
-| 8 | **Activity logs** | ADM-15 | ✅ | Admin activity-log view over mock audit events |
-| 9 | **Encrypted data storage** | NFR | ✅ | Tokens + wallet PIN stored encrypted/hashed; remaining cached PII at hand-off |
+| 4 | **Transaction records** | PAY-07 |  | `WalletTransaction` + ledger screen + mock ledger |
+| 5 | **Wallet protection** | PAY-10 |  | Wallet PIN (salted SHA-256 in secure storage); gated payment/withdrawal; moves server-side at hand-off |
+| 6 | **Delivery confirmation code** | DEL-07 |  | 6-digit per-order code; driver must enter it to mark delivered; buyer sees it on tracking |
+| 7 | **Reporting system** | D8, ADM-07 |  | Report dialog (profile/chat/order) + admin review queue |
+| 8 | **Activity logs** | ADM-15 |  | Admin activity-log view over mock audit events |
+| 9 | **Encrypted data storage** | NFR |  | Tokens + wallet PIN stored encrypted/hashed; remaining cached PII at hand-off |
 | 10 | **Backups** | NFR | ⏳ | Backend/infra concern (DB schedule + restore) — not frontend code |
 
 ---
@@ -401,24 +401,26 @@ Redirect logic (go_router `redirect`): auth gate + role shell selection. **Serve
 Applied the page/nav standards from the reference app (`braidsbook_mobile`):
 
 - **Home shells**: role homes are a single `Scaffold` (`AppShell`) over `IndexedStack` of self-contained tab pages + a **floating pill `CustomBottomNavBar`** (selected item expands with its label, badges, haptic), anchored to the bottom. No shell AppBar → no double headers. Tab index persisted in prefs; `PopScope` back → first tab → exit. Per-role tab providers in `lib/core/router/nav_providers.dart`.
-- **Bottom bar = max 4 items** (buyer: Home/Cart/Orders/Profile · seller: Dashboard/Products/Orders/Profile · driver: Deliveries/Chat/Profile · admin: Overview/Sellers/Withdrawals/Profile). Anything else goes into **`QuickActionsSection`** card tiles on the first tab (search, wallet, tickets, reports, activity, new driver, support…), never more than 4 in one bar.
+- **Bottom bar = max 4 items** (buyer: Home/Cart/Orders/Profile · seller: Dashboard/Products/Orders/Profile · driver: Deliveries/Chat/Profile · admin: Overview/Sellers/Withdrawals/Profile). Anything else goes into **`QuickActionsSection`** — small icon-only circles in one line (label on tooltip) — on the first tab. The bar sits in a **fixed-height 80 px slot** so it never covers content.
+- **Headers never auto-implying a leading**: the splash was rewritten to be go_router-clean (no raw `Navigator`), so the home sits at the router root and tab pages show no back arrow; every `AppBar` uses `automaticallyImplyLeading: false` + `leading: Navigator.canPop(context) ? const BackButton() : null` (pushed routes still get a real back button).
+- **Language switcher**: `LanguageSelector` (English/Français) on the buyer, seller, driver and admin profile tabs + the settings profile screen.
 - **l10n (slang)**: `slang.yaml` + `lib/l10n/app_{en,fr}.arb` → `dart run slang` → `lib/l10n/generated/strings.g.dart`. Access via `context.t` (`l10n_ext.dart`); app root wrapped in `TranslationProvider`; `MaterialApp.supportedLocales` = `L10n.flutterLocales`; locale persisted by `core/i18n/locale_controller.dart`; `LanguageSelector` widget in settings. New strings: add to both `.arb`, run `dart run slang`.
 - **Remaining**: most screen-level strings are still hardcoded English — migrate key-by-key to `context.t` as screens are touched.
 
 ---
 
-## 10. Swagger Hand-off Checklist (when the backend is live)
+## 10. Swagger Hand-off Checklist  (done 2026-08-02)
 
-Given the Swagger JSON/yml, in order:
+1.  **Envelope** — live backend wraps success as `{ data: … }`; errors are NestJS `{ message, error, statusCode }` (updated `ApiEnvelope`).
+2.  **Auth contract** — `Bearer` JWT; login body `{ identifier, password }`; refresh `{ refreshToken }`; session parsed via `AuthSession.fromJson`.
+3.  **Endpoints** — every route added to `core/network/endpoints.dart`.
+4.  **Models** — `fromJson` migrated to camelCase DTOs (money/quantity as Decimal strings; nested `seller`/`category`).
+5.  **`Api…Repository`** — 20 implementations in `lib/data/api/api_repositories.dart` (Dio, multipart uploads, `page`/`limit` pagination).
+6. ⏳ **Realtime** — `SocketService` wired but chat/delivery live sockets still need the backend gateway contract confirmed.
+7.  **Flip flag** — `useMocksProvider` defaults to `false` (real API); tests override it to `true`.
+8. ⏳ **Polish** — checkout/payment idempotency + error copy polish.
 
-1. **Verify envelope** — confirm `{ data, meta, error }` shape and error codes match `ApiException`.
-2. **Auth contract** — bearer header name, refresh endpoint/expiry, `401` behaviour.
-3. **Endpoints** — diff `core/network/endpoints.dart` against Swagger paths/methods; add missing.
-4. **Models** — diff field names/types against DTOs (`@ApiProperty`); fix `fromJson`.
-5. **Write `Api…Repository`** per module (Dio calls, multipart uploads, pagination params).
-6. **Realtime** — confirm socket namespaces, rooms (`chat/{threadId}`, `delivery/{deliveryId}`), and event DTOs from the `x-websocket` panel; align `SocketService`.
-7. **Flip flag** — `useMocksProvider = false` per module; delete `Mock…Repository` for shipped modules.
-8. **Polish** — error messages from `error` field, retry/idempotency for checkout + payments.
+**Known backend gaps** (documented, not frontend bugs): no `/admin/wallets` (returns empty), no `markAllRead` (no-op), withdrawals require an OTP that `WithdrawalRequest` doesn't carry yet, driver creation requires a password, `/auth/me` returns a minimal user (session restore uses `/users/me`).
 
 ---
 

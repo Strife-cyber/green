@@ -36,14 +36,16 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
   String? _imagePath;
   bool _prefilled = false;
   bool _submitting = false;
+  ProviderSubscription<AsyncValue<Product?>>? _productSub;
 
   bool get _isEditing => widget.id != null;
 
   @override
   void initState() {
     super.initState();
-    // Prefill once the existing product loads (edit mode only).
-    ref.listen(productFormControllerProvider(widget.id), (_, next) {
+    // Prefill once the existing product loads (edit mode only). `ref.listen` is
+    // only legal in `build`, so use `listenManual` here and close it on dispose.
+    _productSub = ref.listenManual(productFormControllerProvider(widget.id), (_, next) {
       final product = next.valueOrNull;
       if (product == null || _prefilled) return;
       _name.text = product.name;
@@ -59,6 +61,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
 
   @override
   void dispose() {
+    _productSub?.close();
     _name.dispose();
     _description.dispose();
     _price.dispose();
@@ -99,7 +102,10 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
     final categories = ref.watch(categoriesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Edit Product' : 'New Product')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: Text(_isEditing ? 'Edit Product' : 'New Product')),
       body: AsyncView<Product?>(
         value: existing,
         onRetry: () => ref.invalidate(productFormControllerProvider(widget.id)),

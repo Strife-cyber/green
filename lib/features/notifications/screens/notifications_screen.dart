@@ -19,6 +19,8 @@ class NotificationsScreen extends ConsumerWidget {
     final notifications = ref.watch(notificationControllerProvider);
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
         title: const Text('Notifications'),
         actions: [
           IconButton(

@@ -112,7 +112,10 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
   Widget build(BuildContext context) {
     final tickets = ref.watch(supportControllerProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Support')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: const Text('Support')),
       body: AsyncView<List<SupportTicket>>(
         value: tickets,
         onRetry: () => ref.invalidate(supportControllerProvider),

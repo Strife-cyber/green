@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../core/utils/formatters.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../core/router/app_router.dart';
+import '../../chat/chat_actions.dart';
 import '../../../data/models/delivery.dart';
 import '../../../data/models/enums.dart';
 import '../../../data/models/order.dart';
@@ -32,7 +32,10 @@ class DeliveryTrackingScreen extends ConsumerWidget {
     final request = DeliveryTrackingRequest(orderId: orderId);
     final state = ref.watch(deliveryTrackingControllerProvider(request));
     return Scaffold(
-      appBar: AppBar(title: const Text('Live Tracking')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: const Text('Live Tracking')),
       body: _body(context, ref, request, state),
     );
   }
@@ -76,7 +79,7 @@ class DeliveryTrackingScreen extends ConsumerWidget {
         OrderTimeline(status: _orderStatusFor(delivery)),
         const SizedBox(height: 24),
         OutlinedButton.icon(
-          onPressed: () => context.push(AppRoutes.chat(delivery.orderId)),
+          onPressed: () => openChatForOrder(context, ref, delivery.orderId),
           icon: const Icon(Icons.chat_bubble_outline),
           label: const Text('Contact driver'),
         ),
@@ -127,7 +130,7 @@ class DeliveryTrackingScreen extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          'Order #${delivery.orderId}',
+          'Order ${orderReference(delivery.orderId)}',
           style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
         _statusBadge(delivery),

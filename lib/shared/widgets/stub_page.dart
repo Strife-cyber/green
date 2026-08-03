@@ -13,7 +13,10 @@ class StubPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: Text(title)),
       body: EmptyState(
         icon: Icons.construction_outlined,
         title: '$title — coming soon',

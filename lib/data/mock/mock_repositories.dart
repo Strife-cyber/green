@@ -534,6 +534,15 @@ class MockChatRepository implements ChatRepository {
   }
 
   @override
+  Future<ChatThread?> threadForOrder(String orderId) async {
+    await _delay();
+    for (final t in store.chatThreads) {
+      if (t.orderId == orderId) return t;
+    }
+    return null;
+  }
+
+  @override
   Future<List<ChatMessage>> messages(String threadId) async {
     await _delay();
     return List.of(store.chatMessages[threadId] ?? const []);

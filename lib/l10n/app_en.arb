@@ -111,5 +111,8 @@
   "statCommission": "Commission earned",
   "statTotalOrders": "Total orders",
   "orderPrefix": "Order #",
-  "navMore": "More"
+  "navMore": "More",
+  "addToCart": "Add to cart",
+  "quantity": "Quantity",
+  "addedToCart": "{name} added to cart ({kg} kg)"
 }

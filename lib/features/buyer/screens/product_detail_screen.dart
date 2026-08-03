@@ -60,6 +60,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
         actions: [
           IconButton(
             tooltip: isSaved ? 'Remove from wishlist' : 'Add to wishlist',

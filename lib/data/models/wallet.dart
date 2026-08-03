@@ -15,11 +15,13 @@ class Wallet {
 
   int get total => balance + escrowBalance;
 
+  /// Parses the backend `WalletResponseDto` — camelCase, balances as decimal
+  /// strings.
   factory Wallet.fromJson(Map<String, dynamic> json) => Wallet(
         id: json['id'] as String,
-        userId: json['user_id'] as String? ?? '',
+        userId: json['userId'] as String? ?? json['user_id'] as String? ?? '',
         balance: parseMoneyFromJson(json['balance']),
-        escrowBalance: parseMoneyFromJson(json['escrow_balance']),
+        escrowBalance: parseMoneyFromJson(json['escrowBalance'] ?? json['escrow_balance']),
       );
 
   static int parseMoneyFromJson(dynamic value) {

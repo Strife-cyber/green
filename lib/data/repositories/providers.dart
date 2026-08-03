@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../api/api_repositories.dart';
 import '../mock/mock_auth_repository.dart';
 import '../mock/mock_repositories.dart';
 import '../mock/mock_store.dart';
+import '../../core/network/api_client.dart';
 import 'address_repository.dart';
 import 'admin_repository.dart';
 import 'analytics_repository.dart';
@@ -27,28 +29,114 @@ import 'wishlist_repository.dart';
 /// Fresh in-memory backend state per ProviderContainer (tests start clean).
 final mockStoreProvider = Provider<MockStore>((ref) => MockStore());
 
-/// Repository provider wiring — every repository is a mock today (backend not
-/// live). At the Swagger hand-off each swaps its return value for an
-/// `Api…Repository` backed by `apiClientProvider`; screens and controllers
-/// are unaffected because they depend on the abstract interfaces only.
-final authRepositoryProvider = Provider<AuthRepository>((ref) => MockAuthRepository());
+/// When `true`, every repository is backed by the in-memory [MockStore];
+/// otherwise (the default, since the backend is live) repositories talk to the
+/// API through the Dio-backed Api…Repository implementations. Widget tests
+/// override this to `true` so no real network happens under test.
+final useMocksProvider = Provider<bool>(
+  (ref) => const bool.fromEnvironment('USE_MOCKS', defaultValue: false),
+);
 
-final categoryRepositoryProvider = Provider<CategoryRepository>((ref) => MockCategoryRepository(ref.watch(mockStoreProvider)));
-final productRepositoryProvider = Provider<ProductRepository>((ref) => MockProductRepository(ref.watch(mockStoreProvider)));
-final addressRepositoryProvider = Provider<AddressRepository>((ref) => MockAddressRepository(ref.watch(mockStoreProvider)));
-final orderRepositoryProvider = Provider<OrderRepository>((ref) => MockOrderRepository(ref.watch(mockStoreProvider)));
-final wishlistRepositoryProvider = Provider<WishlistRepository>((ref) => MockWishlistRepository(ref.watch(mockStoreProvider)));
-final ratingRepositoryProvider = Provider<RatingRepository>((ref) => MockRatingRepository(ref.watch(mockStoreProvider)));
-final walletRepositoryProvider = Provider<WalletRepository>((ref) => MockWalletRepository(ref.watch(mockStoreProvider)));
-final paymentRepositoryProvider = Provider<PaymentRepository>((ref) => MockPaymentRepository(ref.watch(mockStoreProvider)));
-final withdrawalRepositoryProvider = Provider<WithdrawalRepository>((ref) => MockWithdrawalRepository(ref.watch(mockStoreProvider)));
-final deliveryRepositoryProvider = Provider<DeliveryRepository>((ref) => MockDeliveryRepository(ref.watch(mockStoreProvider)));
-final chatRepositoryProvider = Provider<ChatRepository>((ref) => MockChatRepository(ref.watch(mockStoreProvider)));
-final notificationRepositoryProvider = Provider<NotificationRepository>((ref) => MockNotificationRepository(ref.watch(mockStoreProvider)));
-final receiptRepositoryProvider = Provider<ReceiptRepository>((ref) => MockReceiptRepository(ref.watch(mockStoreProvider)));
-final supportRepositoryProvider = Provider<SupportRepository>((ref) => MockSupportRepository(ref.watch(mockStoreProvider)));
-final reportRepositoryProvider = Provider<ReportRepository>((ref) => MockReportRepository(ref.watch(mockStoreProvider)));
-final sellerProfileRepositoryProvider = Provider<SellerProfileRepository>((ref) => MockSellerProfileRepository(ref.watch(mockStoreProvider)));
-final userRepositoryProvider = Provider<UserRepository>((ref) => MockUserRepository(ref.watch(mockStoreProvider)));
-final analyticsRepositoryProvider = Provider<AnalyticsRepository>((ref) => MockAnalyticsRepository(ref.watch(mockStoreProvider)));
-final adminRepositoryProvider = Provider<AdminRepository>((ref) => MockAdminRepository(ref.watch(mockStoreProvider)));
+/// Repository provider wiring — each one returns the mock while
+/// `useMocksProvider` is true, and the live `Api…Repository` otherwise.
+/// Screens and controllers are unaffected because they depend on the abstract
+/// interfaces only.
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockAuthRepository();
+  return ApiAuthRepository(ref.watch(apiClientProvider));
+});
+
+final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockCategoryRepository(ref.watch(mockStoreProvider));
+  return ApiCategoryRepository(ref.watch(apiClientProvider));
+});
+
+final productRepositoryProvider = Provider<ProductRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockProductRepository(ref.watch(mockStoreProvider));
+  return ApiProductRepository(ref.watch(apiClientProvider));
+});
+
+final addressRepositoryProvider = Provider<AddressRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockAddressRepository(ref.watch(mockStoreProvider));
+  return ApiAddressRepository(ref.watch(apiClientProvider));
+});
+
+final orderRepositoryProvider = Provider<OrderRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockOrderRepository(ref.watch(mockStoreProvider));
+  return ApiOrderRepository(ref.watch(apiClientProvider));
+});
+
+final wishlistRepositoryProvider = Provider<WishlistRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockWishlistRepository(ref.watch(mockStoreProvider));
+  return ApiWishlistRepository(ref.watch(apiClientProvider));
+});
+
+final ratingRepositoryProvider = Provider<RatingRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockRatingRepository(ref.watch(mockStoreProvider));
+  return ApiRatingRepository(ref.watch(apiClientProvider));
+});
+
+final walletRepositoryProvider = Provider<WalletRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockWalletRepository(ref.watch(mockStoreProvider));
+  return ApiWalletRepository(ref.watch(apiClientProvider));
+});
+
+final paymentRepositoryProvider = Provider<PaymentRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockPaymentRepository(ref.watch(mockStoreProvider));
+  return ApiPaymentRepository(ref.watch(apiClientProvider));
+});
+
+final withdrawalRepositoryProvider = Provider<WithdrawalRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockWithdrawalRepository(ref.watch(mockStoreProvider));
+  return ApiWithdrawalRepository(ref.watch(apiClientProvider));
+});
+
+final deliveryRepositoryProvider = Provider<DeliveryRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockDeliveryRepository(ref.watch(mockStoreProvider));
+  return ApiDeliveryRepository(ref.watch(apiClientProvider));
+});
+
+final chatRepositoryProvider = Provider<ChatRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockChatRepository(ref.watch(mockStoreProvider));
+  return ApiChatRepository(ref.watch(apiClientProvider));
+});
+
+final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockNotificationRepository(ref.watch(mockStoreProvider));
+  return ApiNotificationRepository(ref.watch(apiClientProvider));
+});
+
+final receiptRepositoryProvider = Provider<ReceiptRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockReceiptRepository(ref.watch(mockStoreProvider));
+  return ApiReceiptRepository(ref.watch(apiClientProvider));
+});
+
+final supportRepositoryProvider = Provider<SupportRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockSupportRepository(ref.watch(mockStoreProvider));
+  return ApiSupportRepository(ref.watch(apiClientProvider));
+});
+
+final reportRepositoryProvider = Provider<ReportRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockReportRepository(ref.watch(mockStoreProvider));
+  return ApiReportRepository(ref.watch(apiClientProvider));
+});
+
+final sellerProfileRepositoryProvider = Provider<SellerProfileRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockSellerProfileRepository(ref.watch(mockStoreProvider));
+  return ApiSellerProfileRepository(ref.watch(apiClientProvider));
+});
+
+final userRepositoryProvider = Provider<UserRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockUserRepository(ref.watch(mockStoreProvider));
+  return ApiUserRepository(ref.watch(apiClientProvider));
+});
+
+final analyticsRepositoryProvider = Provider<AnalyticsRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockAnalyticsRepository(ref.watch(mockStoreProvider));
+  return ApiAnalyticsRepository(ref.watch(apiClientProvider));
+});
+
+final adminRepositoryProvider = Provider<AdminRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockAdminRepository(ref.watch(mockStoreProvider));
+  return ApiAdminRepository(ref.watch(apiClientProvider));
+});

@@ -22,6 +22,7 @@ class CartScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Cart'),
         actions: [
           if (!cart.isEmpty)

@@ -58,7 +58,10 @@ class _AdminCreateDriverScreenState extends ConsumerState<AdminCreateDriverScree
   Widget build(BuildContext context) {
     final submitting = ref.watch(adminCreateDriverControllerProvider).isLoading;
     return Scaffold(
-      appBar: AppBar(title: const Text('New Driver')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: const Text('New Driver')),
       body: Form(
         key: _formKey,
         child: ListView(

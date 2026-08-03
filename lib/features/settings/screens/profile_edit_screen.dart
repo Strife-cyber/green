@@ -65,7 +65,10 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     final saving = ref.watch(profileEditControllerProvider).isLoading;
     final user = ref.watch(authControllerProvider).valueOrNull?.user;
     return Scaffold(
-      appBar: AppBar(title: Text(context.t.editProfile)),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: Text(context.t.editProfile)),
       body: Form(
         key: _formKey,
         child: ListView(

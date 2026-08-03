@@ -10,3 +10,12 @@ String formatKg(num kg) {
   if (kg == kg.roundToDouble()) return '${kg.toInt()} kg';
   return '$kg kg';
 }
+
+/// A short, human-friendly order reference derived from a UUID, e.g. the order
+/// `299a5c2b-…` displays as `#299A5C` — no raw UUIDs on screens.
+String orderReference(String id) {
+  final cleaned = id.replaceAll(RegExp(r'[^0-9a-fA-F]'), '');
+  return cleaned.length >= 6
+      ? '#${cleaned.substring(0, 6).toUpperCase()}'
+      : '#$id';
+}

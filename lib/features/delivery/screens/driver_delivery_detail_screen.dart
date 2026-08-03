@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../core/utils/formatters.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../core/router/app_router.dart';
+import '../../chat/chat_actions.dart';
 import '../../../data/models/delivery.dart';
 import '../../../data/models/order.dart';
 import '../../../data/repositories/providers.dart';
@@ -66,7 +66,10 @@ class _DriverDeliveryDetailScreenState extends ConsumerState<DriverDeliveryDetai
     final tracking = ref.watch(deliveryTrackingControllerProvider(_trackingRequest));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Delivery')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: const Text('Delivery')),
       body: AsyncView<Delivery>(
         value: delivery,
         onRetry: () => ref.invalidate(driverDeliveryDetailControllerProvider(widget.id)),
@@ -101,7 +104,7 @@ class _DriverDeliveryDetailScreenState extends ConsumerState<DriverDeliveryDetai
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Order #${delivery.orderId}',
+                  'Order ${orderReference(delivery.orderId)}',
                   style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 _statusBadge(delivery),
@@ -190,7 +193,7 @@ class _DriverDeliveryDetailScreenState extends ConsumerState<DriverDeliveryDetai
     }
     actions.add(
       OutlinedButton.icon(
-        onPressed: () => context.push(AppRoutes.chat(delivery.orderId)),
+        onPressed: () => openChatForOrder(context, ref, delivery.orderId),
         icon: const Icon(Icons.chat_bubble_outline),
         label: const Text('Chat'),
       ),

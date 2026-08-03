@@ -46,7 +46,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Checkout')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: const Text('Checkout')),
       body: cart.isEmpty
           ? const EmptyState(
               icon: Icons.receipt_long_outlined,

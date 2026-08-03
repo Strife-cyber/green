@@ -24,16 +24,18 @@ class ChatThread {
     this.createdAt,
   });
 
+  /// Parses the backend thread DTO — camelCase. Participant names are derived
+  /// client-side, so they stay null from the wire.
   factory ChatThread.fromJson(Map<String, dynamic> json) => ChatThread(
         id: json['id'] as String,
-        orderId: json['order_id'] as String? ?? '',
-        buyerId: json['buyer_id'] as String? ?? '',
-        sellerId: json['seller_id'] as String? ?? '',
-        driverId: json['driver_id'] as String?,
-        buyerName: json['buyer_name'] as String?,
-        sellerName: json['seller_name'] as String?,
-        driverName: json['driver_name'] as String?,
-        createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'] as String) : null,
+        orderId: json['orderId'] as String? ?? json['order_id'] as String? ?? '',
+        buyerId: json['buyerId'] as String? ?? json['buyer_id'] as String? ?? '',
+        sellerId: json['sellerId'] as String? ?? json['seller_id'] as String? ?? '',
+        driverId: json['driverId'] as String? ?? json['driver_id'] as String?,
+        buyerName: json['buyerName'] as String?,
+        sellerName: json['sellerName'] as String?,
+        driverName: json['driverName'] as String?,
+        createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'] as String) : null,
       );
 }
 
@@ -61,14 +63,15 @@ class ChatMessage {
 
   bool isMine(String currentUserId) => senderId == currentUserId;
 
+  /// Parses the backend message DTO — camelCase, `messageType` uppercase.
   factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
         id: json['id'] as String,
-        threadId: json['thread_id'] as String? ?? '',
-        senderId: json['sender_id'] as String? ?? '',
-        type: MessageType.fromApi(json['message_type'] as String? ?? 'text'),
+        threadId: json['threadId'] as String? ?? json['thread_id'] as String? ?? '',
+        senderId: json['senderId'] as String? ?? json['sender_id'] as String? ?? '',
+        type: MessageType.fromApi(json['messageType'] as String? ?? json['message_type'] as String? ?? 'text'),
         content: json['content'] as String? ?? '',
-        fileUrl: json['file_url'] as String?,
-        sentAt: DateTime.tryParse(json['sent_at'] as String? ?? '') ?? DateTime.now(),
-        readAt: json['read_at'] != null ? DateTime.tryParse(json['read_at'] as String) : null,
+        fileUrl: json['fileUrl'] as String? ?? json['file_url'] as String?,
+        sentAt: DateTime.tryParse(json['sentAt'] as String? ?? json['sent_at'] as String? ?? '') ?? DateTime.now(),
+        readAt: json['readAt'] != null ? DateTime.tryParse(json['readAt'] as String) : null,
       );
 }

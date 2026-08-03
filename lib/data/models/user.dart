@@ -8,6 +8,11 @@ class User {
   final String email;
   final String? phone;
   final UserRole role;
+
+  /// Admin sub-role (SUPER_ADMIN/FINANCE/SUPPORT/COMPLIANCE) — only populated
+  /// for ADMIN accounts.
+  final AdminRole? adminRole;
+
   final String? region;
 
   /// Farm/home coordinates (DEL-04). Null until captured.
@@ -26,6 +31,7 @@ class User {
     required this.email,
     this.phone,
     required this.role,
+    this.adminRole,
     this.region,
     this.latitude,
     this.longitude,
@@ -35,31 +41,43 @@ class User {
 
   String get fullName => '$firstName $lastName';
 
+  /// Parses the backend user DTO — all fields are camelCase (`firstName`,
+  /// `emailVerified`, `adminRole`, …).
   factory User.fromJson(Map<String, dynamic> json) => User(
         id: json['id'] as String,
-        firstName: json['first_name'] as String,
-        lastName: json['last_name'] as String,
-        email: json['email'] as String,
+        firstName: json['firstName'] as String? ?? json['first_name'] as String? ?? '',
+        lastName: json['lastName'] as String? ?? json['last_name'] as String? ?? '',
+        email: json['email'] as String? ?? '',
         phone: json['phone'] as String?,
         role: UserRole.fromApi(json['role'] as String? ?? 'buyer'),
+        adminRole: AdminRole.fromApi(json['adminRole'] as String?),
         region: json['region'] as String?,
-        latitude: (json['latitude'] as num?)?.toDouble(),
-        longitude: (json['longitude'] as num?)?.toDouble(),
-        emailVerified: json['email_verified'] as bool? ?? false,
-        createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'] as String) : null,
+        latitude: _toDouble(json['latitude']),
+        longitude: _toDouble(json['longitude']),
+        emailVerified: json['emailVerified'] as bool? ?? false,
+        createdAt: json['createdAt'] != null
+            ? DateTime.tryParse(json['createdAt'] as String)
+            : null,
       );
+
+  static double? _toDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString());
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
-        'first_name': firstName,
-        'last_name': lastName,
+        'firstName': firstName,
+        'lastName': lastName,
         'email': email,
         'phone': phone,
-        'role': role.name,
+        'role': role.apiValue,
+        if (adminRole != null) 'adminRole': adminRole!.apiValue,
         'region': region,
         'latitude': latitude,
         'longitude': longitude,
-        'email_verified': emailVerified,
-        if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
+        'emailVerified': emailVerified,
+        if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
       };
 }

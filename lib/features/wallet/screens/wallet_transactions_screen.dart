@@ -17,7 +17,10 @@ class WalletTransactionsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ledger = ref.watch(ledgerControllerProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Transactions')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: const Text('Transactions')),
       body: AsyncView<List<WalletTransaction>>(
         value: ledger,
         onRetry: () => ref.invalidate(ledgerControllerProvider),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/utils/formatters.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -45,7 +46,7 @@ class ChatThreadList extends ConsumerWidget {
                   _counterpartName(thread, currentUserId),
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
-                subtitle: Text('Order #${thread.orderId}'),
+                subtitle: Text('Order ${orderReference(thread.orderId)}'),
                 trailing: const Icon(Icons.chevron_right, color: AppColors.tanDark),
                 onTap: () => context.push(AppRoutes.chat(thread.id)),
               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/utils/formatters.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -22,7 +23,10 @@ class BuyerOrdersScreen extends ConsumerWidget {
     final orders = ref.watch(buyerOrderListControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('My Orders')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
+        title: const Text('My Orders')),
       body: AsyncView<List<Order>>(
         value: orders,
         onRetry: () => ref.invalidate(buyerOrderListControllerProvider),
@@ -68,7 +72,7 @@ class _OrderCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      order.sellerName ?? 'Order ${order.id}',
+                      order.sellerName ?? 'Order ${orderReference(order.id)}',
                       style: theme.textTheme.titleSmall,
                     ),
                   ),

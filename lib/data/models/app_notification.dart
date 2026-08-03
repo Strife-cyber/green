@@ -24,17 +24,17 @@ class AppNotification {
 
   bool get isRead => readAt != null;
 
+  /// Parses the backend `NotificationItemDto` — camelCase, `type` uppercase,
+  /// `readAt` null until read.
   factory AppNotification.fromJson(Map<String, dynamic> json) => AppNotification(
         id: json['id'] as String,
-        userId: json['user_id'] as String? ?? '',
-        type: NotificationType.values.firstWhere(
-          (t) => t.name == (json['type'] as String? ?? 'order'),
-          orElse: () => NotificationType.order,
-        ),
+        userId: json['userId'] as String? ?? json['user_id'] as String? ?? '',
+        type: NotificationType.fromApi(json['type'] as String? ?? 'order'),
         title: json['title'] as String? ?? '',
         body: json['body'] as String? ?? '',
         data: json['data'] is Map<String, dynamic> ? json['data'] as Map<String, dynamic> : null,
-        readAt: json['read_at'] != null ? DateTime.tryParse(json['read_at'] as String) : null,
-        createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ?? DateTime.now(),
+        readAt: json['readAt'] != null ? DateTime.tryParse(json['readAt'] as String) : null,
+        createdAt: DateTime.tryParse(json['createdAt'] as String? ?? json['created_at'] as String? ?? '') ??
+            DateTime.now(),
       );
 }

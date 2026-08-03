@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import '../../../core/realtime/socket_service.dart';
 import '../../../data/models/delivery.dart';
 import '../../../data/repositories/providers.dart';
+import '../../auth/controllers/auth_controller.dart';
 
 /// Identifies the delivery to track: the driver knows its delivery id, while
 /// a buyer/seller only knows the order id.
@@ -72,7 +73,16 @@ class DeliveryTrackingController
   DeliveryTrackingState build(DeliveryTrackingRequest request) {
     _disposed = false;
     final socket = ref.read(socketServiceProvider);
-    _socketSub = socket.events('delivery.locationUpdated').listen(_mergeSocketEvent);
+    final token = ref.read(authControllerProvider).valueOrNull?.session?.accessToken;
+    // Join the deliveries room so the driver's live position reaches this
+    // device (auto re-joined on reconnect).
+    socket.connect(token: token ?? '', namespace: SocketService.deliveriesNamespace);
+    if (request.deliveryId != null) {
+      socket.joinRoom(SocketService.deliveriesNamespace, {'deliveryId': request.deliveryId!});
+    }
+    _socketSub = socket
+        .events('location:updated', namespace: SocketService.deliveriesNamespace)
+        .listen(_mergeSocketEvent);
     _pollTimer = Timer.periodic(_pollInterval, (_) => unawaited(_refresh()));
     ref.onDispose(() {
       _disposed = true;
@@ -139,19 +149,18 @@ class DeliveryTrackingController
     }
   }
 
+  /// Merges a `location:updated` payload `{ deliveryId, latitude, longitude,
+  /// updatedAt }` into local state.
   void _mergeSocketEvent(Map<String, dynamic> data) {
     try {
       final current = state.delivery;
       if (current == null) return;
       final deliveryId = data['deliveryId'] as String?;
-      final orderId = data['orderId'] as String?;
-      final matches = (deliveryId != null && deliveryId == current.id) ||
-          (orderId != null && orderId == current.orderId);
-      if (!matches) return;
-      final lat = (data['currentLatitude'] as num?)?.toDouble();
-      final lng = (data['currentLongitude'] as num?)?.toDouble();
+      if (deliveryId == null || deliveryId != current.id) return;
+      final lat = (data['latitude'] as num?)?.toDouble();
+      final lng = (data['longitude'] as num?)?.toDouble();
       if (lat == null || lng == null) return;
-      final updatedAt = DateTime.tryParse(data['locationUpdatedAt'] as String? ?? '');
+      final updatedAt = DateTime.tryParse(data['updatedAt'] as String? ?? '');
       state = DeliveryTrackingState(
         delivery: _withCoords(current, lat, lng, updatedAt ?? DateTime.now()),
         publishing: state.publishing,
@@ -172,16 +181,18 @@ class DeliveryTrackingController
     final updatedAt = DateTime.now();
     final updated = _withCoords(current, point.latitude, point.longitude, updatedAt);
     state = DeliveryTrackingState(delivery: updated, publishing: true);
-    // Broadcast so buyers/sellers following the order see the movement. The
-    // mock socket connects to nothing in dev, so this is a guarded no-op.
+    // Broadcast so buyers/sellers following the order see the movement
+    // (real protocol: `location:update` with lat/lng).
     try {
-      ref.read(socketServiceProvider).emit('delivery.locationUpdated', {
-        'deliveryId': updated.id,
-        'orderId': updated.orderId,
-        'currentLatitude': updated.currentLatitude,
-        'currentLongitude': updated.currentLongitude,
-        'locationUpdatedAt': updatedAt.toIso8601String(),
-      });
+      ref.read(socketServiceProvider).emit(
+            'location:update',
+            {
+              'deliveryId': updated.id,
+              'latitude': updated.currentLatitude,
+              'longitude': updated.currentLongitude,
+            },
+            namespace: SocketService.deliveriesNamespace,
+          );
     } catch (_) {
       // Socket unavailable — ignore.
     }

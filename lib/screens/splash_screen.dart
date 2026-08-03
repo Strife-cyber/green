@@ -1,33 +1,96 @@
-import 'package:animated_splash_themes/animated_splash_themes.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../core/router/app_router.dart';
+import '../features/auth/controllers/auth_controller.dart';
+import '../l10n/l10n_ext.dart';
 import '../theme/app_colors.dart';
-import 'auth_gate.dart';
 
-/// Brand splash screen.
-///
-/// Uses the [`animated_splash_themes`] `expand` style — an X-style zoom of the
-/// logo + wordmark on the logo's own cream canvas — then hands off to
-/// [AuthGate], which routes the user to login or their role home.
-///
-/// The wordmark colour comes from [AnimatedSplashScreen.accentColor], which is
-/// pinned to the dark leaf green so it stays legible on the cream background.
-class SplashScreen extends StatelessWidget {
+/// Brand splash screen: the logo + wordmark fade in on the cream canvas, hold
+/// briefly, zoom out — then the router takes over via [GoRouter.of(context).go]
+/// (no raw `Navigator` calls, so the home route always sits at the root and
+/// headers never show a spurious back arrow).
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends ConsumerState<SplashScreen>
+    with TickerProviderStateMixin {
+  late final AnimationController _intro;
+  late final AnimationController _exit;
+
+  @override
+  void initState() {
+    super.initState();
+    _intro = AnimationController(vsync: this, duration: const Duration(milliseconds: 700))
+      ..forward();
+    _exit = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+    Future.delayed(const Duration(milliseconds: 2400), _zoomOut);
+  }
+
+  @override
+  void dispose() {
+    _intro.dispose();
+    _exit.dispose();
+    super.dispose();
+  }
+
+  Future<void> _zoomOut() async {
+    if (!mounted) return;
+    await _exit.forward();
+    if (!mounted) return;
+    final user = ref.read(authControllerProvider).valueOrNull?.user;
+    context.go(user == null ? AppRoutes.login : AppRoutes.homeFor(user.role));
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return AnimatedSplashScreen(
-      appName: 'Trendy Green',
-      appSubtitle: 'FRESH · LOCAL · NATURAL',
-      iconPath: 'assets/logo.png',
-      theme: SplashStyle.expand,
-      nextScreen: const AuthGate(),
-      duration: const Duration(milliseconds: 2800),
-      transitionDuration: const Duration(milliseconds: 900),
-      // Solid cream so the logo (cream canvas) blends in seamlessly.
-      backgroundColors: const [AppColors.background, AppColors.background],
-      accentColor: AppColors.greenDark,
+    final theme = Theme.of(context);
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Center(
+        child: ScaleTransition(
+          scale: Tween(begin: 1.0, end: 1.18)
+              .animate(CurvedAnimation(parent: _exit, curve: Curves.easeIn)),
+          child: FadeTransition(
+            opacity: Tween(begin: 1.0, end: 0.0)
+                .animate(CurvedAnimation(parent: _exit, curve: Curves.easeIn)),
+            child: FadeTransition(
+              opacity: CurvedAnimation(parent: _intro, curve: Curves.easeOut),
+              child: ScaleTransition(
+                scale: Tween(begin: 0.85, end: 1.0)
+                    .animate(CurvedAnimation(parent: _intro, curve: Curves.easeOut)),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // The logo blends into the cream background seamlessly.
+                    Image.asset('assets/logo.png', width: 160, height: 160),
+                    const SizedBox(height: 8),
+                    Text(
+                      context.t.appTitle,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.headlineMedium,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'FRESH · LOCAL · NATURAL',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: AppColors.tanDark,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
