@@ -27,10 +27,11 @@ class PaymentFailure extends PaymentState {
   const PaymentFailure(this.message);
 }
 
-/// Drives a mobile-money payment attempt (PAY-01/02).
-class PaymentController extends Notifier<PaymentState> {
+/// Drives a mobile-money payment attempt (PAY-01/02), keyed by order so one
+/// order's result never leaks into another's checkout screen.
+class PaymentController extends FamilyNotifier<PaymentState, String> {
   @override
-  PaymentState build() => const PaymentIdle();
+  PaymentState build(String arg) => const PaymentIdle();
 
   Future<void> pay({required String orderId, required PaymentChannel channel}) async {
     state = const PaymentInitiating();
@@ -43,4 +44,5 @@ class PaymentController extends Notifier<PaymentState> {
   }
 }
 
-final paymentControllerProvider = NotifierProvider<PaymentController, PaymentState>(PaymentController.new);
+final paymentControllerProvider =
+    NotifierProvider.family<PaymentController, PaymentState, String>(PaymentController.new);

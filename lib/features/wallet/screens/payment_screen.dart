@@ -43,7 +43,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     );
     if (!authorized || !mounted) return;
     ref
-        .read(paymentControllerProvider.notifier)
+        .read(paymentControllerProvider(widget.orderId).notifier)
         .pay(orderId: widget.orderId, channel: _channel);
   }
 
@@ -51,7 +51,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final order = ref.watch(paymentOrderProvider(widget.orderId));
-    final payment = ref.watch(paymentControllerProvider);
+    final payment = ref.watch(paymentControllerProvider(widget.orderId));
 
     final body = switch (payment) {
       PaymentIdle() => _buildCheckout(theme, order),
