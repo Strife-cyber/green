@@ -8,7 +8,6 @@ import '../models/report.dart';
 import '../models/seller_profile.dart';
 import '../models/support_ticket.dart';
 import '../models/user.dart';
-import '../models/wallet.dart';
 import '../models/withdrawal.dart';
 
 /// Admin console — admin-only endpoints (ADM-01..13). Server-side RBAC is the
@@ -20,8 +19,7 @@ abstract class AdminRepository {
   Future<void> approveSeller(String userId);
   Future<void> rejectSeller(String userId);
 
-  // Wallets & withdrawals
-  Future<List<Wallet>> allWallets();
+  // Withdrawals
   Future<List<Withdrawal>> pendingWithdrawals();
   Future<void> processWithdrawal(String id, {bool reject = false});
 

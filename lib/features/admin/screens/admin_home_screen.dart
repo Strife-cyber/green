@@ -158,11 +158,6 @@ class _OverviewTab extends ConsumerWidget {
             QuickActionsSection(
               actions: [
                 QuickAction(
-                  icon: Icons.account_balance_wallet_outlined,
-                  label: t.navWallet,
-                  onTap: () => context.push(AppRoutes.adminWallets),
-                ),
-                QuickAction(
                   icon: Icons.local_shipping_outlined,
                   label: t.navDeliveries,
                   onTap: () => context.push(AppRoutes.adminDeliveries),
@@ -176,11 +171,6 @@ class _OverviewTab extends ConsumerWidget {
                   icon: Icons.flag_outlined,
                   label: t.navReports,
                   onTap: () => context.push(AppRoutes.adminReports),
-                ),
-                QuickAction(
-                  icon: Icons.history,
-                  label: t.navActivity,
-                  onTap: () => context.push(AppRoutes.adminActivity),
                 ),
                 QuickAction(
                   icon: Icons.person_add_alt,

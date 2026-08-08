@@ -14,6 +14,12 @@ class Order {
   final int totalAmount;
   final String? deliveryAddressLabel;
 
+  /// The delivery created by `POST /deliveries` (DEL-02). Null until a driver
+  /// is actually assigned to this order — the seller must assign one before the
+  /// order can be marked SHIPPED.
+  final String? deliveryId;
+  final String? deliveryDriverName;
+
   final List<OrderItem> items;
   final DateTime? placedAt;
   final DateTime? deliveredAt;
@@ -29,32 +35,58 @@ class Order {
     this.deliveryFee = 0,
     required this.totalAmount,
     this.deliveryAddressLabel,
+    this.deliveryId,
+    this.deliveryDriverName,
     this.items = const [],
     this.placedAt,
     this.deliveredAt,
   });
 
   /// Parses the backend `OrderListItemDto` — camelCase, money as decimal
-  /// strings, status enums uppercase.
-  factory Order.fromJson(Map<String, dynamic> json) => Order(
-        id: json['id'] as String,
-        buyerId: json['buyerId'] as String? ?? '',
-        sellerId: json['sellerId'] as String? ?? '',
-        sellerName: json['sellerName'] as String?,
-        status: OrderStatus.fromApi(json['status'] as String? ?? 'pending'),
-        paymentStatus: PaymentStatus.fromApi(json['paymentStatus'] as String? ?? 'unpaid'),
-        subtotal: parseMoney(json['subtotal']?.toString()),
-        deliveryFee: parseMoney(json['deliveryFee']?.toString()),
-        totalAmount: parseMoney(json['totalAmount']?.toString()),
-        deliveryAddressLabel: json['deliveryAddressLabel'] as String?,
-        items: [
-          if (json['items'] is List)
-            for (final it in json['items'] as List)
-              if (it is Map<String, dynamic>) OrderItem.fromJson(it),
-        ],
-        placedAt: json['placedAt'] != null ? DateTime.tryParse(json['placedAt'] as String) : null,
-        deliveredAt: json['deliveredAt'] != null ? DateTime.tryParse(json['deliveredAt'] as String) : null,
-      );
+  /// strings, status enums uppercase. The order detail response nests the
+  /// assigned delivery as `delivery: { id, driver: { firstName, lastName } }`.
+  factory Order.fromJson(Map<String, dynamic> json) {
+    final delivery = json['delivery'];
+    final String? deliveryId;
+    final String? deliveryDriverName;
+    if (delivery is Map<String, dynamic>) {
+      deliveryId = delivery['id'] as String?;
+      final driver = delivery['driver'];
+      if (driver is Map<String, dynamic>) {
+        final first = driver['firstName'] as String? ?? '';
+        final last = driver['lastName'] as String? ?? '';
+        deliveryDriverName = (first.trim().isEmpty && last.trim().isEmpty)
+            ? null
+            : '${first.trim()} ${last.trim()}'.trim();
+      } else {
+        deliveryDriverName = null;
+      }
+    } else {
+      deliveryId = json['deliveryId'] as String?;
+      deliveryDriverName = null;
+    }
+    return Order(
+      id: json['id'] as String,
+      buyerId: json['buyerId'] as String? ?? '',
+      sellerId: json['sellerId'] as String? ?? '',
+      sellerName: json['sellerName'] as String?,
+      status: OrderStatus.fromApi(json['status'] as String? ?? 'pending'),
+      paymentStatus: PaymentStatus.fromApi(json['paymentStatus'] as String? ?? 'unpaid'),
+      subtotal: parseMoney(json['subtotal']?.toString()),
+      deliveryFee: parseMoney(json['deliveryFee']?.toString()),
+      totalAmount: parseMoney(json['totalAmount']?.toString()),
+      deliveryAddressLabel: json['deliveryAddressLabel'] as String?,
+      deliveryId: deliveryId,
+      deliveryDriverName: deliveryDriverName,
+      items: [
+        if (json['items'] is List)
+          for (final it in json['items'] as List)
+            if (it is Map<String, dynamic>) OrderItem.fromJson(it),
+      ],
+      placedAt: json['placedAt'] != null ? DateTime.tryParse(json['placedAt'] as String) : null,
+      deliveredAt: json['deliveredAt'] != null ? DateTime.tryParse(json['deliveredAt'] as String) : null,
+    );
+  }
 }
 
 /// A line on an order — snapshots the product name/price at purchase time.

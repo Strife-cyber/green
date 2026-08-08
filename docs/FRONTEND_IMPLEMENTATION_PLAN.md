@@ -251,7 +251,6 @@ abstract class ProductRepository {
 | `ReceiptController` | `AsyncNotifier<Receipt>` | view + download (REC-01/04) |
 | `SupportController` | `AsyncNotifier<List<SupportTicket>>` | enquiry desk (ADM-10) |
 | `AdminStatsController` | `AsyncNotifier<AdminStats>` | users/sellers/revenue/commission (ADM-01..04) |
-| `AdminWalletController` | `AsyncNotifier<AdminWalletsView>` | balances + withdrawals processing (ADM-05/06) |
 | `AdminApprovalController` | `AsyncNotifier<List<SellerProfile>>` | approve/reject (ADM-11) |
 | `AdminDeliveryController` | `AsyncNotifier<List<Delivery>>` | live deliveries (ADM-08) |
 | `AdminTicketController`, `AdminReportController`, `AdminChatController` | `AsyncNotifier` | ADM-09/07/12 |

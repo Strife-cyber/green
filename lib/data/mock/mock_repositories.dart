@@ -303,7 +303,7 @@ class MockOrderRepository implements OrderRepository {
   @override
   Future<Order> get(String id) async {
     await _delay();
-    return store.orders.firstWhere((o) => o.id == id);
+    return _withDeliveryInfo(store.orders.firstWhere((o) => o.id == id));
   }
 
   @override
@@ -327,7 +327,37 @@ class MockOrderRepository implements OrderRepository {
       deliveredAt: status == OrderStatus.delivered ? DateTime.now() : current.deliveredAt,
     );
     store.orders[index] = updated;
-    return updated;
+    return _withDeliveryInfo(updated);
+  }
+
+  /// Mirrors the backend's order-detail payload: attach the assigned delivery
+  /// (id + driver name) when the store has one for this order (DEL-02).
+  Order _withDeliveryInfo(Order order) {
+    Delivery? delivery;
+    for (final d in store.deliveries) {
+      if (d.orderId == order.id) {
+        delivery = d;
+        break;
+      }
+    }
+    if (delivery == null) return order;
+    return Order(
+      id: order.id,
+      buyerId: order.buyerId,
+      sellerId: order.sellerId,
+      sellerName: order.sellerName,
+      status: order.status,
+      paymentStatus: order.paymentStatus,
+      subtotal: order.subtotal,
+      deliveryFee: order.deliveryFee,
+      totalAmount: order.totalAmount,
+      deliveryAddressLabel: order.deliveryAddressLabel,
+      deliveryId: delivery.id,
+      deliveryDriverName: delivery.driverName,
+      items: order.items,
+      placedAt: order.placedAt,
+      deliveredAt: order.deliveredAt,
+    );
   }
 
   @override
@@ -459,13 +489,30 @@ class MockDeliveryRepository implements DeliveryRepository {
   MockDeliveryRepository(this.store);
 
   @override
+  Future<List<User>> availableDrivers() async {
+    await _delay();
+    return const [
+      User(id: 'u-driver-1', firstName: 'Jean', lastName: 'Kamdem', email: 'driver@greenish.cm', phone: '655000100', role: UserRole.driver, region: 'Littoral', emailVerified: true),
+      User(id: 'u-driver-2', firstName: 'Serge', lastName: 'Tchoua', email: 'driver2@greenish.cm', phone: '655000101', role: UserRole.driver, region: 'Centre', emailVerified: true),
+    ];
+  }
+
+  @override
   Future<Delivery> assign(String orderId, String driverId) async {
     await _delay();
+    final drivers = await availableDrivers();
+    String? driverName;
+    for (final d in drivers) {
+      if (d.id == driverId) {
+        driverName = d.fullName;
+        break;
+      }
+    }
     final delivery = Delivery(
       id: _id('d'),
       orderId: orderId,
       driverId: driverId,
-      driverName: 'Samuel Awa',
+      driverName: driverName ?? 'Assigned driver',
       assignedAt: DateTime.now(),
     );
     store.deliveries.add(delivery);
@@ -809,12 +856,6 @@ class MockAdminRepository implements AdminRepository {
   @override
   Future<void> rejectSeller(String userId) async {
     await _delay();
-  }
-
-  @override
-  Future<List<Wallet>> allWallets() async {
-    await _delay();
-    return [MockStore.wallet, MockStore.sellerWallet];
   }
 
   @override

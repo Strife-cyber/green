@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../data/models/withdrawal.dart';
 import '../../../shared/widgets/amount_text.dart';
@@ -56,12 +57,37 @@ class _WithdrawalCard extends ConsumerWidget {
 
   const _WithdrawalCard({required this.withdrawal});
 
-  Future<void> _process(BuildContext context, WidgetRef ref, {required bool reject}) async {
-    final controller = ref.read(adminWithdrawalsControllerProvider.notifier);
-    await (reject ? controller.reject(withdrawal.id) : controller.process(withdrawal.id));
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(reject ? 'Withdrawal rejected' : 'Withdrawal processed')));
+  Future<void> _process(BuildContext context, WidgetRef ref, {required bool reject}) => _run(
+        context,
+        () => reject
+            ? ref.read(adminWithdrawalsControllerProvider.notifier).reject(withdrawal.id)
+            : ref.read(adminWithdrawalsControllerProvider.notifier).process(withdrawal.id),
+        success: reject ? 'Withdrawal rejected' : 'Withdrawal processed',
+      );
+
+  /// Runs the mutation and surfaces the backend's message instead of an
+  /// unhandled ApiException crashing the screen.
+  Future<void> _run(
+    BuildContext context,
+    Future<void> Function() action, {
+    required String success,
+  }) async {
+    try {
+      await action();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(success)));
+      }
+    } on ApiException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Something went wrong.')),
+        );
+      }
+    }
   }
 
   @override

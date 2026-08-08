@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/utils/validators.dart';
 import '../../../shared/widgets/form_text_field.dart';
-import '../../../theme/app_colors.dart';
 import '../controllers/auth_controller.dart';
 import '../widgets/auth_shell.dart';
 
@@ -113,12 +112,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: const Text('Create one'),
                 ),
               ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Demo: buyer@ / seller@ / admin@ / driver@  ·  any password',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(color: AppColors.tanDark),
             ),
             const SizedBox(height: 4),
             TextButton(

@@ -725,6 +725,16 @@ class ApiDeliveryRepository implements DeliveryRepository {
   }
 
   @override
+  Future<List<User>> availableDrivers() async {
+    try {
+      final res = await _dio.get(Endpoints.deliveryDrivers);
+      return _page(_unwrap(res.data), User.fromJson).items;
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
+
+  @override
   Future<List<Delivery>> driverOrders() async {
     try {
       final res = await _dio.get(Endpoints.driverDeliveries);
@@ -1147,13 +1157,6 @@ class ApiAdminRepository implements AdminRepository {
     } on DioException catch (e) {
       _fail(e);
     }
-  }
-
-  @override
-  Future<List<Wallet>> allWallets() async {
-    // No `/admin/wallets` route exists in the API — the admin wallet screen
-    // would need it. Return an empty list until the backend exposes one.
-    return const [];
   }
 
   @override

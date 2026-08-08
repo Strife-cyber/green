@@ -84,6 +84,7 @@ abstract final class Endpoints {
   // ---- deliveries ----
   static String get deliveries => '$base/deliveries';
   static String get driverDeliveries => '$base/deliveries/driver';
+  static String get deliveryDrivers => '$base/deliveries/drivers';
   static String get delivery => '$base/deliveries/{id}';
   static String get deliveryPickup => '$base/deliveries/{id}/pickup';
   static String get deliveryComplete => '$base/deliveries/{id}/complete';

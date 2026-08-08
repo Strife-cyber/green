@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/api_exception.dart';
 import '../../../core/network/endpoints.dart';
 import '../../../data/mock/mock_data.dart';
 import '../../../data/models/seller_profile.dart';
@@ -60,18 +61,46 @@ class _SellerCard extends ConsumerWidget {
 
   const _SellerCard({required this.seller});
 
-  Future<void> _approve(BuildContext context, WidgetRef ref) async {
-    await ref.read(adminSellersControllerProvider.notifier).approve(seller.userId);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('${seller.farmName} approved')));
-  }
+  /// The backend blocks approval until both identity documents are uploaded
+  /// (AUTH-09 / seller-profiles.service.ts) — gate the button to match.
+  bool get _readyToApprove => seller.nationalIdUrl != null && seller.selfieUrl != null;
 
-  Future<void> _reject(BuildContext context, WidgetRef ref) async {
-    await ref.read(adminSellersControllerProvider.notifier).reject(seller.userId);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('${seller.farmName} rejected')));
+  Future<void> _approve(BuildContext context, WidgetRef ref) => _run(
+        context,
+        () => ref.read(adminSellersControllerProvider.notifier).approve(seller.userId),
+        success: '${seller.farmName} approved',
+      );
+
+  Future<void> _reject(BuildContext context, WidgetRef ref) => _run(
+        context,
+        () => ref.read(adminSellersControllerProvider.notifier).reject(seller.userId),
+        success: '${seller.farmName} rejected',
+      );
+
+  /// Runs an admin mutation and reports the outcome, surfacing the backend's
+  /// own message (e.g. missing identity documents) instead of an unhandled
+  /// ApiException crashing the screen.
+  Future<void> _run(
+    BuildContext context,
+    Future<void> Function() action, {
+    required String success,
+  }) async {
+    try {
+      await action();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(success)));
+      }
+    } on ApiException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Something went wrong.')),
+        );
+      }
+    }
   }
 
   String? get _categoryName {
@@ -103,7 +132,7 @@ class _SellerCard extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(seller.farmName, style: theme.textTheme.titleMedium),
-                      Text(seller.userId, style: theme.textTheme.bodySmall),
+                      //Text(seller.userId, style: theme.textTheme.bodySmall),
                     ],
                   ),
                 ),
@@ -142,6 +171,21 @@ class _SellerCard extends ConsumerWidget {
                 ],
               ),
             ],
+            if (!_readyToApprove) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, size: 16, color: AppColors.orangeDark),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Waiting on identity documents (National ID + selfie) from the seller before approval.',
+                      style: theme.textTheme.bodySmall?.copyWith(color: AppColors.orangeDark),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 12),
             Row(
               children: [
@@ -154,7 +198,7 @@ class _SellerCard extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: FilledButton(
-                    onPressed: () => _approve(context, ref),
+                    onPressed: _readyToApprove ? () => _approve(context, ref) : null,
                     child: const Text('Approve'),
                   ),
                 ),

@@ -4,9 +4,9 @@
 /// To regenerate, run: `dart run slang`
 ///
 /// Locales: 2
-/// Strings: 230 (115 per locale)
+/// Strings: 228 (114 per locale)
 ///
-/// Built on 2026-08-02 at 20:19 UTC
+/// Built on 2026-08-08 at 13:59 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -172,7 +172,6 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
 	String get navProfile => 'Profile';
 	String get navDashboard => 'Dashboard';
 	String get navProducts => 'Products';
-	String get navWallet => 'Wallet';
 	String get navDeliveries => 'Deliveries';
 	String get navChat => 'Chat';
 	String get navAdmin => 'Admin';
@@ -315,7 +314,6 @@ class _StringsFr extends Translations {
 	@override String get navProfile => 'Profil';
 	@override String get navDashboard => 'Tableau de bord';
 	@override String get navProducts => 'Produits';
-	@override String get navWallet => 'Portefeuille';
 	@override String get navDeliveries => 'Livraisons';
 	@override String get navChat => 'Discussions';
 	@override String get navAdmin => 'Admin';
@@ -438,7 +436,6 @@ extension on Translations {
 			case 'navProfile': return 'Profile';
 			case 'navDashboard': return 'Dashboard';
 			case 'navProducts': return 'Products';
-			case 'navWallet': return 'Wallet';
 			case 'navDeliveries': return 'Deliveries';
 			case 'navChat': return 'Chat';
 			case 'navAdmin': return 'Admin';
@@ -561,7 +558,6 @@ extension on _StringsFr {
 			case 'navProfile': return 'Profil';
 			case 'navDashboard': return 'Tableau de bord';
 			case 'navProducts': return 'Produits';
-			case 'navWallet': return 'Portefeuille';
 			case 'navDeliveries': return 'Livraisons';
 			case 'navChat': return 'Discussions';
 			case 'navAdmin': return 'Admin';

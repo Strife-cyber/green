@@ -13,7 +13,6 @@ import '../../features/admin/screens/admin_home_screen.dart';
 import '../../features/admin/screens/admin_reports_screen.dart';
 import '../../features/admin/screens/admin_sellers_screen.dart';
 import '../../features/admin/screens/admin_tickets_screen.dart';
-import '../../features/admin/screens/admin_wallets_screen.dart';
 import '../../features/admin/screens/admin_withdrawals_screen.dart';
 import '../../features/auth/controllers/auth_controller.dart';
 import '../../features/auth/screens/forgot_password_screen.dart';
@@ -94,7 +93,6 @@ abstract final class AppRoutes {
   // Admin
   static const String adminHome = '/admin/home';
   static const String adminSellers = '/admin/sellers';
-  static const String adminWallets = '/admin/wallets';
   static const String adminWithdrawals = '/admin/withdrawals';
   static const String adminDeliveries = '/admin/deliveries';
   static const String adminTickets = '/admin/tickets';
@@ -221,7 +219,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       // ---- admin ----
       GoRoute(path: AppRoutes.adminHome, builder: (_, _) => const AdminHomeScreen()),
       GoRoute(path: AppRoutes.adminSellers, builder: (_, _) => const AdminSellersScreen()),
-      GoRoute(path: AppRoutes.adminWallets, builder: (_, _) => const AdminWalletsScreen()),
       GoRoute(path: AppRoutes.adminWithdrawals, builder: (_, _) => const AdminWithdrawalsScreen()),
       GoRoute(path: AppRoutes.adminDeliveries, builder: (_, _) => const AdminDeliveriesScreen()),
       GoRoute(path: AppRoutes.adminTickets, builder: (_, _) => const AdminTicketsScreen()),
