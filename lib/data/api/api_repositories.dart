@@ -1,6 +1,10 @@
 import 'dart:io' as io;
 
+import 'package:cross_file/cross_file.dart';
 import 'package:dio/dio.dart';
+// `kIsWeb` for the receipt guard — hide the `Category` annotation it also
+// exports (it collides with our `models/category.dart`).
+import 'package:flutter/foundation.dart' hide Category;
 
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
@@ -78,6 +82,17 @@ Page<T> _page<T>(dynamic body, T Function(Map<String, dynamic>) fromJson) {
 
 String _money(dynamic value) =>
     value == null ? '0' : value.toString().replaceAll(',', '');
+
+/// Reads a picked file's bytes for multipart upload. On native the path is a
+/// filesystem path; on web it's a blob URL that `MultipartFile.fromFile` can't
+/// read — `XFile.readAsBytes` handles both. Falls back to [fallbackName] when
+/// the path carries no useful filename (web blob URLs don't).
+Future<MultipartFile> _multipartFile(String path, String fallbackName) async {
+  final x = XFile(path);
+  var name = x.name;
+  if (name.isEmpty || !name.contains('.')) name = fallbackName;
+  return MultipartFile.fromBytes(await x.readAsBytes(), filename: name);
+}
 
 /// Maps a Dio failure to a typed [ApiException].
 Never _fail(DioException error) => throw apiExceptionFromDio(error);
@@ -331,7 +346,7 @@ class ApiProductRepository implements ProductRepository {
   Future<Product> _uploadImage(String id, String imagePath) async {
     try {
       final form = FormData.fromMap({
-        'file': await MultipartFile.fromFile(imagePath),
+        'file': await _multipartFile(imagePath, 'product.jpg'),
       });
       await _dio.post(_sub(Endpoints.productImage, 'id', id), data: form);
       // The upload endpoint only echoes `{ imageUrl }` — refetch the product
@@ -811,8 +826,11 @@ class ApiChatRepository implements ChatRepository {
     try {
       String? fileUrl;
       if (input.filePath != null) {
+        // Pick a sensible fallback filename for web blob URLs.
+        final fallback =
+            input.type == MessageType.voice ? 'voice.m4a' : 'attachment.jpg';
         final form = FormData.fromMap({
-          'file': await MultipartFile.fromFile(input.filePath!),
+          'file': await _multipartFile(input.filePath!, fallback),
         });
         final upload = await _dio.post(
           _sub(Endpoints.chatAttachments, 'threadId', threadId),
@@ -897,6 +915,9 @@ class ApiReceiptRepository implements ReceiptRepository {
 
   @override
   Future<String?> downloadPdf(String orderId) async {
+    // No filesystem on web — returning null lets the caller show its usual
+    // "unavailable" snackbar (same as the mock repository).
+    if (kIsWeb) return null;
     try {
       final receipt = await getForOrder(orderId);
       final res = await _dio.get(
@@ -1010,7 +1031,7 @@ class ApiSellerProfileRepository implements SellerProfileRepository {
   Future<String> _uploadDocument(String endpoint, String filePath) async {
     try {
       final form = FormData.fromMap({
-        'file': await MultipartFile.fromFile(filePath),
+        'file': await _multipartFile(filePath, 'document.jpg'),
       });
       final res = await _dio.post(endpoint, data: form);
       final up = _unwrap(res.data);

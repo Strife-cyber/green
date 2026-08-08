@@ -1,10 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../theme/app_colors.dart';
 import 'image_network.dart';
+import 'local_file_image.dart';
 
 /// A tappable image that opens the gallery and returns the picked file path.
 /// Used for product photos and chat images.
@@ -51,7 +50,7 @@ class PhotoPicker extends StatelessWidget {
         ),
         clipBehavior: Clip.antiAlias,
         child: hasFile
-            ? Image.file(File(imagePath!), fit: BoxFit.cover)
+            ? LocalFileImage(path: imagePath!)
             : hasUrl
                 ? ImageNetwork(url: imageUrl)
                 : const Center(child: Icon(Icons.add_photo_alternate_outlined, color: AppColors.tanDark)),

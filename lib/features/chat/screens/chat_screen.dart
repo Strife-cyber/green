@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:record/record.dart';
@@ -12,6 +13,7 @@ import '../../../data/repositories/providers.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/image_network.dart';
+import '../../../shared/widgets/local_file_image.dart';
 import '../../../shared/widgets/photo_picker.dart';
 import '../../../shared/widgets/report_dialog.dart';
 import '../../../theme/app_colors.dart';
@@ -240,6 +242,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Future<void> _startRecording() async {
+    // The `record` package has no web implementation — hide the feature on
+    // web instead of crashing on the first platform call.
+    if (kIsWeb) {
+      if (mounted) _showSnack('Voice notes are not available on the web yet.');
+      return;
+    }
     try {
       if (!await _recorder.hasPermission()) {
         if (mounted) _showSnack('Microphone permission is required for voice notes.');
@@ -424,14 +432,15 @@ class _ImageContent extends StatelessWidget {
     final isLocal = filePath != null &&
         (filePath.startsWith('/') || RegExp(r'^[A-Za-z]:').hasMatch(filePath));
     if (isLocal) {
+      // `Image.file` can't render blob URLs on web — LocalFileImage reads the
+      // picked file's bytes cross-platform instead.
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: Image.file(
-          File(filePath),
+        child: LocalFileImage(
+          path: filePath,
           width: 180,
           height: 140,
           fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => const SizedBox.shrink(),
         ),
       );
     }
