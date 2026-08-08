@@ -115,6 +115,12 @@ class ChatController extends FamilyNotifier<ChatState, String> {
     try {
       final sent = await ref.read(chatRepositoryProvider).send(arg, input);
       if (_disposed) return;
+      // The server may stream this same message back via `message:created`
+      // before the POST resolves — don't append it twice.
+      if (state.messages.any((m) => m.id == sent.id)) {
+        state = state.copyWith(sending: false);
+        return;
+      }
       state = state.copyWith(messages: [...state.messages, sent], sending: false);
     } catch (error) {
       if (_disposed) return;
