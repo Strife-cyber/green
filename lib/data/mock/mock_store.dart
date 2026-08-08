@@ -28,6 +28,11 @@ class MockStore {
   final List<WalletTransaction> transactions;
   final Set<String> wishlistProductIds;
 
+  /// Delivery confirmation codes issued by [MockDeliveryRepository.complete],
+  /// keyed by delivery id (DEL-07). The code is never exposed on the model —
+  /// the buyer confirms it via [MockDeliveryRepository.confirm].
+  final Map<String, String> deliveryCodes;
+
   MockStore()
       : products = List.of(seedProducts),
         orders = List.of(seedOrders),
@@ -39,7 +44,8 @@ class MockStore {
         reports = List.of(seedReports),
         deliveries = List.of(seedDeliveries),
         transactions = List.of(seedTransactions),
-        wishlistProductIds = {'p-tomatoes'};
+        wishlistProductIds = {'p-tomatoes'},
+        deliveryCodes = {};
 
   static const wallet = Wallet(id: 'w-buyer-1', userId: 'u-buyer-1', balance: 25000, escrowBalance: 0);
   static const sellerWallet = Wallet(id: 'w-seller-1', userId: 'u-seller-1', balance: 85000, escrowBalance: 12000);
@@ -158,7 +164,6 @@ final seedOrders = <Order>[
     deliveryFee: 500,
     totalAmount: 3500,
     deliveryAddressLabel: 'Home',
-    confirmationCode: '482913',
     items: [
       OrderItem(orderId: 'o-1', productId: 'p-tomatoes', productName: 'Fresh Tomatoes', unitPrice: 600, quantityKg: 5, lineTotal: 3000),
     ],
@@ -175,7 +180,6 @@ final seedOrders = <Order>[
     deliveryFee: 500,
     totalAmount: 2750,
     deliveryAddressLabel: 'Office',
-    confirmationCode: '590214',
     items: [
       OrderItem(orderId: 'o-2', productId: 'p-plantain', productName: 'Green Plantains', unitPrice: 450, quantityKg: 5, lineTotal: 2250),
     ],

@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../chat/chat_actions.dart';
 import '../../../data/models/delivery.dart';
-import '../../../data/models/order.dart';
-import '../../../data/repositories/providers.dart';
 import '../../../shared/widgets/async_view.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../../../theme/app_colors.dart';
@@ -13,13 +11,9 @@ import '../controllers/delivery_tracking_controller.dart';
 import '../controllers/driver_delivery_detail_controller.dart';
 import '../widgets/live_delivery_map.dart';
 
-/// Loads the order so the driver can verify its delivery confirmation code.
-final driverOrderProvider = FutureProvider.family<Order, String>(
-  (ref, orderId) => ref.watch(orderRepositoryProvider).get(orderId),
-);
-
-/// Driver view of one delivery: live map, status, pickup/deliver actions and
-/// a link to the order's chat (DRV-03/04).
+/// Driver view of one delivery: live map, status, pickup / complete actions
+/// and a link to the order's chat (DRV-03/04). The confirmation code is issued
+/// by the backend and sent to the buyer (DEL-07) — the driver never sees it.
 class DriverDeliveryDetailScreen extends ConsumerStatefulWidget {
   final String id;
 
@@ -32,19 +26,9 @@ class DriverDeliveryDetailScreen extends ConsumerStatefulWidget {
 
 class _DriverDeliveryDetailScreenState extends ConsumerState<DriverDeliveryDetailScreen> {
   bool _busy = false;
-  final _codeController = TextEditingController();
-
-  /// The expected confirmation code for the current order (loaded async).
-  String? _expectedCode;
 
   DeliveryTrackingRequest get _trackingRequest =>
       DeliveryTrackingRequest(deliveryId: widget.id);
-
-  @override
-  void dispose() {
-    _codeController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,21 +57,16 @@ class _DriverDeliveryDetailScreenState extends ConsumerState<DriverDeliveryDetai
       body: AsyncView<Delivery>(
         value: delivery,
         onRetry: () => ref.invalidate(driverDeliveryDetailControllerProvider(widget.id)),
-        builder: (data) {
-          final orderCode =
-              ref.watch(driverOrderProvider(data.orderId)).valueOrNull?.confirmationCode;
-          _expectedCode = orderCode;
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              LiveDeliveryMap(delivery: tracking.delivery ?? data),
-              const SizedBox(height: 16),
-              _infoCard(context, data),
-              const SizedBox(height: 16),
-              ..._actions(context, data, orderCode),
-            ],
-          );
-        },
+        builder: (data) => ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            LiveDeliveryMap(delivery: tracking.delivery ?? data),
+            const SizedBox(height: 16),
+            _infoCard(context, data),
+            const SizedBox(height: 16),
+            ..._actions(context, data),
+          ],
+        ),
       ),
     );
   }
@@ -145,7 +124,7 @@ class _DriverDeliveryDetailScreenState extends ConsumerState<DriverDeliveryDetai
     return const StatusBadge(label: 'Assigned', color: AppColors.tanDark);
   }
 
-  List<Widget> _actions(BuildContext context, Delivery delivery, String? orderCode) {
+  List<Widget> _actions(BuildContext context, Delivery delivery) {
     final actions = <Widget>[];
     if (!delivery.isDelivered) {
       actions.add(
@@ -158,38 +137,17 @@ class _DriverDeliveryDetailScreenState extends ConsumerState<DriverDeliveryDetai
       );
       actions.add(const SizedBox(height: 12));
       if (delivery.isPickupConfirmed) {
-        // The delivery can only be handed over once the buyer's confirmation
-        // code matches the order's (DEL-07).
+        // Hand-off: the backend issues a 6-digit code to the buyer and the
+        // order is delivered once the buyer confirms it (DEL-07).
         actions.add(
-          TextField(
-            controller: _codeController,
-            keyboardType: TextInputType.number,
-            maxLength: 6,
-            textInputAction: TextInputAction.done,
-            decoration: const InputDecoration(
-              labelText: 'Confirmation code from buyer',
-              prefixIcon: Icon(Icons.pin_outlined),
-              counterText: '',
-            ),
-            onChanged: (_) => setState(() {}),
-            onSubmitted: (_) {
-              if (orderCode != null && _codeController.text.trim() != orderCode) {
-                _showError('That code does not match this order.');
-              }
-            },
+          FilledButton.icon(
+            onPressed: _busy ? null : _completeDelivery,
+            icon: const Icon(Icons.qr_code_2),
+            label: const Text('Complete delivery'),
           ),
         );
         actions.add(const SizedBox(height: 12));
       }
-      actions.add(
-        FilledButton(
-          onPressed: delivery.isPickupConfirmed && !_busy && _codeMatches(orderCode)
-              ? _markDelivered
-              : null,
-          child: const Text('Mark delivered'),
-        ),
-      );
-      actions.add(const SizedBox(height: 12));
     }
     actions.add(
       OutlinedButton.icon(
@@ -217,26 +175,22 @@ class _DriverDeliveryDetailScreenState extends ConsumerState<DriverDeliveryDetai
     }
   }
 
-  bool _codeMatches(String? orderCode) {
-    final entered = _codeController.text.trim();
-    return orderCode != null && entered.isNotEmpty && entered == orderCode;
-  }
-
-  Future<void> _markDelivered() async {
-    if (!_codeMatches(_expectedCode)) {
-      _showError('Enter the correct confirmation code before marking delivered.');
-      return;
-    }
+  Future<void> _completeDelivery() async {
     setState(() => _busy = true);
     try {
       await ref
           .read(driverDeliveryDetailControllerProvider(widget.id).notifier)
-          .markDelivered();
+          .completeDelivery();
       await ref
           .read(deliveryTrackingControllerProvider(_trackingRequest).notifier)
           .refreshNow();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Confirmation code sent to the buyer.')),
+        );
+      }
     } catch (_) {
-      if (mounted) _showError('Could not mark as delivered. Try again.');
+      if (mounted) _showError('Could not complete the delivery. Try again.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }

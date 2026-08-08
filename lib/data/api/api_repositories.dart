@@ -742,7 +742,20 @@ class ApiDeliveryRepository implements DeliveryRepository {
   Future<Delivery> pickup(String id) => _action(id, Endpoints.deliveryPickup);
 
   @override
-  Future<Delivery> deliver(String id) => _action(id, Endpoints.deliveryComplete);
+  Future<Delivery> complete(String id) => _action(id, Endpoints.deliveryComplete);
+
+  @override
+  Future<Delivery> confirm(String id, String code) async {
+    try {
+      final res = await _dio.post(
+        _sub(Endpoints.deliveryConfirm, 'id', id),
+        data: {'code': code},
+      );
+      return Delivery.fromJson(_unwrap(res.data) as Map<String, dynamic>);
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
 }
 
 /// ────────────────────────────────────────────────────────────────────────────

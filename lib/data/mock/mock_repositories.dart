@@ -233,9 +233,6 @@ class MockOrderRepository implements OrderRepository {
   final MockStore store;
   MockOrderRepository(this.store);
 
-  /// Deterministic 6-digit confirmation code for the new order (DEL-07).
-  String _confirmationCode() => (_nextId * 37 % 900000 + 100000).toString();
-
   @override
   Future<Order> create(CreateOrderInput input) async {
     await _delay();
@@ -265,7 +262,6 @@ class MockOrderRepository implements OrderRepository {
       subtotal: subtotal,
       deliveryFee: input.deliveryFee,
       totalAmount: subtotal + input.deliveryFee,
-      confirmationCode: _confirmationCode(),
       items: items,
       placedAt: DateTime.now(),
     );
@@ -316,7 +312,6 @@ class MockOrderRepository implements OrderRepository {
       deliveryFee: current.deliveryFee,
       totalAmount: current.totalAmount,
       deliveryAddressLabel: current.deliveryAddressLabel,
-      confirmationCode: current.confirmationCode,
       items: current.items,
       placedAt: current.placedAt,
       deliveredAt: status == OrderStatus.delivered ? DateTime.now() : current.deliveredAt,
@@ -501,8 +496,39 @@ class MockDeliveryRepository implements DeliveryRepository {
   }
 
   @override
-  Future<Delivery> deliver(String id) async {
+  Future<Delivery> complete(String id) async {
     await _delay();
+    final index = store.deliveries.indexWhere((d) => d.id == id);
+    final current = store.deliveries[index];
+    // The backend generates the code server-side and sends it to the buyer —
+    // the mock uses a fixed code so the demo/tests can confirm it.
+    store.deliveryCodes[id] = '482913';
+    final updated = Delivery(
+      id: current.id,
+      orderId: current.orderId,
+      driverId: current.driverId,
+      driverName: current.driverName,
+      assignedAt: current.assignedAt,
+      pickupConfirmedAt: current.pickupConfirmedAt ?? DateTime.now(),
+      deliveredAt: current.deliveredAt,
+      currentLatitude: current.currentLatitude,
+      currentLongitude: current.currentLongitude,
+      locationUpdatedAt: current.locationUpdatedAt,
+    );
+    store.deliveries[index] = updated;
+    return updated;
+  }
+
+  @override
+  Future<Delivery> confirm(String id, String code) async {
+    await _delay();
+    final expected = store.deliveryCodes[id];
+    if (expected == null) {
+      throw Exception('No confirmation code has been issued for this delivery.');
+    }
+    if (expected != code) {
+      throw Exception('Invalid confirmation code.');
+    }
     final index = store.deliveries.indexWhere((d) => d.id == id);
     final current = store.deliveries[index];
     final updated = Delivery(
@@ -518,6 +544,7 @@ class MockDeliveryRepository implements DeliveryRepository {
       locationUpdatedAt: current.locationUpdatedAt,
     );
     store.deliveries[index] = updated;
+    store.deliveryCodes.remove(id);
     return updated;
   }
 }

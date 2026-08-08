@@ -14,10 +14,6 @@ class Order {
   final int totalAmount;
   final String? deliveryAddressLabel;
 
-  /// 6-digit code the buyer shares with the driver to confirm hand-off
-  /// (DEL-07).
-  final String? confirmationCode;
-
   final List<OrderItem> items;
   final DateTime? placedAt;
   final DateTime? deliveredAt;
@@ -33,7 +29,6 @@ class Order {
     this.deliveryFee = 0,
     required this.totalAmount,
     this.deliveryAddressLabel,
-    this.confirmationCode,
     this.items = const [],
     this.placedAt,
     this.deliveredAt,
@@ -52,7 +47,6 @@ class Order {
         deliveryFee: parseMoney(json['deliveryFee']?.toString()),
         totalAmount: parseMoney(json['totalAmount']?.toString()),
         deliveryAddressLabel: json['deliveryAddressLabel'] as String?,
-        confirmationCode: json['confirmationCode'] as String?,
         items: [
           if (json['items'] is List)
             for (final it in json['items'] as List)

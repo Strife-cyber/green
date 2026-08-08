@@ -17,9 +17,11 @@ class DriverDeliveryDetailController
     return updated;
   }
 
-  /// Marks the delivery as handed over to the buyer.
-  Future<Delivery> markDelivered() async {
-    final updated = await ref.read(deliveryRepositoryProvider).deliver(arg);
+  /// Driver hands off to the buyer: the backend issues a 6-digit code and sends
+  /// it to the buyer (DEL-07). The order is not delivered until the buyer
+  /// confirms the code.
+  Future<Delivery> completeDelivery() async {
+    final updated = await ref.read(deliveryRepositoryProvider).complete(arg);
     state = AsyncData(updated);
     return updated;
   }
