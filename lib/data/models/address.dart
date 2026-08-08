@@ -23,9 +23,10 @@ class Address {
   });
 
   /// Parses the backend `CreateAddressDto` response — camelCase. Coordinates
-  /// are returned as decimal strings by the API.
+  /// are returned as decimal strings by the API. `id` may be absent on legacy
+  /// payloads (e.g. a coordinate-only delivery destination) — default to ''.
   factory Address.fromJson(Map<String, dynamic> json) => Address(
-        id: json['id'] as String,
+        id: json['id'] as String? ?? '',
         label: json['label'] as String? ?? '',
         recipientName: json['recipientName'] as String? ?? json['recipient_name'] as String? ?? '',
         phone: json['phone'] as String? ?? '',

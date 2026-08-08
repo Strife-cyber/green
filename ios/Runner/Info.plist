@@ -26,6 +26,10 @@
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
+		<!-- When-in-use location for live driver tracking (DEL-04). No
+		     NSLocationAlwaysAndWhenInUseUsageDescription — foreground only. -->
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Green uses your location to share your live driving position with the buyer while the app is open.</string>
 		<key>UIBackgroundModes</key>
 		<array>
 			<string>remote-notification</string>
