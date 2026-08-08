@@ -96,18 +96,15 @@ class _LiveDeliveryMapState extends State<LiveDeliveryMap>
   @override
   Widget build(BuildContext context) {
     final center = _centerFor(widget.delivery);
-    return GestureDetector(
-      onTap: widget.onTap,
-      behavior: HitTestBehavior.opaque,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: SizedBox(
-          height: widget.height,
-          width: double.infinity,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              FlutterMap(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: SizedBox(
+        height: widget.height,
+        width: double.infinity,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            FlutterMap(
                 mapController: _controller,
                 options: MapOptions(initialCenter: center, initialZoom: 15),
                 children: [
@@ -140,6 +137,17 @@ class _LiveDeliveryMapState extends State<LiveDeliveryMap>
                   ),
                 ],
               ),
+              // Transparent tap layer on top of the map. flutter_map handles
+              // taps itself, so a GestureDetector around it never fires —
+              // this overlay claims the tap while still letting pan/zoom
+              // reach the map beneath (translucent hit test).
+              if (widget.onTap != null)
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: widget.onTap,
+                    behavior: HitTestBehavior.translucent,
+                  ),
+                ),
               Positioned(
                 top: 8,
                 left: 8,
@@ -148,7 +156,6 @@ class _LiveDeliveryMapState extends State<LiveDeliveryMap>
             ],
           ),
         ),
-      ),
     );
   }
 

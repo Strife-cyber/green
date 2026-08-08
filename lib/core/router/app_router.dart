@@ -127,8 +127,10 @@ abstract final class AppRoutes {
   static String chat(String threadId) => '$chatThreads/$threadId';
   static String sellerOrderDetail(String id) => '/seller/orders/$id';
   static String sellerProductEdit(String id) => '/seller/products/$id/edit';
-  static String deliveryTracking(String orderId) => '/buyer/tracking/$orderId';
-  static String liveMap(String orderId) => '/buyer/tracking/$orderId/map';
+  // Role-neutral: any participant in the order (buyer, seller, driver) can
+  // follow live delivery — the delivery endpoints resolve ownership server-side.
+  static String deliveryTracking(String orderId) => '/tracking/$orderId';
+  static String liveMap(String orderId) => '/tracking/$orderId/map';
   static String receipt(String orderId) => '/buyer/receipt/$orderId';
   static String payment(String orderId) => '/buyer/payment/$orderId';
   static String driverDelivery(String id) => '/driver/deliveries/$id';
@@ -195,8 +197,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: AppRoutes.addresses, builder: (_, _) => const AddressesScreen()),
       GoRoute(path: AppRoutes.buyerProfile, builder: (_, _) => const BuyerProfileScreen()),
       GoRoute(path: '${AppRoutes.chatThreads}/:threadId', builder: (_, s) => ChatScreen(threadId: s.pathParameters['threadId']!)),
-      GoRoute(path: '/buyer/tracking/:orderId', builder: (_, s) => DeliveryTrackingScreen(orderId: s.pathParameters['orderId']!)),
-      GoRoute(path: '/buyer/tracking/:orderId/map', builder: (_, s) => LiveMapScreen(orderId: s.pathParameters['orderId']!)),
+      GoRoute(path: '/tracking/:orderId', builder: (_, s) => DeliveryTrackingScreen(orderId: s.pathParameters['orderId']!)),
+      GoRoute(path: '/tracking/:orderId/map', builder: (_, s) => LiveMapScreen(orderId: s.pathParameters['orderId']!)),
       GoRoute(path: '/buyer/receipt/:orderId', builder: (_, s) => ReceiptScreen(orderId: s.pathParameters['orderId']!)),
       GoRoute(path: '/buyer/payment/:orderId', builder: (_, s) => PaymentScreen(orderId: s.pathParameters['orderId']!)),
 

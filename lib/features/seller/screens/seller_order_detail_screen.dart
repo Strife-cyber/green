@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../chat/chat_actions.dart';
+import '../../../core/router/app_router.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../data/models/enums.dart';
 import '../../../data/models/order.dart';
@@ -291,6 +293,12 @@ class _OrderDetailContent extends ConsumerWidget {
           ));
         break;
       case OrderStatus.shipped:
+        buttons.add(OutlinedButton.icon(
+          onPressed: () => context.push(AppRoutes.deliveryTracking(order.id)),
+          icon: const Icon(Icons.local_shipping_outlined),
+          label: const Text('Track delivery'),
+        ));
+        break;
       case OrderStatus.delivered:
       case OrderStatus.cancelled:
         break;

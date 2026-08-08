@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../core/realtime/socket_service.dart';
 import '../../../data/models/delivery.dart';
+import '../../../data/models/enums.dart';
 import '../../../data/repositories/providers.dart';
 import '../../auth/controllers/auth_controller.dart';
 
@@ -69,6 +70,12 @@ class DeliveryTrackingController
   Timer? _publishTimer;
   StreamSubscription<Map<String, dynamic>>? _socketSub;
   StreamSubscription<Position>? _gpsSub;
+
+  /// Cached delivery id once it's resolved through the order — the 5s status
+  /// poll then hits `GET /deliveries/{id}` directly instead of re-fetching the
+  /// order every tick. Position still streams over the socket; the poll only
+  /// keeps status (pickup/delivered) fresh.
+  String? _resolvedDeliveryId;
   int _routeIndex = 0;
   bool _disposed = false;
 
@@ -207,13 +214,37 @@ class DeliveryTrackingController
       final request = arg;
       final Delivery fresh;
       if (request.deliveryId != null) {
+        _resolvedDeliveryId = request.deliveryId;
         fresh = await repo.get(request.deliveryId!);
+      } else if (_resolvedDeliveryId != null) {
+        // Already resolved through the order — skip the order lookup on polls.
+        fresh = await repo.get(_resolvedDeliveryId!);
       } else {
-        final all = await repo.driverOrders();
-        fresh = all.firstWhere(
-          (d) => d.orderId == request.orderId,
-          orElse: () => throw StateError('No delivery for order ${request.orderId}'),
-        );
+        // `GET /deliveries/driver` is driver-only — a buyer/seller who opens
+        // tracking would 403. Resolve their delivery through the order instead:
+        // the order payload embeds the assigned delivery's id (DEL-02), and
+        // `GET /deliveries/{id}` is visible to the order's buyer/seller.
+        final role = ref.read(authControllerProvider).valueOrNull?.user?.role;
+        if (role == UserRole.driver) {
+          final all = await repo.driverOrders();
+          final driverDelivery = all.firstWhere(
+            (d) => d.orderId == request.orderId,
+            orElse: () => throw StateError('No delivery for order ${request.orderId}'),
+          );
+          _resolvedDeliveryId = driverDelivery.id;
+          fresh = driverDelivery;
+        } else {
+          final order = await ref.read(orderRepositoryProvider).get(request.orderId!);
+          final deliveryId = order.deliveryId;
+          if (deliveryId == null) {
+            // No driver assigned yet — let the screen show its "not assigned"
+            // empty state rather than a confusing load error.
+            state = DeliveryTrackingState(publishing: state.publishing);
+            return;
+          }
+          _resolvedDeliveryId = deliveryId;
+          fresh = await repo.get(deliveryId);
+        }
       }
       if (_disposed) return;
       // While publishing, keep the driver's locally-stepped coordinates and
