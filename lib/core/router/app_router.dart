@@ -36,6 +36,8 @@ import '../../features/chat/screens/chat_screen.dart';
 import '../../features/chat/screens/chat_threads_screen.dart';
 import '../../features/delivery/screens/delivery_tracking_screen.dart';
 import '../../features/delivery/screens/driver_delivery_detail_screen.dart';
+import '../../features/delivery/screens/driver_route_screen.dart';
+import '../../features/delivery/screens/live_map_screen.dart';
 import '../../features/delivery/screens/driver_home_screen.dart';
 import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/receipts/screens/receipt_screen.dart';
@@ -128,9 +130,11 @@ abstract final class AppRoutes {
   static String sellerOrderDetail(String id) => '/seller/orders/$id';
   static String sellerProductEdit(String id) => '/seller/products/$id/edit';
   static String deliveryTracking(String orderId) => '/buyer/tracking/$orderId';
+  static String liveMap(String orderId) => '/buyer/tracking/$orderId/map';
   static String receipt(String orderId) => '/buyer/receipt/$orderId';
   static String payment(String orderId) => '/buyer/payment/$orderId';
   static String driverDelivery(String id) => '/driver/deliveries/$id';
+  static String driverRoute = '/driver/route';
   static String adminThread(String threadId) => '/admin/chat/$threadId';
 }
 
@@ -194,6 +198,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: AppRoutes.buyerProfile, builder: (_, _) => const BuyerProfileScreen()),
       GoRoute(path: '${AppRoutes.chatThreads}/:threadId', builder: (_, s) => ChatScreen(threadId: s.pathParameters['threadId']!)),
       GoRoute(path: '/buyer/tracking/:orderId', builder: (_, s) => DeliveryTrackingScreen(orderId: s.pathParameters['orderId']!)),
+      GoRoute(path: '/buyer/tracking/:orderId/map', builder: (_, s) => LiveMapScreen(orderId: s.pathParameters['orderId']!)),
       GoRoute(path: '/buyer/receipt/:orderId', builder: (_, s) => ReceiptScreen(orderId: s.pathParameters['orderId']!)),
       GoRoute(path: '/buyer/payment/:orderId', builder: (_, s) => PaymentScreen(orderId: s.pathParameters['orderId']!)),
 
@@ -211,6 +216,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // ---- driver ----
       GoRoute(path: AppRoutes.driverHome, builder: (_, _) => const DriverHomeScreen()),
       GoRoute(path: '/driver/deliveries/:id', builder: (_, s) => DriverDeliveryDetailScreen(id: s.pathParameters['id']!)),
+      GoRoute(path: AppRoutes.driverRoute, builder: (_, _) => const DriverRouteScreen()),
 
       // ---- admin ----
       GoRoute(path: AppRoutes.adminHome, builder: (_, _) => const AdminHomeScreen()),

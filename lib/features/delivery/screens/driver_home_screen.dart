@@ -77,7 +77,15 @@ class _DeliveriesTab extends ConsumerWidget {
         automaticallyImplyLeading: false,
         leading: Navigator.canPop(context) ? const BackButton() : null,
         title: Text(t.navDeliveries),
-        actions: const [LanguageAction()],
+        actions: [
+          // Route planner (DRV-06): plot all open deliveries as stops.
+          IconButton(
+            tooltip: 'Plan route',
+            icon: const Icon(Icons.route_outlined),
+            onPressed: () => context.push(AppRoutes.driverRoute),
+          ),
+          const LanguageAction(),
+        ],
       ),
       body: RefreshableAsyncView<List<Delivery>>(
         value: deliveries,

@@ -219,6 +219,12 @@ class _AddressFormDialogState extends ConsumerState<_AddressFormDialog> {
   late final TextEditingController _phone;
   late final TextEditingController _line;
   String? _region;
+
+  /// GPS fix captured by detection — persisted with the address so it's a
+  /// drivable destination (a region name alone isn't).
+  double? _latitude;
+  double? _longitude;
+
   bool _detecting = false;
   String? _detectionMessage;
   bool _detectionError = false;
@@ -234,6 +240,8 @@ class _AddressFormDialogState extends ConsumerState<_AddressFormDialog> {
     _line = TextEditingController(text: a?.addressLine ?? '');
     _region = a?.region ??
         (user?.region != null && kCameroonRegions.contains(user!.region) ? user.region : null);
+    _latitude = a?.latitude;
+    _longitude = a?.longitude;
 
     // Ask for location permission up front so the app can help complete the
     // address automatically (the OS dialog appears once the form is shown).
@@ -297,7 +305,10 @@ class _AddressFormDialogState extends ConsumerState<_AddressFormDialog> {
         if (line.isNotEmpty) _line.text = line;
         final region = CameroonLocator.regionFromPlacemark(pm);
         if (region != null) _region = region;
-        _detectionMessage = 'Location detected in Cameroon — please confirm the details below.';
+        _latitude = result.latitude;
+        _longitude = result.longitude;
+        _detectionMessage =
+            'Location detected in Cameroon — GPS coordinates captured with this address.';
       }
     });
   }
@@ -312,6 +323,8 @@ class _AddressFormDialogState extends ConsumerState<_AddressFormDialog> {
         phone: _phone.text.trim(),
         region: _region ?? '',
         addressLine: _line.text.trim(),
+        latitude: _latitude,
+        longitude: _longitude,
         isDefault: widget.address?.isDefault ?? false,
       ),
     );

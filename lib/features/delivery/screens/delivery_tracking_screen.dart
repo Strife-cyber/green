@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../core/utils/formatters.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/router/app_router.dart';
+import '../../../core/utils/formatters.dart';
 import '../../chat/chat_actions.dart';
 import '../../../data/models/delivery.dart';
 import '../../../data/models/enums.dart';
@@ -75,7 +77,11 @@ class _DeliveryTrackingScreenState extends ConsumerState<DeliveryTrackingScreen>
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        LiveDeliveryMap(delivery: delivery, height: 280),
+        LiveDeliveryMap(
+          delivery: delivery,
+          height: 280,
+          onTap: () => context.push(AppRoutes.liveMap(widget.orderId)),
+        ),
         const SizedBox(height: 16),
         _statusRow(context, delivery),
         if (delivery.isPickupConfirmed && !delivery.isDelivered) ...[

@@ -13,10 +13,17 @@ class CameroonDetection {
   /// True when the detected country is Cameroon.
   final bool inCameroon;
 
+  /// The raw WGS84 fix, when a position was obtained. Persisted with the
+  /// address so it's a drivable destination, not just a region name.
+  final double? latitude;
+  final double? longitude;
+
   const CameroonDetection({
     this.placemark,
     this.detected = false,
     this.inCameroon = false,
+    this.latitude,
+    this.longitude,
   });
 }
 
@@ -52,6 +59,8 @@ abstract final class CameroonLocator {
         placemark: placemarks.first,
         detected: true,
         inCameroon: _isCameroon(placemarks.first),
+        latitude: position.latitude,
+        longitude: position.longitude,
       );
     } catch (_) {
       return const CameroonDetection();

@@ -151,6 +151,8 @@ class MockAddressRepository implements AddressRepository {
       phone: '655000001',
       region: 'Centre',
       addressLine: 'Bastos, Yaoundé',
+      latitude: 3.8667,
+      longitude: 11.5167,
       isDefault: true,
     ),
     const Address(
@@ -160,6 +162,8 @@ class MockAddressRepository implements AddressRepository {
       phone: '655000001',
       region: 'Littoral',
       addressLine: 'Akwa, Douala',
+      latitude: 4.0511,
+      longitude: 9.7679,
     ),
   ];
 
@@ -181,6 +185,8 @@ class MockAddressRepository implements AddressRepository {
       phone: input.phone,
       region: input.region,
       addressLine: input.addressLine,
+      latitude: input.latitude,
+      longitude: input.longitude,
       isDefault: input.isDefault,
     );
     _addresses.add(address);
@@ -198,6 +204,8 @@ class MockAddressRepository implements AddressRepository {
       phone: input.phone,
       region: input.region,
       addressLine: input.addressLine,
+      latitude: input.latitude,
+      longitude: input.longitude,
       isDefault: input.isDefault,
     );
     return _addresses[index];
@@ -221,6 +229,8 @@ class MockAddressRepository implements AddressRepository {
         phone: _addresses[i].phone,
         region: _addresses[i].region,
         addressLine: _addresses[i].addressLine,
+        latitude: _addresses[i].latitude,
+        longitude: _addresses[i].longitude,
         isDefault: isDefault,
       );
     }
@@ -490,6 +500,7 @@ class MockDeliveryRepository implements DeliveryRepository {
       currentLatitude: current.currentLatitude,
       currentLongitude: current.currentLongitude,
       locationUpdatedAt: current.locationUpdatedAt,
+      deliveryAddress: current.deliveryAddress,
     );
     store.deliveries[index] = updated;
     return updated;
@@ -514,6 +525,7 @@ class MockDeliveryRepository implements DeliveryRepository {
       currentLatitude: current.currentLatitude,
       currentLongitude: current.currentLongitude,
       locationUpdatedAt: current.locationUpdatedAt,
+      deliveryAddress: current.deliveryAddress,
     );
     store.deliveries[index] = updated;
     return updated;
@@ -542,6 +554,7 @@ class MockDeliveryRepository implements DeliveryRepository {
       currentLatitude: current.currentLatitude,
       currentLongitude: current.currentLongitude,
       locationUpdatedAt: current.locationUpdatedAt,
+      deliveryAddress: current.deliveryAddress,
     );
     store.deliveries[index] = updated;
     store.deliveryCodes.remove(id);

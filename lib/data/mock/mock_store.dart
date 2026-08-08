@@ -1,4 +1,5 @@
 import '../models/activity_log.dart';
+import '../models/address.dart';
 import '../models/app_notification.dart';
 import '../models/chat.dart';
 import '../models/delivery.dart';
@@ -186,6 +187,38 @@ final seedOrders = <Order>[
     placedAt: DateTime(2026, 7, 25, 9, 0),
     deliveredAt: DateTime(2026, 7, 25, 14, 20),
   ),
+  Order(
+    id: 'o-3',
+    buyerId: 'u-buyer-1',
+    sellerId: 'u-seller-1',
+    sellerName: 'Bello Farms',
+    status: OrderStatus.confirmed,
+    paymentStatus: PaymentStatus.unpaid,
+    subtotal: 4500,
+    deliveryFee: 500,
+    totalAmount: 5000,
+    deliveryAddressLabel: 'Bepanda',
+    items: [
+      OrderItem(orderId: 'o-3', productId: 'p-avocado', productName: 'Hass Avocados', unitPrice: 1500, quantityKg: 3, lineTotal: 4500),
+    ],
+    placedAt: DateTime(2026, 7, 31, 8, 45),
+  ),
+  Order(
+    id: 'o-4',
+    buyerId: 'u-buyer-1',
+    sellerId: 'u-seller-1',
+    sellerName: 'Bello Farms',
+    status: OrderStatus.confirmed,
+    paymentStatus: PaymentStatus.unpaid,
+    subtotal: 1800,
+    deliveryFee: 600,
+    totalAmount: 2400,
+    deliveryAddressLabel: 'Bonabéri',
+    items: [
+      OrderItem(orderId: 'o-4', productId: 'p-plantain', productName: 'Green Plantains', unitPrice: 450, quantityKg: 4, lineTotal: 1800),
+    ],
+    placedAt: DateTime(2026, 7, 31, 9, 15),
+  ),
 ];
 
 const seedThreads = <ChatThread>[
@@ -274,6 +307,9 @@ final seedReports = <Report>[
   ),
 ];
 
+/// Seeds three active deliveries so the driver's route map demos multiple
+/// stops (DRV-06). Each carries the order's destination coordinates — WGS84
+/// Douala neighbourhoods — which the backend now provides on every delivery.
 final seedDeliveries = <Delivery>[
   Delivery(
     id: 'd-1',
@@ -281,6 +317,52 @@ final seedDeliveries = <Delivery>[
     driverId: 'u-driver-1',
     driverName: 'Samuel Awa',
     assignedAt: DateTime(2026, 7, 30, 11, 0),
+    deliveryAddress: const Address(
+      id: 'a-1',
+      label: 'Home',
+      recipientName: 'Marie Ngon',
+      phone: '655000001',
+      region: 'Littoral',
+      addressLine: 'Akwa, Douala',
+      latitude: 4.0511,
+      longitude: 9.7679,
+      isDefault: true,
+    ),
+  ),
+  Delivery(
+    id: 'd-2',
+    orderId: 'o-3',
+    driverId: 'u-driver-1',
+    driverName: 'Samuel Awa',
+    assignedAt: DateTime(2026, 7, 31, 9, 30),
+    deliveryAddress: const Address(
+      id: 'a-3',
+      label: 'Bepanda',
+      recipientName: 'Marie Ngon',
+      phone: '655000001',
+      region: 'Littoral',
+      addressLine: 'Bepanda, Douala',
+      latitude: 4.0331,
+      longitude: 9.7534,
+    ),
+  ),
+  Delivery(
+    id: 'd-3',
+    orderId: 'o-4',
+    driverId: 'u-driver-1',
+    driverName: 'Samuel Awa',
+    pickupConfirmedAt: DateTime(2026, 7, 31, 10, 15),
+    assignedAt: DateTime(2026, 7, 31, 10, 0),
+    deliveryAddress: const Address(
+      id: 'a-4',
+      label: 'Bonabéri',
+      recipientName: 'Marie Ngon',
+      phone: '655000001',
+      region: 'Littoral',
+      addressLine: 'Bonabéri, Douala',
+      latitude: 4.0831,
+      longitude: 9.6880,
+    ),
   ),
 ];
 

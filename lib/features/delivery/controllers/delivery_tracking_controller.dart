@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../core/realtime/socket_service.dart';
@@ -32,7 +33,8 @@ class DeliveryTrackingState {
   final bool loading;
   final String? error;
 
-  /// True while the driver is publishing the mock position route.
+  /// True while the driver is publishing live position (device GPS, or the
+  /// simulated route fallback when GPS isn't available).
   final bool publishing;
 
   const DeliveryTrackingState({
@@ -45,10 +47,10 @@ class DeliveryTrackingState {
 
 /// Tracks a delivery's live position. The latest [Delivery] is loaded from the
 /// repository and polled every few seconds so pickup/deliver status stays
-/// fresh; `delivery.locationUpdated` socket events for the matching delivery
-/// are merged in as they arrive. The driver can also call [startPublishing] to
-/// walk a fixed mock route, keeping the demo visible before the backend socket
-/// is live (the mock socket connects to nothing, so all calls are guarded).
+/// fresh; `location:updated` socket events for the matching delivery are
+/// merged in as they arrive. The driver can call [startPublishing] to share
+/// their device GPS, falling back to a simulated Douala route when location
+/// isn't available so the demo still moves (all socket calls are guarded).
 class DeliveryTrackingController
     extends FamilyNotifier<DeliveryTrackingState, DeliveryTrackingRequest> {
   static const _pollInterval = Duration(seconds: 5);
@@ -66,6 +68,7 @@ class DeliveryTrackingController
   Timer? _pollTimer;
   Timer? _publishTimer;
   StreamSubscription<Map<String, dynamic>>? _socketSub;
+  StreamSubscription<Position>? _gpsSub;
   int _routeIndex = 0;
   bool _disposed = false;
 
@@ -96,22 +99,106 @@ class DeliveryTrackingController
   /// a pickup/deliver action).
   Future<void> refreshNow() => _refresh();
 
-  /// Begins publishing the driver's mock position every few seconds, updating
-  /// local state and broadcasting `delivery.locationUpdated` to followers.
-  void startPublishing() {
+  /// Begins publishing the driver's live device GPS, updating local state and
+  /// broadcasting `location:update` to followers. When location permission is
+  /// denied, GPS is off or the stream errors, it falls back to the simulated
+  /// Douala route so the demo never breaks.
+  Future<void> startPublishing() async {
     if (state.publishing) return;
     state = DeliveryTrackingState(delivery: state.delivery, publishing: true);
-    _tick();
     _publishTimer?.cancel();
-    _publishTimer = Timer.periodic(_publishInterval, (_) => _tick());
+    _gpsSub?.cancel();
+
+    if (!await _locationPermissionGranted()) {
+      if (_disposed) return;
+      _startSimulatedRoute();
+      return;
+    }
+    if (_disposed) return;
+    try {
+      _gpsSub = Geolocator.getPositionStream(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 3, // meters — trims jitter while still following roads
+        ),
+      ).listen(
+        _onGpsPosition,
+        onError: (Object _) => _startSimulatedRoute(),
+        onDone: _startSimulatedRoute,
+      );
+    } catch (_) {
+      _startSimulatedRoute();
+    }
   }
 
-  /// Stops publishing the mock position (e.g. once delivered).
+  /// Stops publishing position (GPS stream + any fallback timer).
   void stopPublishing() {
     _publishTimer?.cancel();
     _publishTimer = null;
+    _gpsSub?.cancel();
+    _gpsSub = null;
     if (!state.publishing) return;
     state = DeliveryTrackingState(delivery: state.delivery, publishing: false);
+  }
+
+  Future<bool> _locationPermissionGranted() async {
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) return false;
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      return permission == LocationPermission.whileInUse ||
+          permission == LocationPermission.always;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _onGpsPosition(Position position) {
+    final current = state.delivery;
+    if (current == null || current.isDelivered) {
+      stopPublishing();
+      return;
+    }
+    final updated = _withCoords(
+      current,
+      position.latitude,
+      position.longitude,
+      position.timestamp.toLocal(),
+    );
+    state = DeliveryTrackingState(delivery: updated, publishing: true);
+    _emitLocation(updated);
+  }
+
+  /// Steps the hardcoded Douala route — used only when real GPS is
+  /// unavailable, so the tracking demo still moves.
+  void _startSimulatedRoute() {
+    if (!state.publishing) return; // already stopped
+    _gpsSub?.cancel();
+    _gpsSub = null;
+    _routeIndex = 0;
+    _publishTimer?.cancel();
+    _tick();
+    _publishTimer = Timer.periodic(_publishInterval, (_) => _tick());
+  }
+
+  /// Broadcasts a position so buyers/sellers following the order see movement
+  /// (real protocol: `location:update` with lat/lng).
+  void _emitLocation(Delivery updated) {
+    try {
+      ref.read(socketServiceProvider).emit(
+            'location:update',
+            {
+              'deliveryId': updated.id,
+              'latitude': updated.currentLatitude,
+              'longitude': updated.currentLongitude,
+            },
+            namespace: SocketService.deliveriesNamespace,
+          );
+    } catch (_) {
+      // Socket unavailable — ignore.
+    }
   }
 
   Future<void> _refresh() async {
@@ -181,26 +268,13 @@ class DeliveryTrackingController
     final updatedAt = DateTime.now();
     final updated = _withCoords(current, point.latitude, point.longitude, updatedAt);
     state = DeliveryTrackingState(delivery: updated, publishing: true);
-    // Broadcast so buyers/sellers following the order see the movement
-    // (real protocol: `location:update` with lat/lng).
-    try {
-      ref.read(socketServiceProvider).emit(
-            'location:update',
-            {
-              'deliveryId': updated.id,
-              'latitude': updated.currentLatitude,
-              'longitude': updated.currentLongitude,
-            },
-            namespace: SocketService.deliveriesNamespace,
-          );
-    } catch (_) {
-      // Socket unavailable — ignore.
-    }
+    _emitLocation(updated);
   }
 
   void _dispose() {
     _pollTimer?.cancel();
     _publishTimer?.cancel();
+    _gpsSub?.cancel();
     _socketSub?.cancel();
   }
 
@@ -215,6 +289,7 @@ class DeliveryTrackingController
         currentLatitude: lat ?? d.currentLatitude,
         currentLongitude: lng ?? d.currentLongitude,
         locationUpdatedAt: at ?? d.locationUpdatedAt,
+        deliveryAddress: d.deliveryAddress,
       );
 }
 

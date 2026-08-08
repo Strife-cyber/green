@@ -1,3 +1,5 @@
+import 'address.dart';
+
 /// A delivery assignment with live driver position (DEL-02/03, DRV-03/04).
 class Delivery {
   final String id;
@@ -11,6 +13,11 @@ class Delivery {
   final double? currentLongitude;
   final DateTime? locationUpdatedAt;
 
+  /// The order's destination (DRV-06). The backend nests it under `order` as
+  /// `deliveryAddress` with WGS84 `latitude`/`longitude` (may be null when the
+  /// order has no saved address). Drives the route planner.
+  final Address? deliveryAddress;
+
   const Delivery({
     required this.id,
     required this.orderId,
@@ -22,10 +29,19 @@ class Delivery {
     this.currentLatitude,
     this.currentLongitude,
     this.locationUpdatedAt,
+    this.deliveryAddress,
   });
 
   bool get isPickupConfirmed => pickupConfirmedAt != null;
   bool get isDelivered => deliveredAt != null;
+
+  /// Destination coordinates, when the order's saved address has them.
+  double? get destinationLatitude => deliveryAddress?.latitude;
+  double? get destinationLongitude => deliveryAddress?.longitude;
+
+  /// True when this delivery has a drivable destination (a coordinate is a
+  /// requirement for route planning — a region name alone isn't).
+  bool get hasDestination => destinationLatitude != null && destinationLongitude != null;
 
   /// Parses the backend `DeliveryListItemDto` — camelCase.
   factory Delivery.fromJson(Map<String, dynamic> json) => Delivery(
@@ -39,7 +55,21 @@ class Delivery {
         currentLatitude: _toDoubleOrNull(json['currentLatitude'] ?? json['current_latitude']),
         currentLongitude: _toDoubleOrNull(json['currentLongitude'] ?? json['current_longitude']),
         locationUpdatedAt: _dateOrNull(json['locationUpdatedAt'] ?? json['location_updated_at']),
+        deliveryAddress: _deliveryAddressFrom(json['order'] ?? json),
       );
+
+  /// The destination lives under the nested `order` object in the delivery
+  /// payload; fall back to a flat `deliveryAddress` for older responses.
+  static Address? _deliveryAddressFrom(dynamic raw) {
+    if (raw is! Map<String, dynamic>) return null;
+    final address = raw['deliveryAddress'] ?? raw['delivery_address'];
+    if (address is! Map<String, dynamic>) return null;
+    try {
+      return Address.fromJson(address);
+    } catch (_) {
+      return null; // Malformed destination — treat as no address.
+    }
+  }
 
   static double? _toDoubleOrNull(dynamic value) {
     if (value == null) return null;
