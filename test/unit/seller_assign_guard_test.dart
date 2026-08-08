@@ -91,5 +91,40 @@ void main() {
       expect(drivers.every((d) => d.role == UserRole.driver), isTrue);
       expect(drivers.first.fullName, isNotEmpty);
     });
+
+    test('updateStatus does not clobber an assigned delivery (guard stays open)',
+        () async {
+      final store = MockStore();
+      final deliveryRepo = MockDeliveryRepository(store);
+      final orderRepo = MockOrderRepository(store);
+
+      store.orders.insert(
+        0,
+        Order(
+          id: 'o-status-guard',
+          buyerId: 'u-buyer-1',
+          sellerId: 'u-seller-1',
+          status: OrderStatus.pending,
+          paymentStatus: PaymentStatus.unpaid,
+          subtotal: 3000,
+          deliveryFee: 500,
+          totalAmount: 3500,
+          items: const [],
+          placedAt: DateTime(2026, 8, 1),
+        ),
+      );
+
+      // Seller assigns a driver, then confirms the order — as in the live flow
+      // where PATCH /orders/:id/status returns a payload without `delivery`.
+      final delivery = await deliveryRepo.assign('o-status-guard', 'u-driver-1');
+      final updated = await orderRepo.updateStatus(
+        'o-status-guard',
+        OrderStatus.confirmed,
+      );
+
+      // The guard source survives the status transition.
+      expect(updated.deliveryId, delivery.id);
+      expect(updated.deliveryDriverName, delivery.driverName);
+    });
   });
 }
