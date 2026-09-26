@@ -32,6 +32,10 @@ abstract class AuthRepository {
 
   /// Resends the email-verification link to the given address (AUTH-03).
   Future<void> resendVerification(String email);
+
+  /// One-shot `GET /auth/me` poll — true once the backend reports the current
+  /// account's email as verified (D7 browse-only gate lifts).
+  Future<bool> emailVerified();
 }
 
 /// Sign-up payload (AUTH-01). Sellers additionally provide farm details and

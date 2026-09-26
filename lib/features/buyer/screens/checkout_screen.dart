@@ -9,6 +9,7 @@ import '../../../shared/widgets/amount_text.dart';
 import '../../../shared/widgets/async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../theme/app_colors.dart';
+import '../../auth/controllers/auth_controller.dart';
 import '../controllers/address_controller.dart';
 import '../controllers/buyer_order_list_controller.dart';
 import '../controllers/cart_controller.dart';
@@ -129,6 +130,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     Map<String, List<CartLine>> groups,
     Address address,
   ) async {
+    // D7: browsing is free for unverified accounts, but placing an order is
+    // the one action that requires a verified email — the banner's Resend /
+    // check-status affordances live above the app shell.
+    if (ref.read(authControllerProvider).valueOrNull?.user?.emailVerified ==
+        false) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.t.verifyToOrderHint)),
+      );
+      return;
+    }
     final result = await ref
         .read(checkoutControllerProvider.notifier)
         .submit(

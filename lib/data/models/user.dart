@@ -41,6 +41,29 @@ class User {
 
   String get fullName => '$firstName $lastName';
 
+  User copyWith({
+    String? firstName,
+    String? lastName,
+    String? phone,
+    String? region,
+    double? latitude,
+    double? longitude,
+    bool? emailVerified,
+  }) => User(
+        id: id,
+        firstName: firstName ?? this.firstName,
+        lastName: lastName ?? this.lastName,
+        email: email,
+        phone: phone ?? this.phone,
+        role: role,
+        adminRole: adminRole,
+        region: region ?? this.region,
+        latitude: latitude ?? this.latitude,
+        longitude: longitude ?? this.longitude,
+        emailVerified: emailVerified ?? this.emailVerified,
+        createdAt: createdAt,
+      );
+
   /// Parses the backend user DTO — all fields are camelCase (`firstName`,
   /// `emailVerified`, `adminRole`, …).
   factory User.fromJson(Map<String, dynamic> json) => User(

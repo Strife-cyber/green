@@ -30,6 +30,17 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   Timer? _cooldownTimer;
 
   @override
+  void initState() {
+    super.initState();
+    // Deep link from the verification email (/verify-email?token=…): consume
+    // the token once, then poll the status so the gate lifts on its own.
+    final token = GoRouterState.of(context).uri.queryParameters['token'];
+    if (token != null && token.isNotEmpty) {
+      unawaited(_verifyFromLink(token));
+    }
+  }
+
+  @override
   void dispose() {
     _cooldownTimer?.cancel();
     super.dispose();
@@ -57,13 +68,41 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     }
   }
 
+  Future<void> _verifyFromLink(String token) async {
+    try {
+      await ref.read(authControllerProvider.notifier).verifyEmailToken(token);
+      if (!mounted) return;
+      final verified =
+          await ref.read(authControllerProvider.notifier).checkEmailVerification();
+      if (!mounted) return;
+      if (verified) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Your email is verified — welcome!')),
+        );
+        context.go(
+          AppRoutes.homeFor(ref.read(authControllerProvider).valueOrNull!.user!.role),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('This verification link is invalid or has expired.'),
+          ),
+        );
+      }
+    }
+  }
+
+  /// One-shot `GET /auth/me` poll per tap — no provider invalidate, so the
+  /// router never bounces through splash mid-check (that was the old
+  /// check-status loop).
   Future<void> _checkStatus() async {
     setState(() => _resending = true);
-    await ref.read(authControllerProvider.notifier).refreshSession();
+    final verified =
+        await ref.read(authControllerProvider.notifier).checkEmailVerification();
     if (!mounted) return;
     setState(() => _resending = false);
-    final verified =
-        ref.read(authControllerProvider).valueOrNull?.user?.emailVerified ?? false;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -139,10 +178,16 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
             child: Text(context.t.checkVerificationStatus),
           ),
           const SizedBox(height: 4),
-          TextButton(
-            onPressed: () => context.go(AppRoutes.login),
-            child: const Text('Back to sign in'),
-          ),
+          if (user != null)
+            TextButton(
+              onPressed: () => context.go(AppRoutes.homeFor(user.role)),
+              child: const Text('Continue browsing'),
+            )
+          else
+            TextButton(
+              onPressed: () => context.go(AppRoutes.login),
+              child: const Text('Back to sign in'),
+            ),
         ],
       ),
     );

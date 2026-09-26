@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/utils/money.dart';
 import '../../../core/utils/validators.dart';
 import '../../../data/models/enums.dart';
 import '../../../shared/widgets/form_text_field.dart';
 import '../../../theme/app_colors.dart';
+import '../../auth/controllers/auth_controller.dart';
 import '../controllers/withdrawal_controller.dart';
 import '../controllers/wallet_controller.dart';
-import '../services/wallet_pin_service.dart';
-import '../widgets/wallet_pin_dialogs.dart';
 
 /// Request a wallet withdrawal (PAY-05).
 class WithdrawalScreen extends ConsumerStatefulWidget {
@@ -26,10 +26,45 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
   WithdrawalChannel _channel = WithdrawalChannel.mtnMomo;
 
   @override
+  void initState() {
+    super.initState();
+    // Click-diet: prefill the payout number from the account profile and pick
+    // the matching MoMo/OM channel when the prefix maps cleanly.
+    final phone = ref.read(authControllerProvider).valueOrNull?.user?.phone;
+    if (phone != null && phone.isNotEmpty) {
+      _account.text = phone;
+      _channel = _channelForPhone(phone) ?? _channel;
+    }
+  }
+
+  @override
   void dispose() {
     _amount.dispose();
     _account.dispose();
     super.dispose();
+  }
+
+  /// Cameroon carrier heuristic: MTN MoMo = 65x–654, 67x, 680–684; Orange
+  /// Money = 655–659, 69x, 685–689. Returns null when the number is not
+  /// confidently one or the other (foreign format, landline).
+  static WithdrawalChannel? _channelForPhone(String phone) {
+    final digits = phone.replaceAll(RegExp(r'\D'), '');
+    final local = digits.startsWith('237') ? digits.substring(3) : digits;
+    if (local.length != 9) return null;
+    final prefix3 = int.tryParse(local.substring(0, 3));
+    final prefix2 = int.tryParse(local.substring(0, 2));
+    if (prefix3 == null || prefix2 == null) return null;
+    if (prefix2 == 67 ||
+        (prefix3 >= 650 && prefix3 <= 654) ||
+        (prefix3 >= 680 && prefix3 <= 684)) {
+      return WithdrawalChannel.mtnMomo;
+    }
+    if (prefix2 == 69 ||
+        (prefix3 >= 655 && prefix3 <= 659) ||
+        (prefix3 >= 685 && prefix3 <= 689)) {
+      return WithdrawalChannel.orangeMoney;
+    }
+    return null;
   }
 
   Future<void> _submit() async {
@@ -42,14 +77,23 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
       );
       return;
     }
-    // Wallet-PIN gate before the request leaves the device (PAY-10). Client-side
-    // enforcement for the demo; verification moves server-side at hand-off.
-    final authorized = await authorizeWalletAction(context, ref.read(walletPinServiceProvider));
-    if (!authorized || !mounted) return;
+    // The account password replaces the client-side wallet PIN here: the
+    // backend verifies it (bcrypt) inside POST /withdrawals and answers
+    // "incorrect password" on mismatch — surfaced verbatim via the controller.
+    final password = await showDialog<String>(
+      context: context,
+      builder: (context) => _WithdrawalConfirmDialog(
+        amount: amount,
+        channel: _channel,
+        accountReference: _account.text.trim(),
+      ),
+    );
+    if (password == null || password.isEmpty || !mounted) return;
     await ref.read(withdrawalControllerProvider.notifier).request(
           amount: amount,
           channel: _channel,
           accountReference: _account.text,
+          password: password,
         );
   }
 
@@ -138,5 +182,76 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
     if (amount == null || amount <= 0) return 'Enter a valid amount.';
     if (amount < 2000) return 'Minimum withdrawal is 2 000 FCFA.';
     return null;
+  }
+}
+
+/// Confirm dialog — recaps the request and collects the account password the
+/// backend verifies before accepting the withdrawal (PAY-05).
+class _WithdrawalConfirmDialog extends StatefulWidget {
+  final int amount;
+  final WithdrawalChannel channel;
+  final String accountReference;
+
+  const _WithdrawalConfirmDialog({
+    required this.amount,
+    required this.channel,
+    required this.accountReference,
+  });
+
+  @override
+  State<_WithdrawalConfirmDialog> createState() => _WithdrawalConfirmDialogState();
+}
+
+class _WithdrawalConfirmDialogState extends State<_WithdrawalConfirmDialog> {
+  final _password = TextEditingController();
+
+  @override
+  void dispose() {
+    _password.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AlertDialog(
+      title: const Text('Confirm withdrawal'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${formatMoney(widget.amount)} → ${widget.channel.label} '
+            '(${widget.accountReference})',
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _password,
+            autofocus: true,
+            obscureText: true,
+            textInputAction: TextInputAction.done,
+            decoration: const InputDecoration(
+              labelText: 'Account password',
+              prefixIcon: Icon(Icons.lock_outline),
+            ),
+            onSubmitted: (_) => _confirm(),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(onPressed: _confirm, child: const Text('Withdraw')),
+      ],
+    );
+  }
+
+  void _confirm() {
+    final password = _password.text;
+    if (password.isEmpty) return;
+    Navigator.pop(context, password);
   }
 }
