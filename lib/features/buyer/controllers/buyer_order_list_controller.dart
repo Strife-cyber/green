@@ -8,9 +8,9 @@ import '../../auth/controllers/auth_controller.dart';
 class BuyerOrderListController extends AsyncNotifier<List<Order>> {
   @override
   Future<List<Order>> build() async {
-    final userId = ref.watch(authControllerProvider).valueOrNull?.user?.id;
-    final orders = await ref.watch(orderRepositoryProvider).buyerOrders();
+    final userId = ref.watch(currentUserIdProvider);
     if (userId == null) return const [];
+    final orders = await ref.watch(orderRepositoryProvider).buyerOrders();
     return [
       for (final order in orders)
         if (order.buyerId == userId) order,

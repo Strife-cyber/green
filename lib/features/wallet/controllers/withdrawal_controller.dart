@@ -4,6 +4,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../data/models/enums.dart';
 import '../../../data/repositories/providers.dart';
 import '../../../data/repositories/withdrawal_repository.dart';
+import '../../auth/controllers/auth_controller.dart';
 
 /// Flow state of a wallet withdrawal request.
 sealed class WithdrawalState {
@@ -30,7 +31,11 @@ class WithdrawalError extends WithdrawalState {
 /// Submits a wallet withdrawal request (PAY-05).
 class WithdrawalController extends Notifier<WithdrawalState> {
   @override
-  WithdrawalState build() => const WithdrawalIdle();
+  WithdrawalState build() {
+    // Resets leftover submit/error state on account switch.
+    ref.watch(currentUserIdProvider);
+    return const WithdrawalIdle();
+  }
 
   Future<void> request({
     required int amount,

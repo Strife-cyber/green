@@ -239,3 +239,13 @@ class AuthController extends AsyncNotifier<AuthState> {
 
 final authControllerProvider =
     AsyncNotifierProvider<AuthController, AuthState>(AuthController.new);
+
+/// The signed-in user's id, or null while unauthenticated. User-scoped
+/// providers watch THIS (not the full auth state) so they only rebuild on an
+/// actual account switch — logout, login, session expiry — instead of
+/// refetching on every auth emission (e.g. the verify banner's status check).
+final currentUserIdProvider = Provider<String?>(
+  (ref) => ref.watch(
+    authControllerProvider.select((a) => a.valueOrNull?.user?.id),
+  ),
+);

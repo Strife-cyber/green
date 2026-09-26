@@ -27,9 +27,11 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 }
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
-  /// Flat per-seller delivery fee in FCFA. Charged once per seller group, but
-  /// shown to the buyer as a single line so the split stays invisible.
-  static const int deliveryFee = 500;
+  /// Per-seller delivery fee sent on order creation. The backend currently
+  /// persists `delivery_fee: 0` and charges the subtotal only (the fee rule
+  /// isn't decided yet), so the summary shows "set at order" instead of a
+  /// phantom amount and the displayed total always equals the charge.
+  static const int deliveryFee = 0;
 
   String? _selectedAddressId;
 
@@ -301,8 +303,10 @@ class _AddressCard extends StatelessWidget {
 }
 
 /// A single order-style summary of the whole cart: every line item, one
-/// subtotal, one delivery fee, one total. The seller grouping is only used to
+/// subtotal, one delivery line, one total. The seller grouping is only used to
 /// charge the correct flat fee per seller — the buyer never sees the split.
+/// Until the backend computes a fee, the delivery line reads "set at order"
+/// and the total is exactly what payment charges.
 class _CheckoutSummaryCard extends StatelessWidget {
   final Map<String, List<CartLine>> groups;
   final int deliveryFee;
@@ -341,7 +345,20 @@ class _CheckoutSummaryCard extends StatelessWidget {
               ],
             const Divider(),
             _priceRow(context, t.subtotal, subtotal),
-            _priceRow(context, t.delivery, deliveryTotal),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(t.delivery, style: theme.textTheme.bodyMedium),
+                  Text(
+                    'Set at order',
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(color: AppColors.tanDark),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 4),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

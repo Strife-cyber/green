@@ -101,18 +101,28 @@ class _AuthInterceptor extends Interceptor {
       return;
     }
 
+    AuthSession session;
     try {
-      final session = await _refreshOnce(refreshToken);
+      session = await _refreshOnce(refreshToken);
       await _tokens.saveSession(session);
-      // Replay the original request with the fresh token. The flag prevents an
-      // endless 401 → refresh → retry loop if the retry is rejected too.
-      err.requestOptions.extra[extraRetried] = true;
-      final retry = await _dio.fetch(err.requestOptions);
-      handler.resolve(retry);
     } catch (_) {
       // Refresh rejected — the session can't be salvaged.
       await _safeClear();
       handler.next(err);
+      return;
+    }
+
+    // The refresh succeeded, so the session is still valid — replay the
+    // original request with the fresh token. The flag prevents an endless
+    // 401 → refresh → retry loop. A 401 on the retry is a business rejection
+    // (e.g. a wrong withdrawal password), not an expired session: surface it
+    // as the response error, never clear the session.
+    err.requestOptions.extra[extraRetried] = true;
+    try {
+      final retry = await _dio.fetch(err.requestOptions);
+      handler.resolve(retry);
+    } on DioException catch (retryError) {
+      handler.next(retryError);
     }
   }
 

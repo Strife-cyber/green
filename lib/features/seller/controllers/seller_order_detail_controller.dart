@@ -4,6 +4,7 @@ import '../../../data/models/delivery.dart';
 import '../../../data/models/enums.dart';
 import '../../../data/models/order.dart';
 import '../../../data/repositories/providers.dart';
+import '../../auth/controllers/auth_controller.dart';
 
 /// Deliveries assigned in this app session, keyed by order id. The live backend
 /// has not always redeployed the `delivery` include on `GET /orders/:id`, so
@@ -11,12 +12,21 @@ import '../../../data/repositories/providers.dart';
 /// `assign()` even when a status update or refetch returns an order without the
 /// nested delivery. Once the backend echoes `delivery`, its value wins.
 final assignedDeliveriesProvider =
-    StateProvider<Map<String, Delivery>>((ref) => const {});
+    StateProvider<Map<String, Delivery>>((ref) {
+  // Session-scoped cache — reset when the account switches.
+  ref.watch(currentUserIdProvider);
+  return const {};
+});
 
 /// Loads a single seller order and drives its status transitions (SELL-03).
 class SellerOrderDetailController extends FamilyAsyncNotifier<Order, String> {
   @override
   Future<Order> build(String arg) async {
+    // Scoped to the signed-in user — a logout → login refetches instead of
+    // serving the previous seller's cached order.
+    if (ref.watch(currentUserIdProvider) == null) {
+      throw StateError('signed out');
+    }
     final order = await ref.watch(orderRepositoryProvider).get(arg);
     return _mergeAssigned(order);
   }

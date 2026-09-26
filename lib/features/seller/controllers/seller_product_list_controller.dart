@@ -10,7 +10,7 @@ import '../../auth/controllers/auth_controller.dart';
 class SellerProductListController extends AutoDisposeAsyncNotifier<List<Product>> {
   @override
   Future<List<Product>> build() async {
-    final userId = ref.watch(authControllerProvider).valueOrNull?.user?.id;
+    final userId = ref.watch(currentUserIdProvider);
     if (userId == null) return const [];
     final page = await ref.watch(productRepositoryProvider).list(page: 1, pageSize: 100);
     return [for (final p in page.items) if (p.sellerId == userId) p];

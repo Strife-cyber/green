@@ -3,11 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/order.dart';
 import '../../../data/models/user.dart';
 import '../../../data/repositories/providers.dart';
+import '../../auth/controllers/auth_controller.dart';
 
-/// All DRIVER accounts, for admin oversight (ADM-08, D6).
+/// All DRIVER accounts, for admin oversight (ADM-08, D6). Scoped to the
+/// signed-in user.
 class AdminDriversController extends AsyncNotifier<List<User>> {
   @override
-  Future<List<User>> build() => ref.watch(adminRepositoryProvider).drivers();
+  Future<List<User>> build() async {
+    if (ref.watch(currentUserIdProvider) == null) {
+      return const [];
+    }
+    return ref.watch(adminRepositoryProvider).drivers();
+  }
 
   /// Re-fetches the list (pull-to-refresh / after creating a driver).
   Future<void> refresh() async {

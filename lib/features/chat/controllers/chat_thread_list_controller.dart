@@ -17,6 +17,12 @@ class ChatThreadListController extends AsyncNotifier<List<ChatThread>> {
 
   @override
   Future<List<ChatThread>> build() async {
+    // Scoped to the signed-in user — watching auth rebuilds on logout/login so
+    // a different account never sees the previous one's threads (and we skip
+    // connecting the socket while signed out).
+    if (ref.watch(currentUserIdProvider) == null) {
+      return const [];
+    }
     final socket = ref.read(socketServiceProvider);
     // Connect (awaiting session restore on cold start) — the root namespace
     // already carries the auth handshake. No rooms are joined here: the list

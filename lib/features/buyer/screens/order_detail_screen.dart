@@ -427,11 +427,17 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final t = context.t;
     final unpaid = order.paymentStatus == PaymentStatus.unpaid;
     final pending = order.status == OrderStatus.pending;
+    final cancelled = order.status == OrderStatus.cancelled;
     final shipped = order.status == OrderStatus.shipped;
     final delivered = order.status == OrderStatus.delivered;
 
+    // Gate on BOTH fields — a cancelled order stays UNPAID (mustn't offer
+    // Pay) and a paid-but-pending order mustn't offer Cancel.
+    final canCancel = pending && unpaid;
+    final canPay = unpaid && !cancelled;
+
     final buttons = <Widget>[];
-    if (pending) {
+    if (canCancel) {
       buttons.add(
         OutlinedButton.icon(
           onPressed: () => _cancelOrder(order),
@@ -444,7 +450,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         ),
       );
     }
-    if (unpaid) {
+    if (canPay) {
       buttons.add(
         FilledButton.icon(
           onPressed: () => context.push(AppRoutes.payment(order.id)),
