@@ -33,6 +33,9 @@ class Cart {
   /// Number of distinct product lines.
   int get itemCount => lines.length;
 
+  /// Total kilograms across every line (a "1 item" cart can hold many kg).
+  double get totalKg => lines.fold(0, (sum, line) => sum + line.quantityKg);
+
   /// Sum of every line total in FCFA.
   int get subtotal => lines.fold(0, (sum, line) => sum + line.lineTotal);
 }
@@ -56,18 +59,19 @@ class CartController extends Notifier<Cart> {
   }
 
   void add(Product product, double quantityKg) {
+    if (product.quantityKg <= 0) return; // Sold out — nothing to add.
     final index = state.lines.indexWhere((l) => l.product.id == product.id);
     final List<CartLine> lines;
     if (index >= 0) {
-      final current = state.lines[index];
       lines = [...state.lines];
-      lines[index] = current.copyWith(
-        quantityKg: (current.quantityKg + quantityKg).clamp(0.5, _stockLimit(product)).toDouble(),
-      );
+      lines[index] = _capped(lines[index], lines[index].quantityKg + quantityKg);
     } else {
       lines = [
         ...state.lines,
-        CartLine(product: product, quantityKg: quantityKg.clamp(0.5, _stockLimit(product)).toDouble()),
+        CartLine(
+          product: product,
+          quantityKg: quantityKg.clamp(0.5, product.quantityKg).toDouble(),
+        ),
       ];
     }
     state = Cart(lines: lines);
@@ -78,10 +82,27 @@ class CartController extends Notifier<Cart> {
     state = Cart(lines: [
       for (final line in state.lines)
         if (line.product.id == productId)
-          line.copyWith(quantityKg: quantityKg.clamp(0.5, _stockLimit(line.product)).toDouble())
+          _capped(line, quantityKg)
         else
           line,
     ]);
+    _persist();
+  }
+
+  /// Removes every line matching [test] (used to drop exactly the lines that
+  /// became orders during a partial checkout).
+  void removeLinesWhere(bool Function(CartLine) test) {
+    state = Cart(lines: [
+      for (final line in state.lines)
+        if (!test(line)) line,
+    ]);
+    _persist();
+  }
+
+  /// Re-inserts [lines] (e.g. an "Undo clear cart" action).
+  void restore(List<CartLine> lines) {
+    if (lines.isEmpty) return;
+    state = Cart(lines: lines);
     _persist();
   }
 
@@ -129,8 +150,14 @@ class CartController extends Notifier<Cart> {
     }
   }
 
-  double _stockLimit(Product product) =>
-      product.quantityKg > 0 ? product.quantityKg : 1000;
+  /// Caps a line at the product's live stock. A sold-out product (0 kg) keeps
+  /// its existing quantity untouched — never lets the stepper write beyond 0.
+  CartLine _capped(CartLine line, double quantityKg) {
+    if (line.product.quantityKg <= 0) return line;
+    return line.copyWith(
+      quantityKg: quantityKg.clamp(0.5, line.product.quantityKg).toDouble(),
+    );
+  }
 
   Map<String, dynamic> _lineToJson(CartLine line) => {
         'product_id': line.product.id,

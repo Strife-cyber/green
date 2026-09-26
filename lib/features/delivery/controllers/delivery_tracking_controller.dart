@@ -83,10 +83,10 @@ class DeliveryTrackingController
   DeliveryTrackingState build(DeliveryTrackingRequest request) {
     _disposed = false;
     final socket = ref.read(socketServiceProvider);
-    final token = ref.read(authControllerProvider).valueOrNull?.session?.accessToken;
-    // Join the deliveries room so the driver's live position reaches this
-    // device (auto re-joined on reconnect).
-    socket.connect(token: token ?? '', namespace: SocketService.deliveriesNamespace);
+    // Connect (awaiting session restore on cold start, so the token is never
+    // empty) and join the deliveries room — rooms are re-joined automatically
+    // on any reconnect.
+    unawaited(socket.connectWhenAuthed(ref, namespace: SocketService.deliveriesNamespace));
     if (request.deliveryId != null) {
       socket.joinRoom(SocketService.deliveriesNamespace, {'deliveryId': request.deliveryId!});
     }
@@ -309,18 +309,10 @@ class DeliveryTrackingController
     _socketSub?.cancel();
   }
 
-  Delivery _withCoords(Delivery d, double? lat, double? lng, DateTime? at) => Delivery(
-        id: d.id,
-        orderId: d.orderId,
-        driverId: d.driverId,
-        driverName: d.driverName,
-        assignedAt: d.assignedAt,
-        pickupConfirmedAt: d.pickupConfirmedAt,
-        deliveredAt: d.deliveredAt,
+  Delivery _withCoords(Delivery d, double? lat, double? lng, DateTime? at) => d.copyWith(
         currentLatitude: lat ?? d.currentLatitude,
         currentLongitude: lng ?? d.currentLongitude,
         locationUpdatedAt: at ?? d.locationUpdatedAt,
-        deliveryAddress: d.deliveryAddress,
       );
 }
 

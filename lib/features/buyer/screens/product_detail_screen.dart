@@ -85,6 +85,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
   Widget _buildContent(BuildContext context, Product product) {
     final theme = Theme.of(context);
+    final soldOut = product.quantityKg <= 0;
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,10 +117,19 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'Available: ${_trimKg(product.quantityKg)} kg',
-                  style: theme.textTheme.bodySmall?.copyWith(color: AppColors.tanDark),
-                ),
+                if (soldOut)
+                  Text(
+                    'Out of stock',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.orangeDark,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  )
+                else
+                  Text(
+                    'Available: ${_trimKg(product.quantityKg)} kg',
+                    style: theme.textTheme.bodySmall?.copyWith(color: AppColors.tanDark),
+                  ),
                 if (product.description != null) ...[
                   const SizedBox(height: 16),
                   Text('Description', style: theme.textTheme.titleSmall),
@@ -127,19 +137,20 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   Text(product.description!, style: theme.textTheme.bodyMedium),
                 ],
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Text('Quantity', style: theme.textTheme.titleSmall),
-                    const Spacer(),
-                    QuantityStepper(
-                      value: _quantityKg,
-                      step: 0.5,
-                      min: 0.5,
-                      max: product.quantityKg > 0 ? product.quantityKg : 1000,
-                      onChanged: (value) => setState(() => _quantityKg = value),
-                    ),
-                  ],
-                ),
+                if (!soldOut)
+                  Row(
+                    children: [
+                      Text('Quantity', style: theme.textTheme.titleSmall),
+                      const Spacer(),
+                      QuantityStepper(
+                        value: _quantityKg,
+                        step: 0.5,
+                        min: 0.5,
+                        max: product.quantityKg,
+                        onChanged: (value) => setState(() => _quantityKg = value),
+                      ),
+                    ],
+                  ),
                 const SizedBox(height: 16),
                 _SellerCard(
                   sellerId: product.sellerId,
@@ -147,9 +158,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 ),
                 const SizedBox(height: 20),
                 FilledButton.icon(
-                  onPressed: () => _addToCart(product),
-                  icon: const Icon(Icons.add_shopping_cart),
-                  label: const Text('Add to cart'),
+                  onPressed: soldOut ? null : () => _addToCart(product),
+                  icon: Icon(soldOut ? Icons.block : Icons.add_shopping_cart),
+                  label: Text(soldOut ? 'Out of stock' : 'Add to cart'),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),

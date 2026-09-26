@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../core/utils/formatters.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../chat/chat_actions.dart';
 import '../../../data/models/delivery.dart';
+import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/async_view.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../../../theme/app_colors.dart';
@@ -11,9 +11,9 @@ import '../controllers/delivery_tracking_controller.dart';
 import '../controllers/driver_delivery_detail_controller.dart';
 import '../widgets/live_delivery_map.dart';
 
-/// Driver view of one delivery: live map, status, pickup / complete actions
-/// and a link to the order's chat (DRV-03/04). The confirmation code is issued
-/// by the backend and sent to the buyer (DEL-07) — the driver never sees it.
+/// Driver view of one delivery: live map, status and the Start → Arrived
+/// actions (DRV-03/04). The confirmation code is issued by the backend and sent
+/// to the buyer (DEL-07) — the driver never sees it, and there is no buyer chat.
 class DriverDeliveryDetailScreen extends ConsumerStatefulWidget {
   final String id;
 
@@ -125,6 +125,7 @@ class _DriverDeliveryDetailScreenState extends ConsumerState<DriverDeliveryDetai
   }
 
   List<Widget> _actions(BuildContext context, Delivery delivery) {
+    final t = context.t;
     final actions = <Widget>[];
     if (!delivery.isDelivered) {
       actions.add(
@@ -132,30 +133,24 @@ class _DriverDeliveryDetailScreenState extends ConsumerState<DriverDeliveryDetai
           onPressed: delivery.isPickupConfirmed || _busy
               ? null
               : _confirmPickup,
-          child: const Text('Confirm pickup'),
+          child: Text(t.driverTaskStart),
         ),
       );
       actions.add(const SizedBox(height: 12));
       if (delivery.isPickupConfirmed) {
-        // Hand-off: the backend issues a 6-digit code to the buyer and the
-        // order is delivered once the buyer confirms it (DEL-07).
+        // Hand-off: the backend issues a 6-digit code to the buyer (when the
+        // order requires one) and the order is delivered once the buyer
+        // confirms it (DEL-07).
         actions.add(
           FilledButton.icon(
             onPressed: _busy ? null : _completeDelivery,
             icon: const Icon(Icons.qr_code_2),
-            label: const Text('Complete delivery'),
+            label: Text(t.driverTaskArrived),
           ),
         );
         actions.add(const SizedBox(height: 12));
       }
     }
-    actions.add(
-      OutlinedButton.icon(
-        onPressed: () => openChatForOrder(context, ref, delivery.orderId),
-        icon: const Icon(Icons.chat_bubble_outline),
-        label: const Text('Chat'),
-      ),
-    );
     return actions;
   }
 

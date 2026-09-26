@@ -15,6 +15,7 @@ class FormTextField extends StatelessWidget {
   final Widget? suffixIcon;
   final String? Function(String?)? validator;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onFieldSubmitted;
 
   const FormTextField({
     super.key,
@@ -30,6 +31,7 @@ class FormTextField extends StatelessWidget {
     this.suffixIcon,
     this.validator,
     this.onChanged,
+    this.onFieldSubmitted,
   });
 
   @override
@@ -49,6 +51,7 @@ class FormTextField extends StatelessWidget {
       ),
       validator: validator,
       onChanged: onChanged,
+      onFieldSubmitted: onFieldSubmitted,
     );
   }
 }

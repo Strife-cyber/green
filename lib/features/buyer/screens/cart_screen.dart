@@ -14,6 +14,52 @@ import '../widgets/cart_line_tile.dart';
 class CartScreen extends ConsumerWidget {
   const CartScreen({super.key});
 
+  /// Asks before wiping the cart and offers an undo snackbar afterwards.
+  Future<void> _confirmClearCart(BuildContext context, WidgetRef ref) async {
+    final cart = ref.read(cartControllerProvider);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear your cart?'),
+        content: Text(
+          'This removes ${cart.lines.length} product '
+          'line${cart.lines.length == 1 ? '' : 's'} · '
+          '${_trimKg(cart.totalKg)} kg from your cart. '
+          'You can add them again any time.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep cart'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Clear'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final snapshot = cart.lines;
+    ref.read(cartControllerProvider.notifier).clear();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Cart cleared'),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () =>
+              ref.read(cartControllerProvider.notifier).restore(snapshot),
+        ),
+      ),
+    );
+  }
+
+  String _trimKg(double v) => v == v.roundToDouble() ? '${v.toInt()}' : '$v';
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
@@ -26,7 +72,10 @@ class CartScreen extends ConsumerWidget {
         title: const Text('Cart'),
         actions: [
           if (!cart.isEmpty)
-            TextButton(onPressed: controller.clear, child: const Text('Clear')),
+            TextButton(
+              onPressed: () => _confirmClearCart(context, ref),
+              child: const Text('Clear'),
+            ),
         ],
       ),
       body: cart.isEmpty
@@ -68,7 +117,9 @@ class CartScreen extends ConsumerWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Subtotal (${cart.itemCount} item${cart.itemCount == 1 ? '' : 's'})',
+                              '${cart.lines.length} '
+                              'product${cart.lines.length == 1 ? '' : 's'} · '
+                              '${_trimKg(cart.totalKg)} kg',
                               style: theme.textTheme.bodyMedium,
                             ),
                             AmountText(

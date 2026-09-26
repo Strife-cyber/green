@@ -96,6 +96,8 @@ void main() {
     when(() => repo.login(email: any(named: 'email'), password: any(named: 'password')))
         .thenThrow(Exception('bad credentials'));
 
+    // Let the initial session-restore build settle before acting on the state.
+    await container.read(authControllerProvider.future);
     await expectLater(
       container.read(authControllerProvider.notifier).login(email: 'x', password: 'y'),
       throwsA(isA<Exception>()),

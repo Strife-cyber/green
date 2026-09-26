@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/l10n.dart';
 import '../widgets/chat_thread_list.dart';
 
 /// The current user's order conversations (CHAT-01).
@@ -12,7 +13,7 @@ class ChatThreadsScreen extends StatelessWidget {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leading: Navigator.canPop(context) ? const BackButton() : null,
-        title: const Text('Chats')),
+        title: Text(context.t.chatThreadsTitle)),
       body: const ChatThreadList(),
     );
   }

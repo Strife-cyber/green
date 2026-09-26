@@ -75,6 +75,11 @@ class _ReportCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    // Prefer the backend-reported display name; fall back to the id when the
+    // server doesn't include it (ADM-07).
+    final reportedLabel = (report.reportedName != null && report.reportedName!.isNotEmpty)
+        ? report.reportedName!
+        : report.reportedId;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -83,13 +88,13 @@ class _ReportCard extends ConsumerWidget {
           children: [
             Row(
               children: [
-                UserAvatar(name: report.reportedId),
+                UserAvatar(name: reportedLabel),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(report.reportedId, style: theme.textTheme.titleMedium),
+                      Text(reportedLabel, style: theme.textTheme.titleMedium),
                       Text('$_targetLabel · ${report.status.name}', style: theme.textTheme.bodySmall),
                     ],
                   ),

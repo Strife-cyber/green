@@ -13,6 +13,12 @@ class AdminTicketsController extends AsyncNotifier<List<SupportTicket>> {
     await ref.read(adminRepositoryProvider).resolveTicket(id);
     ref.invalidateSelf();
   }
+
+  /// Assign a ticket to the current admin, then re-fetch the list.
+  Future<void> assign(String id) async {
+    await ref.read(adminRepositoryProvider).assignTicket(id);
+    ref.invalidateSelf();
+  }
 }
 
 final adminTicketsControllerProvider =

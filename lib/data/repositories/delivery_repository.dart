@@ -18,8 +18,12 @@ abstract class DeliveryRepository {
   /// delivered until the buyer confirms that code via [confirm].
   Future<Delivery> complete(String id);
 
-  /// Buyer confirms the delivery with the 6-digit code issued by the driver.
-  /// On success the order transitions to DELIVERED, escrow is released to the
-  /// seller and the receipt is issued.
-  Future<Delivery> confirm(String id, String code);
+  /// Buyer confirms receipt of the delivery (DEL-07).
+  ///
+  /// The 6-digit [code] is required only when the order total is above the
+  /// code-required threshold ([Delivery.codeRequired]); otherwise the buyer
+  /// confirms with a null code — the one-tap "Got it". On success the order
+  /// transitions to DELIVERED, escrow is released to the seller and the
+  /// receipt is issued.
+  Future<Delivery> confirm(String id, {String? code});
 }

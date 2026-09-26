@@ -141,7 +141,19 @@ abstract final class AppRoutes {
 final routerProvider = Provider<GoRouter>((ref) {
   // Re-run the redirect whenever auth state changes (restore/login/logout).
   final refresh = ValueNotifier(0);
-  ref.listen(authControllerProvider, (_, _) => refresh.value++);
+  // True only for the brief window right after a fresh login/signup/restore —
+  // lets the redirect bounce public pages to /verify-email for unverified
+  // users, then clears once they reach the verification screen so the public
+  // auth screens stay reachable as a sign-out / re-auth escape hatch.
+  var justAuthenticated = false;
+  ref.listen(authControllerProvider, (previous, next) {
+    final prev = previous?.valueOrNull;
+    final curr = next.valueOrNull;
+    justAuthenticated =
+        curr?.status == AuthStatus.authenticated &&
+        prev?.status != AuthStatus.authenticated;
+    refresh.value++;
+  });
 
   return GoRouter(
     initialLocation: AppRoutes.splash,
@@ -163,6 +175,23 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (user == null) {
         if (location == AppRoutes.splash || AppRoutes.isPublic(location)) return null;
         return AppRoutes.login;
+      }
+
+      // Logged in but not email-verified (AUTH-03): funnel to /verify-email so
+      // the user never lands on their role home unverified. The verification
+      // screen itself is allowed, and public auth screens stay reachable as the
+      // sign-out / re-auth escape hatch — except right after a fresh
+      // login/signup, when they'd park the user on a form.
+      if (user.emailVerified == false) {
+        if (location == AppRoutes.verifyEmail) {
+          justAuthenticated = false;
+          return null;
+        }
+        if (justAuthenticated && AppRoutes.isPublic(location)) {
+          return AppRoutes.verifyEmail;
+        }
+        if (AppRoutes.isPublic(location)) return null;
+        return AppRoutes.verifyEmail;
       }
 
       // Logged in: never land on public pages or a foreign role's home. The

@@ -2,18 +2,36 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/models/auth.dart';
 import '../storage/token_storage.dart';
 import 'api_exception.dart';
 import 'endpoints.dart';
 
+/// Broadcast when a mid-session 401 could not be recovered by a token refresh
+/// (refresh token missing, expired or rejected). App-level code ([GreenApp])
+/// listens and signs the user out, so the router returns to login.
+final sessionExpiredProvider =
+    NotifierProvider<SessionExpiredNotifier, int>(SessionExpiredNotifier.new);
+
+class SessionExpiredNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void signal() => state++;
+}
+
 /// Shared Dio instance for the Api…Repository implementations.
 final apiClientProvider = Provider<Dio>((ref) {
-  return createApiClient(ref.watch(tokenStorageProvider));
+  return createApiClient(
+    ref.watch(tokenStorageProvider),
+    onSessionExpired: () => ref.read(sessionExpiredProvider.notifier).signal(),
+  );
 });
 
-/// Builds the app's Dio client: base URL, timeouts, auth header interceptor,
-/// and request/response logging (see [_LoggingInterceptor]).
-Dio createApiClient(TokenStorage tokens) {
+/// Builds the app's Dio client: base URL, timeouts, auth header interceptor
+/// (with transparent 401 → refresh → retry), and request/response logging (see
+/// [_LoggingInterceptor]).
+Dio createApiClient(TokenStorage tokens, {void Function()? onSessionExpired}) {
   final dio = Dio(
     BaseOptions(
       baseUrl: Endpoints.base,
@@ -24,24 +42,120 @@ Dio createApiClient(TokenStorage tokens) {
     ),
   );
   dio.interceptors
-    ..add(_AuthInterceptor(tokens))
+    ..add(_AuthInterceptor(tokens, dio, onSessionExpired))
     ..add(_LoggingInterceptor());
   return dio;
 }
 
-/// Attaches `Authorization: Bearer <token>` to every request.
+/// Attaches `Authorization: Bearer <token>` to every request, and transparently
+/// recovers from a mid-session 401 (~6h access-token expiry) by refreshing the
+/// token pair — single-flight, so concurrent 401s share one refresh — then
+/// retrying the original request once with the new token. If the refresh fails
+/// the session is cleared and [onSessionExpired] is signalled so the app can
+/// redirect to login.
 class _AuthInterceptor extends Interceptor {
   final TokenStorage _tokens;
+  final Dio _dio;
+  final void Function()? _onSessionExpired;
 
-  _AuthInterceptor(this._tokens);
+  /// One shared refresh future across all concurrent 401s; dropped once the
+  /// refresh settles so a later expiry can refresh again.
+  Future<AuthSession>? _refreshFuture;
+
+  _AuthInterceptor(this._tokens, this._dio, this._onSessionExpired);
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-    final token = await _tokens.readAccessToken();
-    if (token != null && token.isNotEmpty) {
-      options.headers['Authorization'] = 'Bearer $token';
+    // The refresh call authenticates with the refresh token in the body — a
+    // stale access-token header would only make the backend reject it.
+    if (!options.uri.toString().startsWith(Endpoints.refresh)) {
+      final token = await _tokens.readAccessToken();
+      if (token != null && token.isNotEmpty) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
     }
     handler.next(options);
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
+    final status = err.response?.statusCode;
+    final uri = err.requestOptions.uri.toString();
+    final alreadyRetried = err.requestOptions.extra[extraRetried] == true;
+
+    if (status != 401 || alreadyRetried || _isNoRefreshUri(uri)) {
+      handler.next(err);
+      return;
+    }
+
+    // No refresh token left to recover with — the session is dead.
+    String? refreshToken;
+    try {
+      refreshToken = await _tokens.readRefreshToken();
+    } catch (_) {
+      refreshToken = null;
+    }
+    if (refreshToken == null || refreshToken.isEmpty) {
+      await _safeClear();
+      handler.next(err);
+      return;
+    }
+
+    try {
+      final session = await _refreshOnce(refreshToken);
+      await _tokens.saveSession(session);
+      // Replay the original request with the fresh token. The flag prevents an
+      // endless 401 → refresh → retry loop if the retry is rejected too.
+      err.requestOptions.extra[extraRetried] = true;
+      final retry = await _dio.fetch(err.requestOptions);
+      handler.resolve(retry);
+    } catch (_) {
+      // Refresh rejected — the session can't be salvaged.
+      await _safeClear();
+      handler.next(err);
+    }
+  }
+
+  static const String extraRetried = '__authRetried';
+
+  /// Auth calls whose 401 means bad credentials (or a bad refresh token), not
+  /// an expired session — never trigger a refresh.
+  static bool _isNoRefreshUri(String uri) =>
+      uri.startsWith(Endpoints.refresh) ||
+      uri.startsWith(Endpoints.login) ||
+      uri.startsWith(Endpoints.signup) ||
+      uri.startsWith(Endpoints.otpRequest) ||
+      uri.startsWith(Endpoints.otpVerify) ||
+      uri.startsWith(Endpoints.forgotPassword) ||
+      uri.startsWith(Endpoints.resetPassword) ||
+      uri.startsWith(Endpoints.verifyEmail) ||
+      uri.startsWith(Endpoints.resendVerification);
+
+  /// Single-flight refresh: the first 401 starts the refresh and everyone else
+  /// awaits the same future.
+  Future<AuthSession> _refreshOnce(String refreshToken) {
+    final active = _refreshFuture;
+    if (active != null) return active;
+    final future = _dio
+        .post(Endpoints.refresh, data: {'refreshToken': refreshToken})
+        .then((res) => AuthSession.fromJson(
+            ApiEnvelope.unwrap(res.data) as Map<String, dynamic>))
+        .whenComplete(() => _refreshFuture = null);
+    _refreshFuture = future;
+    return future;
+  }
+
+  Future<void> _safeClear() async {
+    try {
+      await _tokens.clearSession();
+    } catch (_) {
+      // Secure storage teardown — nothing else to fall back on.
+    }
+    try {
+      _onSessionExpired?.call();
+    } catch (_) {
+      // The listener (GreenApp → logout) must not prevent the error surfacing.
+    }
   }
 }
 

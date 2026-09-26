@@ -45,6 +45,7 @@ abstract final class Endpoints {
   static String get sellerProfileNationalId => '$base/seller-profiles/me/national-id';
   static String get sellerProfileSelfie => '$base/seller-profiles/me/selfie';
   static String get sellerProfileDocuments => '$base/seller-profiles/me/documents/{kind}';
+  static String get sellerProfileResubmit => '$base/seller-profiles/me/resubmit';
 
   // ---- addresses ----
   static String get addresses => '$base/addresses';

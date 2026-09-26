@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../data/models/address.dart';
+import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/amount_text.dart';
 import '../../../shared/widgets/async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -13,9 +14,10 @@ import '../controllers/buyer_order_list_controller.dart';
 import '../controllers/cart_controller.dart';
 import '../controllers/checkout_controller.dart';
 
-/// Checkout (BUY-07): groups the cart by seller into one order per seller,
-/// lets the buyer pick a saved delivery address (or add one) and places every
-/// order through `orderRepository`. On success the buyer lands on payment.
+/// Checkout (BUY-07): presents the whole cart as ONE order — a single summary
+/// card, a single delivery fee, one total and one "Place order" button. The
+/// per-seller splitting still happens server-side, but nothing here lets it
+/// leak: the buyer never sees "order 1 of 2". On success they land on payment.
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
 
@@ -24,7 +26,8 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 }
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
-  /// Flat per-order delivery fee in FCFA.
+  /// Flat per-seller delivery fee in FCFA. Charged once per seller group, but
+  /// shown to the buyer as a single line so the split stays invisible.
   static const int deliveryFee = 500;
 
   String? _selectedAddressId;
@@ -50,12 +53,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leading: Navigator.canPop(context) ? const BackButton() : null,
-        title: const Text('Checkout')),
+        title: Text(context.t.checkout)),
       body: cart.isEmpty
-          ? const EmptyState(
+          ? EmptyState(
               icon: Icons.receipt_long_outlined,
-              title: 'Nothing to checkout',
-              message: 'Your cart is empty.',
+              title: context.t.nothingToCheckout,
+              message: context.t.emptyCart,
             )
           : AsyncView<List<Address>>(
               value: addresses,
@@ -73,15 +76,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           setState(() => _selectedAddressId = address.id),
                     ),
                     const SizedBox(height: 16),
-                    for (final entry in groups.entries) ...[
-                      _SellerOrderCard(
-                        sellerId: entry.key,
-                        lines: entry.value,
-                        deliveryFee: deliveryFee,
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    _GrandTotal(
+                    _CheckoutSummaryCard(
                       groups: groups,
                       deliveryFee: deliveryFee,
                     ),
@@ -102,7 +97,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Text('Place order'),
+                          : Text(context.t.placeOrder),
                     ),
                   ],
                 );
@@ -134,20 +129,96 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     Map<String, List<CartLine>> groups,
     Address address,
   ) async {
-    final orderId = await ref
+    final result = await ref
         .read(checkoutControllerProvider.notifier)
         .submit(
           sellerGroups: groups,
           address: address,
           deliveryFee: deliveryFee,
         );
-    if (orderId == null || !mounted) return;
-    ref.read(cartControllerProvider.notifier).clear();
-    // The new order won't show on the Orders tab unless the list refetches.
+    if (!mounted) return;
+
+    final placed = result.placedOrders;
+    if (placed.isEmpty) return; // Full failure — snackbar via ref.listen below.
+
+    final cartController = ref.read(cartControllerProvider.notifier);
+    if (result.allSucceeded) {
+      // Every order placed — only now is the cart safe to clear.
+      cartController.clear();
+    } else {
+      // Partial checkout: drop only the lines that became orders, keep the
+      // rest so the buyer can retry the failed seller groups.
+      final succeededSellerIds = {for (final p in placed) p.sellerId};
+      cartController.removeLinesWhere(
+        (line) => succeededSellerIds.contains(line.product.sellerId),
+      );
+    }
+
+    // The new orders won't show on the Orders tab unless the list refetches —
+    // the payment screen reads it to continue through the remaining orders.
     ref.invalidate(buyerOrderListControllerProvider);
-    context.pushReplacement(AppRoutes.payment(orderId));
+
+    if (result.partial) {
+      await _showPartialCheckoutDialog(result);
+      return;
+    }
+    if (!mounted) return;
+    context.pushReplacement(AppRoutes.payment(placed.first.orderId));
+  }
+
+  Future<void> _showPartialCheckoutDialog(CheckoutResult result) async {
+    final placed = result.placedOrders;
+    final total = placed.length + result.failedGroups;
+    final action = await showDialog<_PartialAction>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Some orders were placed'),
+        content: Text(
+          'You had $total order${total == 1 ? '' : 's'} but only '
+          '${placed.length} could be placed. The placed '
+          'order${placed.length == 1 ? '' : 's'} '
+          '${placed.length == 1 ? 'is' : 'are'} ready to pay. '
+          'What would you like to do?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, _PartialAction.dismiss),
+            child: const Text('Close'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, _PartialAction.retry),
+            child: const Text('Retry the rest'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, _PartialAction.payPlaced),
+            child: Text(
+              'Pay ${placed.length == 1 ? 'placed order' : 'placed orders'}',
+            ),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (action == _PartialAction.payPlaced) {
+      context.pushReplacement(AppRoutes.payment(placed.first.orderId));
+    } else if (action == _PartialAction.retry) {
+      // The cart now holds only the failed groups' lines — resubmit those.
+      final remainingAddress = _resolveSelected(
+        ref.read(addressControllerProvider).valueOrNull ?? const <Address>[],
+      );
+      final remainingGroups = _groupBySeller(
+        ref.read(cartControllerProvider).lines,
+      );
+      if (remainingGroups.isNotEmpty && remainingAddress.id.isNotEmpty) {
+        await _placeOrder(remainingGroups, remainingAddress);
+      }
+    }
+    // _PartialAction.dismiss (or a barrier tap) leaves the cart as-is.
   }
 }
+
+/// What the buyer chose in the partial-checkout dialog.
+enum _PartialAction { payPlaced, retry, dismiss }
 
 /// Delivery-address picker card; empty state links out to manage addresses.
 class _AddressCard extends StatelessWidget {
@@ -170,7 +241,7 @@ class _AddressCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Delivery address', style: theme.textTheme.titleSmall),
+            Text(context.t.deliveryAddress, style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),
             if (addresses.isEmpty)
               Row(
@@ -218,23 +289,28 @@ class _AddressCard extends StatelessWidget {
   }
 }
 
-/// Per-seller order summary: items, subtotal, delivery and total.
-class _SellerOrderCard extends StatelessWidget {
-  final String sellerId;
-  final List<CartLine> lines;
+/// A single order-style summary of the whole cart: every line item, one
+/// subtotal, one delivery fee, one total. The seller grouping is only used to
+/// charge the correct flat fee per seller — the buyer never sees the split.
+class _CheckoutSummaryCard extends StatelessWidget {
+  final Map<String, List<CartLine>> groups;
   final int deliveryFee;
 
-  const _SellerOrderCard({
-    required this.sellerId,
-    required this.lines,
-    required this.deliveryFee,
-  });
+  const _CheckoutSummaryCard({required this.groups, required this.deliveryFee});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final sellerName = lines.first.product.sellerName ?? 'Seller';
-    final subtotal = lines.fold(0, (sum, line) => sum + line.lineTotal);
+    final t = context.t;
+
+    var subtotal = 0;
+    for (final entry in groups.entries) {
+      for (final line in entry.value) {
+        subtotal += line.lineTotal;
+      }
+    }
+    final deliveryTotal = deliveryFee * groups.length;
+    final total = subtotal + deliveryTotal;
 
     return Card(
       child: Padding(
@@ -242,39 +318,30 @@ class _SellerOrderCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.storefront_outlined, color: AppColors.green),
-                const SizedBox(width: 8),
-                Text(sellerName, style: theme.textTheme.titleSmall),
-              ],
-            ),
+            Text(t.items, style: theme.textTheme.titleSmall),
             const SizedBox(height: 12),
-            for (final line in lines) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '${line.product.name} × ${_trimKg(line.quantityKg)} kg',
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ),
-                  AmountText(line.lineTotal, style: theme.textTheme.bodyMedium),
-                ],
-              ),
-              const SizedBox(height: 4),
-            ],
+            for (final entry in groups.entries)
+              for (final line in entry.value) ...[
+                _LineRow(
+                  line: line,
+                  sellerName: line.product.sellerName,
+                ),
+                const SizedBox(height: 4),
+              ],
             const Divider(),
-            _priceRow(context, 'Subtotal', subtotal),
-            _priceRow(context, 'Delivery', deliveryFee),
+            _priceRow(context, t.subtotal, subtotal),
+            _priceRow(context, t.delivery, deliveryTotal),
             const SizedBox(height: 4),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Total', style: theme.textTheme.titleSmall),
+                Text(t.total, style: theme.textTheme.titleSmall),
                 AmountText(
-                  subtotal + deliveryFee,
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                  total,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.greenDark,
+                  ),
                 ),
               ],
             ),
@@ -296,45 +363,39 @@ class _SellerOrderCard extends StatelessWidget {
       ),
     );
   }
-
-  String _trimKg(double v) => v == v.roundToDouble() ? '${v.toInt()}' : '$v';
 }
 
-/// Overall checkout total across every per-seller order.
-class _GrandTotal extends StatelessWidget {
-  final Map<String, List<CartLine>> groups;
-  final int deliveryFee;
+class _LineRow extends StatelessWidget {
+  final CartLine line;
+  final String? sellerName;
 
-  const _GrandTotal({required this.groups, required this.deliveryFee});
+  const _LineRow({required this.line, this.sellerName});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    var grandTotal = 0;
-    var itemCount = 0;
-    for (final entry in groups.entries) {
-      for (final line in entry.value) {
-        grandTotal += line.lineTotal;
-        itemCount++;
-      }
-      grandTotal += deliveryFee;
-    }
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          '$itemCount item${itemCount == 1 ? '' : 's'} · '
-          '${groups.length} order${groups.length == 1 ? '' : 's'}',
-          style: theme.textTheme.bodyMedium,
-        ),
-        AmountText(
-          grandTotal,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w800,
-            color: AppColors.greenDark,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(line.product.name, style: Theme.of(context).textTheme.bodyMedium),
+              Text(
+                sellerName == null
+                    ? '${_trimKg(line.quantityKg)} kg'
+                    : '$sellerName · ${_trimKg(line.quantityKg)} kg',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: AppColors.tanDark),
+              ),
+            ],
           ),
         ),
+        AmountText(line.lineTotal, style: Theme.of(context).textTheme.bodyMedium),
       ],
     );
   }
+
+  String _trimKg(double v) => v == v.roundToDouble() ? '${v.toInt()}' : '$v';
 }

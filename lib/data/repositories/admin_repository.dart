@@ -28,6 +28,8 @@ abstract class AdminRepository {
 
   // Support & reports
   Future<List<SupportTicket>> tickets();
+  /// Assigns a support ticket to the current admin (`PATCH /assign`).
+  Future<void> assignTicket(String id);
   Future<void> resolveTicket(String id);
   Future<List<Report>> reports();
   Future<void> actionReport(String id, {bool action = false});
@@ -37,7 +39,11 @@ abstract class AdminRepository {
   Future<List<ChatMessage>> chatMessages(String threadId);
 
   // Driver accounts (D6)
-  Future<void> createDriver(CreateDriverInput input);
+  /// Creates a driver account. The backend generates the password itself and
+  /// returns it as `tempPassword` — the caller shows it to the admin once so it
+  /// can be shared with the driver. Returns the temporary password on success,
+  /// or null if the backend returned none.
+  Future<String?> createDriver(CreateDriverInput input);
   Future<List<User>> drivers();
 
   // Orders (admin) — for the delivery-assignment picker.

@@ -197,28 +197,58 @@ class _ProductSheetState extends ConsumerState<_ProductSheet> {
             Text(product.description!, style: theme.textTheme.bodyMedium),
           ],
           const SizedBox(height: 24),
-          Row(
-            children: [
-              Text(t.quantity, style: theme.textTheme.titleSmall),
-              const Spacer(),
-              QuantityStepper(
-                value: _quantityKg,
-                step: 0.5,
-                min: 0.5,
-                max: product.quantityKg,
-                onChanged: (v) => setState(() => _quantityKg = v),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
+          if (product.quantityKg <= 0)
+            _outOfStock(theme)
+          else ...[
+            Row(
+              children: [
+                Text(t.quantity, style: theme.textTheme.titleSmall),
+                const Spacer(),
+                QuantityStepper(
+                  value: _quantityKg,
+                  step: 0.5,
+                  min: 0.5,
+                  max: product.quantityKg,
+                  onChanged: (v) => setState(() => _quantityKg = v),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${_trimKg(product.quantityKg)} kg available',
+              style: theme.textTheme.bodySmall?.copyWith(color: AppColors.tanDark),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _outOfStock(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.tan.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.block, size: 16, color: AppColors.orangeDark),
+          const SizedBox(width: 6),
           Text(
-            '${product.quantityKg} kg available',
-            style: theme.textTheme.bodySmall?.copyWith(color: AppColors.tanDark),
+            'Out of stock',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: AppColors.orangeDark,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
     );
   }
+
+  String _trimKg(double v) => v == v.roundToDouble() ? '${v.toInt()}' : '$v';
 }
 
 class _BottomBar extends ConsumerWidget {
@@ -240,6 +270,7 @@ class _BottomBar extends ConsumerWidget {
     final theme = Theme.of(context);
     final savedIds = ref.watch(wishlistControllerProvider).valueOrNull ?? const <String>{};
     final isSaved = savedIds.contains(product.id);
+    final soldOut = product.quantityKg <= 0;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -264,7 +295,7 @@ class _BottomBar extends ConsumerWidget {
             const SizedBox(width: 8),
             Expanded(
               child: FilledButton.icon(
-                onPressed: adding ? null : onAddToCart,
+                onPressed: (adding || soldOut) ? null : onAddToCart,
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
@@ -275,8 +306,10 @@ class _BottomBar extends ConsumerWidget {
                         height: 22,
                         child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                       )
-                    : const Icon(Icons.add_shopping_cart),
-                label: adding ? const SizedBox.shrink() : Text(t.addToCart),
+                    : Icon(soldOut ? Icons.block : Icons.add_shopping_cart),
+                label: adding
+                    ? const SizedBox.shrink()
+                    : Text(soldOut ? 'Out of stock' : t.addToCart),
               ),
             ),
           ],

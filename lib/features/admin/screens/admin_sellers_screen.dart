@@ -65,17 +65,65 @@ class _SellerCard extends ConsumerWidget {
   /// (AUTH-09 / seller-profiles.service.ts) — gate the button to match.
   bool get _readyToApprove => seller.nationalIdUrl != null && seller.selfieUrl != null;
 
-  Future<void> _approve(BuildContext context, WidgetRef ref) => _run(
-        context,
-        () => ref.read(adminSellersControllerProvider.notifier).approve(seller.userId),
-        success: '${seller.farmName} approved',
-      );
+  Future<void> _approve(BuildContext context, WidgetRef ref) async {
+    final confirmed = await _confirm(
+      context,
+      title: 'Approve ${seller.farmName}?',
+      message: 'This activates the seller account. The seller will be able to list and sell products.',
+      confirmLabel: 'Approve',
+    );
+    if (!confirmed) return;
+    if (!context.mounted) return;
+    await _run(
+      context,
+      () => ref.read(adminSellersControllerProvider.notifier).approve(seller.userId),
+      success: '${seller.farmName} approved',
+    );
+  }
 
-  Future<void> _reject(BuildContext context, WidgetRef ref) => _run(
-        context,
-        () => ref.read(adminSellersControllerProvider.notifier).reject(seller.userId),
-        success: '${seller.farmName} rejected',
-      );
+  Future<void> _reject(BuildContext context, WidgetRef ref) async {
+    final confirmed = await _confirm(
+      context,
+      title: 'Reject ${seller.farmName}?',
+      message: 'The seller will be notified and must re-upload identity documents to reapply.',
+      confirmLabel: 'Reject',
+    );
+    if (!confirmed) return;
+    if (!context.mounted) return;
+    await _run(
+      context,
+      () => ref.read(adminSellersControllerProvider.notifier).reject(seller.userId),
+      success: '${seller.farmName} rejected',
+    );
+  }
+
+  /// Confirmation dialog — approve/reject flips a seller's account state, so a
+  /// tap shouldn't fire it without explicit consent (AUTH-07).
+  Future<bool> _confirm(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required String confirmLabel,
+  }) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(confirmLabel),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
 
   /// Runs an admin mutation and reports the outcome, surfacing the backend's
   /// own message (e.g. missing identity documents) instead of an unhandled

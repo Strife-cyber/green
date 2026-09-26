@@ -3,7 +3,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/i18n/locale_controller.dart';
+import 'core/network/api_client.dart';
 import 'core/notifications/push_service.dart';
+import 'core/realtime/socket_service.dart';
 import 'core/router/app_router.dart';
 import 'data/models/enums.dart';
 import 'data/repositories/providers.dart';
@@ -31,11 +33,24 @@ class GreenApp extends ConsumerWidget {
     PushService.instance.isAuthenticated =
         ref.read(authControllerProvider).valueOrNull?.user != null;
 
-    // Dispatch any deep link that arrived before auth was known.
+    // A mid-session 401 that the refresh flow couldn't recover from: the Dio
+    // interceptor already cleared the tokens, so sign the user out — this
+    // returns the router to login (and, via the listener below, drops the
+    // realtime socket).
+    ref.listen<int>(sessionExpiredProvider, (_, _) {
+      ref.read(authControllerProvider.notifier).logout();
+    });
+
+    // Dispatch any deep link that arrived before auth was known, and tear down
+    // the realtime socket the moment the session is gone so a stale user's
+    // stream can't keep flowing (logout / session expiry).
     ref.listen<AsyncValue<AuthState>>(authControllerProvider, (_, next) {
       final user = next.valueOrNull?.user;
       PushService.instance.isAuthenticated = user != null;
-      if (user == null) return;
+      if (user == null) {
+        ref.read(socketServiceProvider).disconnectAll();
+        return;
+      }
       _dispatchPendingDeepLink(ref, user.role);
     });
 

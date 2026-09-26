@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
 import '../../data/models/chat.dart';
 import '../../data/repositories/providers.dart';
+import '../../l10n/l10n.dart';
 
 /// Opens the chat thread for an order.
 ///
@@ -27,9 +28,7 @@ Future<void> openChatForOrder(
     context.push(AppRoutes.chat(thread.id));
   } else {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('This order has no chat thread yet — new orders automatically get one at checkout.'),
-      ),
+      SnackBar(content: Text(context.t.chatNoThreadForOrder)),
     );
   }
 }

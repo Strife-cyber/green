@@ -46,6 +46,8 @@ class MockStore {
         deliveries = List.of(seedDeliveries),
         transactions = List.of(seedTransactions),
         wishlistProductIds = {'p-tomatoes'},
+        // No code is issued until the driver completes a delivery (DEL-07);
+        // only code-required orders store one (the buyer confirms with it).
         deliveryCodes = {};
 
   static const wallet = Wallet(id: 'w-buyer-1', userId: 'u-buyer-1', balance: 25000, escrowBalance: 0);
@@ -155,11 +157,12 @@ const seedProducts = <Product>[
 
 final seedOrders = <Order>[
   Order(
+    // o-1: placed, unpaid — the buyer's "Pay now" demo.
     id: 'o-1',
     buyerId: 'u-buyer-1',
     sellerId: 'u-seller-1',
     sellerName: 'Bello Farms',
-    status: OrderStatus.confirmed,
+    status: OrderStatus.pending,
     paymentStatus: PaymentStatus.unpaid,
     subtotal: 3000,
     deliveryFee: 500,
@@ -168,9 +171,10 @@ final seedOrders = <Order>[
     items: [
       OrderItem(orderId: 'o-1', productId: 'p-tomatoes', productName: 'Fresh Tomatoes', unitPrice: 600, quantityKg: 5, lineTotal: 3000),
     ],
-    placedAt: DateTime(2026, 7, 30, 10, 30),
+    placedAt: DateTime(2026, 8, 16, 10, 30),
   ),
   Order(
+    // o-2: delivered history.
     id: 'o-2',
     buyerId: 'u-buyer-1',
     sellerId: 'u-seller-1',
@@ -184,16 +188,17 @@ final seedOrders = <Order>[
     items: [
       OrderItem(orderId: 'o-2', productId: 'p-plantain', productName: 'Green Plantains', unitPrice: 450, quantityKg: 5, lineTotal: 2250),
     ],
-    placedAt: DateTime(2026, 7, 25, 9, 0),
-    deliveredAt: DateTime(2026, 7, 25, 14, 20),
+    placedAt: DateTime(2026, 8, 10, 9, 0),
+    deliveredAt: DateTime(2026, 8, 10, 14, 20),
   ),
   Order(
+    // o-3: paid, confirmed — awaits the seller preparing it.
     id: 'o-3',
     buyerId: 'u-buyer-1',
     sellerId: 'u-seller-1',
     sellerName: 'Bello Farms',
     status: OrderStatus.confirmed,
-    paymentStatus: PaymentStatus.unpaid,
+    paymentStatus: PaymentStatus.escrowHeld,
     subtotal: 4500,
     deliveryFee: 500,
     totalAmount: 5000,
@@ -201,23 +206,41 @@ final seedOrders = <Order>[
     items: [
       OrderItem(orderId: 'o-3', productId: 'p-avocado', productName: 'Hass Avocados', unitPrice: 1500, quantityKg: 3, lineTotal: 4500),
     ],
-    placedAt: DateTime(2026, 7, 31, 8, 45),
+    placedAt: DateTime(2026, 8, 17, 8, 45),
   ),
   Order(
+    // o-4: paid, confirmed, high total → the buyer must enter a code.
     id: 'o-4',
     buyerId: 'u-buyer-1',
     sellerId: 'u-seller-1',
     sellerName: 'Bello Farms',
     status: OrderStatus.confirmed,
-    paymentStatus: PaymentStatus.unpaid,
+    paymentStatus: PaymentStatus.escrowHeld,
+    subtotal: 28000,
+    deliveryFee: 500,
+    totalAmount: 28500,
+    deliveryAddressLabel: 'Bonabéri',
+    items: [
+      OrderItem(orderId: 'o-4', productId: 'p-honey', productName: 'Pure Forest Honey', unitPrice: 8000, quantityKg: 3.5, lineTotal: 28000),
+    ],
+    placedAt: DateTime(2026, 8, 17, 9, 15),
+  ),
+  Order(
+    // o-5: paid, picked up, on the way — the buyer's one-tap "Got it" demo.
+    id: 'o-5',
+    buyerId: 'u-buyer-1',
+    sellerId: 'u-seller-1',
+    sellerName: 'Bello Farms',
+    status: OrderStatus.shipped,
+    paymentStatus: PaymentStatus.escrowHeld,
     subtotal: 1800,
     deliveryFee: 600,
     totalAmount: 2400,
-    deliveryAddressLabel: 'Bonabéri',
+    deliveryAddressLabel: 'Home',
     items: [
-      OrderItem(orderId: 'o-4', productId: 'p-plantain', productName: 'Green Plantains', unitPrice: 450, quantityKg: 4, lineTotal: 1800),
+      OrderItem(orderId: 'o-5', productId: 'p-plantain', productName: 'Green Plantains', unitPrice: 450, quantityKg: 4, lineTotal: 1800),
     ],
-    placedAt: DateTime(2026, 7, 31, 9, 15),
+    placedAt: DateTime(2026, 8, 18, 11, 0),
   ),
 ];
 
@@ -307,16 +330,24 @@ final seedReports = <Report>[
   ),
 ];
 
-/// Seeds three active deliveries so the driver's route map demos multiple
-/// stops (DRV-06). Each carries the order's destination coordinates — WGS84
-/// Douala neighbourhoods — which the backend now provides on every delivery.
+/// Seeds the deliveries consistent with the new lifecycle (payment →
+/// auto-assign → pickup → SHIPPED → buyer confirm → DELIVERED). Each carries
+/// the order's destination coordinates — WGS84 Douala neighbourhoods.
 final seedDeliveries = <Delivery>[
   Delivery(
+    // d-1: picked up, on the way to the buyer (order o-5 is SHIPPED).
     id: 'd-1',
-    orderId: 'o-1',
+    orderId: 'o-5',
     driverId: 'u-driver-1',
     driverName: 'Samuel Awa',
-    assignedAt: DateTime(2026, 7, 30, 11, 0),
+    assignedAt: DateTime(2026, 8, 18, 10, 0),
+    pickupConfirmedAt: DateTime(2026, 8, 18, 10, 30),
+    // A little off the drop-off so the driver task card shows a real distance.
+    currentLatitude: 4.0391,
+    currentLongitude: 9.7513,
+    locationUpdatedAt: DateTime(2026, 8, 18, 10, 35),
+    orderStatus: OrderStatus.shipped,
+    codeRequired: false,
     deliveryAddress: const Address(
       id: 'a-1',
       label: 'Home',
@@ -330,11 +361,14 @@ final seedDeliveries = <Delivery>[
     ),
   ),
   Delivery(
+    // d-2: assigned, awaiting pickup (order o-3 is CONFIRMED).
     id: 'd-2',
     orderId: 'o-3',
     driverId: 'u-driver-1',
     driverName: 'Samuel Awa',
-    assignedAt: DateTime(2026, 7, 31, 9, 30),
+    assignedAt: DateTime(2026, 8, 17, 9, 30),
+    orderStatus: OrderStatus.confirmed,
+    codeRequired: false,
     deliveryAddress: const Address(
       id: 'a-3',
       label: 'Bepanda',
@@ -347,12 +381,14 @@ final seedDeliveries = <Delivery>[
     ),
   ),
   Delivery(
+    // d-3: assigned, awaiting pickup, code required (order o-4 is CONFIRMED).
     id: 'd-3',
     orderId: 'o-4',
     driverId: 'u-driver-1',
     driverName: 'Samuel Awa',
-    pickupConfirmedAt: DateTime(2026, 7, 31, 10, 15),
-    assignedAt: DateTime(2026, 7, 31, 10, 0),
+    assignedAt: DateTime(2026, 8, 17, 10, 0),
+    orderStatus: OrderStatus.confirmed,
+    codeRequired: true,
     deliveryAddress: const Address(
       id: 'a-4',
       label: 'Bonabéri',

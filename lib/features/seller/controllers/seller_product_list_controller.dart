@@ -4,8 +4,10 @@ import '../../../data/models/product.dart';
 import '../../../data/repositories/providers.dart';
 import '../../auth/controllers/auth_controller.dart';
 
-/// The signed-in seller's own listings (SELL-01).
-class SellerProductListController extends AsyncNotifier<List<Product>> {
+/// The signed-in seller's own listings (SELL-01). `autoDispose` so the list
+/// refetches when the seller returns to the screen — create/update/delete stays
+/// visible without an explicit invalidate.
+class SellerProductListController extends AutoDisposeAsyncNotifier<List<Product>> {
   @override
   Future<List<Product>> build() async {
     final userId = ref.watch(authControllerProvider).valueOrNull?.user?.id;
@@ -35,4 +37,6 @@ class SellerProductListController extends AsyncNotifier<List<Product>> {
 }
 
 final sellerProductListControllerProvider =
-    AsyncNotifierProvider<SellerProductListController, List<Product>>(SellerProductListController.new);
+    AsyncNotifierProvider.autoDispose<SellerProductListController, List<Product>>(
+  SellerProductListController.new,
+);

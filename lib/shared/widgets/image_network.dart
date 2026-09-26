@@ -37,6 +37,13 @@ class ImageNetwork extends StatelessWidget {
       child: const Icon(Icons.eco_outlined, color: AppColors.tanDark),
     );
 
+    // Decode only as many pixels as the widget actually needs (physical size)
+    // so a 3000×3000 product photo doesn't decode at full resolution into a
+    // small thumbnail — cuts memory sharply on grids/carousels.
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final cacheWidth = width == null ? null : (width! * dpr).round();
+    final cacheHeight = height == null ? null : (height! * dpr).round();
+
     Widget image;
     if (url == null || url!.isEmpty) {
       image = placeholder;
@@ -47,6 +54,8 @@ class ImageNetwork extends StatelessWidget {
         height: height,
         fit: fit,
         headers: headers,
+        cacheWidth: cacheWidth,
+        cacheHeight: cacheHeight,
         errorBuilder: (_, _, _) => placeholder,
         loadingBuilder: (context, child, progress) =>
             progress == null ? child : placeholder,

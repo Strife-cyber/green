@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/utils/validators.dart';
+import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/form_text_field.dart';
 import '../controllers/auth_controller.dart';
 import '../widgets/auth_shell.dart';
@@ -36,7 +37,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await ref.read(authControllerProvider.notifier).login(email: _email.text, password: _password.text);
       // On success the router redirect moves the user to their role home.
     } catch (_) {
-      if (mounted) _showError('Login failed. Check your credentials and try again.');
+      if (mounted) _showError(context.t.loginFailed);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -77,7 +78,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 onPressed: () => setState(() => _obscure = !_obscure),
               ),
               validator: validatePassword,
-              onChanged: (_) => _submit(),
+              // Submit only on the button press (or keyboard "done") — never on
+              // every keystroke (that fired a login request while typing). The
+              // FormField re-validates live on change, so feedback stays fresh.
+              onFieldSubmitted: (_) => _submit(),
             ),
             Align(
               alignment: Alignment.centerRight,

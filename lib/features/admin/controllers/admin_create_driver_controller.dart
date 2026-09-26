@@ -10,16 +10,18 @@ class AdminCreateDriverController extends Notifier<AsyncValue<void>> {
   @override
   AsyncValue<void> build() => const AsyncData(null);
 
-  /// Creates the driver account. Returns `true` on success.
-  Future<bool> submit(CreateDriverInput input) async {
+  /// Creates the driver account. Returns the backend-generated temporary
+  /// password on success (so the screen can show it once, for sharing with the
+  /// driver), or null on failure.
+  Future<String?> submit(CreateDriverInput input) async {
     state = const AsyncLoading();
     try {
-      await ref.read(adminRepositoryProvider).createDriver(input);
+      final tempPassword = await ref.read(adminRepositoryProvider).createDriver(input);
       state = const AsyncData(null);
-      return true;
+      return tempPassword;
     } catch (error, stackTrace) {
       state = AsyncError(error, stackTrace);
-      return false;
+      return null;
     }
   }
 }

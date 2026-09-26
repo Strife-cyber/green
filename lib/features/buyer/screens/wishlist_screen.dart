@@ -73,20 +73,7 @@ class WishlistScreen extends ConsumerWidget {
                     Positioned(
                       top: 4,
                       right: 4,
-                      child: IconButton(
-                        tooltip: 'Remove from wishlist',
-                        style: IconButton.styleFrom(
-                          backgroundColor: AppColors.backgroundElevated,
-                        ),
-                        icon: const Icon(
-                          Icons.favorite,
-                          color: AppColors.orange,
-                          size: 20,
-                        ),
-                        onPressed: () => ref
-                            .read(wishlistControllerProvider.notifier)
-                            .toggle(product.id),
-                      ),
+                      child: _WishlistHeart(productId: product.id),
                     ),
                   ],
                 );
@@ -95,6 +82,40 @@ class WishlistScreen extends ConsumerWidget {
           },
         ),
       ),
+    );
+  }
+}
+
+/// The wishlist heart with an in-flight guard — disabled and spinner'd while
+/// the toggle for [productId] is pending, so double-taps can't race.
+class _WishlistHeart extends ConsumerWidget {
+  final String productId;
+
+  const _WishlistHeart({required this.productId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller = ref.read(wishlistControllerProvider.notifier);
+    final pending = controller.isPending(productId);
+    return IconButton(
+      tooltip: 'Remove from wishlist',
+      style: IconButton.styleFrom(
+        backgroundColor: AppColors.backgroundElevated,
+      ),
+      onPressed: pending
+          ? null
+          : () => ref.read(wishlistControllerProvider.notifier).toggle(productId),
+      icon: pending
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.orange),
+            )
+          : const Icon(
+              Icons.favorite,
+              color: AppColors.orange,
+              size: 20,
+            ),
     );
   }
 }

@@ -19,4 +19,9 @@ abstract class SellerProfileRepository {
   Future<String> uploadNationalId(String filePath);
 
   Future<String> uploadSelfie(String filePath);
+
+  /// Re-submits a REJECTED profile for a new review round
+  /// (POST `/seller-profiles/me/resubmit`). Throws if identity documents are
+  /// still missing — the profile flips back to PENDING once both are present.
+  Future<void> resubmit();
 }

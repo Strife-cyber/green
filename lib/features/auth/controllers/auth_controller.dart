@@ -40,27 +40,46 @@ class AuthController extends AsyncNotifier<AuthState> {
     final tokens = ref.watch(tokenStorageProvider);
     final accessToken = await tokens.readAccessToken();
 
-    if (accessToken == null) {
+    // No access token at all, or an empty/blank one — there is nothing to
+    // restore, so clear any half-written session deterministically.
+    if (accessToken == null || accessToken.isEmpty) {
+      await tokens.clearSession();
       return const AuthState.unauthenticated();
     }
 
     try {
       final session = await ref.read(authRepositoryProvider).restoreSession(accessToken);
-      return AuthState.authenticated(session);
+      // The Dio interceptor may have refreshed the token mid-request; the repo
+      // echoes back the token it was handed, so prefer whatever is on disk now
+      // (keeps `session.accessToken` in sync for socket/chat consumers).
+      final latestAccess = await tokens.readAccessToken() ?? accessToken;
+      return AuthState.authenticated(
+        latestAccess == accessToken
+            ? session
+            : AuthSession(
+                accessToken: latestAccess,
+                refreshToken: session.refreshToken,
+                user: session.user,
+                sellerProfile: session.sellerProfile,
+              ),
+      );
     } catch (_) {
-      // Token stale — try the refresh token before giving up.
+      // Token stale — try the refresh token before giving up. A missing or
+      // empty refresh token means the session can't be recovered: clear it
+      // instead of leaving a half-restored state that redirects nowhere.
       final refreshToken = await tokens.readRefreshToken();
-      if (refreshToken != null) {
-        try {
-          final session = await ref.read(authRepositoryProvider).refresh(refreshToken);
-          await tokens.saveSession(session);
-          return AuthState.authenticated(session);
-        } catch (_) {
-          // Fall through to clear.
-        }
+      if (refreshToken == null || refreshToken.isEmpty) {
+        await tokens.clearSession();
+        return const AuthState.unauthenticated();
       }
-      await tokens.clearSession();
-      return const AuthState.unauthenticated();
+      try {
+        final session = await ref.read(authRepositoryProvider).refresh(refreshToken);
+        await tokens.saveSession(session);
+        return AuthState.authenticated(session);
+      } catch (_) {
+        await tokens.clearSession();
+        return const AuthState.unauthenticated();
+      }
     }
   }
 
@@ -164,6 +183,23 @@ class AuthController extends AsyncNotifier<AuthState> {
 
   Future<void> resetPassword({required String token, required String newPassword}) {
     return ref.read(authRepositoryProvider).resetPassword(token: token.trim(), newPassword: newPassword);
+  }
+
+  /// Re-sends the email-verification link (AUTH-03).
+  Future<void> resendVerification(String email) {
+    return ref.read(authRepositoryProvider).resendVerification(email.trim());
+  }
+
+  /// Re-fetches the current session (used by the "I've verified — check
+  /// status" affordance on the verification screen). If the backend now reports
+  /// `emailVerified: true`, the router's redirect can let the user through.
+  Future<void> refreshSession() async {
+    ref.invalidateSelf();
+    try {
+      await future;
+    } catch (_) {
+      // Token may be stale — the user can sign in again.
+    }
   }
 }
 

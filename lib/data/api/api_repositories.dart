@@ -233,6 +233,15 @@ class ApiAuthRepository implements AuthRepository {
       _fail(e);
     }
   }
+
+  @override
+  Future<void> resendVerification(String email) async {
+    try {
+      await _dio.post(Endpoints.resendVerification, data: {'email': email});
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
 }
 
 /// ────────────────────────────────────────────────────────────────────────────
@@ -770,7 +779,9 @@ class ApiDeliveryRepository implements DeliveryRepository {
   Future<Delivery> complete(String id) => _action(id, Endpoints.deliveryComplete);
 
   @override
-  Future<Delivery> confirm(String id, String code) async {
+  Future<Delivery> confirm(String id, {String? code}) async {
+    // The backend accepts `{ code?: string | null }` — a null code is the
+    // one-tap "Got it" when the order is below the code-required threshold.
     try {
       final res = await _dio.post(
         _sub(Endpoints.deliveryConfirm, 'id', id),
@@ -794,7 +805,16 @@ class ApiChatRepository implements ChatRepository {
   Future<List<ChatThread>> threads() async {
     try {
       final res = await _dio.get(Endpoints.chatThreads);
-      return _page(_unwrap(res.data), ChatThread.fromJson).items;
+      final data = _unwrap(res.data);
+      // The enriched list may come back as a bare array or the usual
+      // `{ items, total, page, limit }` envelope — accept both.
+      if (data is List) {
+        return [
+          for (final it in data)
+            if (it is Map<String, dynamic>) ChatThread.fromJson(it),
+        ];
+      }
+      return _page(data, ChatThread.fromJson).items;
     } on DioException catch (e) {
       _fail(e);
     }
@@ -902,7 +922,19 @@ class ApiNotificationRepository implements NotificationRepository {
   @override
   Future<void> markAllRead() async {
     // The API exposes per-item read only (`PATCH /notifications/{id}/read`);
-    // mark-all has no backend route — no-op.
+    // mark-all has no backend route — emulate it with a bounded loop over the
+    // unread items so a large inbox can't spawn unbounded requests.
+    try {
+      final res = await _dio.get(Endpoints.notifications);
+      final items = _page(_unwrap(res.data), AppNotification.fromJson).items;
+      const maxBatch = 50;
+      final unread = items.where((n) => !n.isRead).take(maxBatch);
+      for (final n in unread) {
+        await _dio.patch(_sub(Endpoints.notificationRead, 'id', n.id));
+      }
+    } on DioException catch (e) {
+      _fail(e);
+    }
   }
 }
 
@@ -1058,6 +1090,15 @@ class ApiSellerProfileRepository implements SellerProfileRepository {
   @override
   Future<String> uploadSelfie(String filePath) =>
       _uploadDocument(Endpoints.sellerProfileSelfie, filePath);
+
+  @override
+  Future<void> resubmit() async {
+    try {
+      await _dio.post(Endpoints.sellerProfileResubmit);
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
 }
 
 /// ────────────────────────────────────────────────────────────────────────────
@@ -1215,6 +1256,15 @@ class ApiAdminRepository implements AdminRepository {
   }
 
   @override
+  Future<void> assignTicket(String id) async {
+    try {
+      await _dio.patch(_sub(Endpoints.assignSupportTicket, 'id', id));
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
+
+  @override
   Future<List<Report>> reports() async {
     try {
       final res = await _dio.get(Endpoints.adminReports);
@@ -1259,17 +1309,19 @@ class ApiAdminRepository implements AdminRepository {
   }
 
   @override
-  Future<void> createDriver(CreateDriverInput input) async {
+  Future<String?> createDriver(CreateDriverInput input) async {
     try {
-      // The API's CreateDriverDto requires a password; the interface doesn't
-      // carry one, so a placeholder is used (the driver sets it on first login).
-      await _dio.post(Endpoints.adminDrivers, data: {
+      // The backend ignores any client-supplied password, generates its own and
+      // returns it as `tempPassword` (D6). We deliberately send none.
+      final res = await _dio.post(Endpoints.adminDrivers, data: {
         'firstName': input.firstName,
         'lastName': input.lastName,
         'email': input.email,
         'phone': input.phone,
-        'password': 'Driver@12345',
+        'region': input.region,
       });
+      final body = _unwrap(res.data);
+      return body is Map<String, dynamic> ? body['tempPassword'] as String? : null;
     } on DioException catch (e) {
       _fail(e);
     }

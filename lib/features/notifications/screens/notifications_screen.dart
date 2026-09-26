@@ -1,18 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/notifications/push_service.dart';
+import '../../../core/router/app_router.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../data/models/app_notification.dart';
 import '../../../data/models/enums.dart';
+import '../../../features/auth/controllers/auth_controller.dart';
+import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../theme/app_colors.dart';
 import '../controllers/notification_controller.dart';
 
 /// In-app notification centre (NOT-01..06): icon-per-type list, mark-all-read,
-/// and tap-to-mark-read.
+/// and tap-to-mark-read + navigate to the underlying entity.
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
+
+  Future<void> _markAllRead(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final successText = context.t.allCaughtUp;
+    const failureText = 'Could not mark all as read.';
+    messenger.hideCurrentSnackBar();
+    try {
+      await ref.read(notificationControllerProvider.notifier).markAllRead();
+      messenger.showSnackBar(SnackBar(content: Text(successText)));
+    } catch (_) {
+      messenger.showSnackBar(const SnackBar(content: Text(failureText)));
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -21,12 +39,12 @@ class NotificationsScreen extends ConsumerWidget {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leading: Navigator.canPop(context) ? const BackButton() : null,
-        title: const Text('Notifications'),
+        title: Text(context.t.notifications),
         actions: [
           IconButton(
-            tooltip: 'Mark all read',
+            tooltip: context.t.markAllRead,
             icon: const Icon(Icons.done_all_outlined),
-            onPressed: () => ref.read(notificationControllerProvider.notifier).markAllRead(),
+            onPressed: () => _markAllRead(context, ref),
           ),
         ],
       ),
@@ -34,10 +52,10 @@ class NotificationsScreen extends ConsumerWidget {
         value: notifications,
         onRefresh: () => ref.read(notificationControllerProvider.notifier).refresh(),
         onRetry: () => ref.invalidate(notificationControllerProvider),
-        empty: const EmptyState(
+        empty: EmptyState(
           icon: Icons.notifications_none,
-          title: 'No notifications',
-          message: 'You are all caught up.',
+          title: context.t.noNotifications,
+          message: context.t.allCaughtUp,
         ),
         builder: (list) => ListView.separated(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -56,8 +74,37 @@ class _NotificationTile extends ConsumerWidget {
   const _NotificationTile({required this.notification});
 
   Future<void> _open(BuildContext context, WidgetRef ref) async {
-    if (notification.isRead) return;
-    await ref.read(notificationControllerProvider.notifier).markRead(notification.id);
+    // Mark read (best-effort) so the unread dot clears immediately.
+    if (!notification.isRead) {
+      ref.read(notificationControllerProvider.notifier).markRead(notification.id);
+    }
+    final role = ref.read(authControllerProvider).valueOrNull?.user?.role;
+    String? path;
+    final data = notification.data;
+    if (data != null && data.isNotEmpty) {
+      // Treat the payload as an entity deep link only when it carries a known
+      // entity key — `resolvePath`'s fallback to the role home would otherwise
+      // stack a duplicate home over this screen.
+      final hasEntity = const ['orderId', 'threadId', 'receiptId', 'deliveryId']
+          .any((k) => data.containsKey(k) && (data[k]?.toString().isNotEmpty ?? false));
+      if (hasEntity) {
+        path = PushService.resolvePath(data, role);
+      }
+    }
+    if (path != null && path.isNotEmpty) {
+      context.push(path);
+      return;
+    }
+    // No entity link in the payload — degrade per type so the tap never
+    // feels dead.
+    final fallback = switch (notification.type) {
+      NotificationType.payment => AppRoutes.walletTransactions,
+      NotificationType.chat => AppRoutes.chatThreads,
+      _ => null,
+    };
+    if (fallback != null) {
+      context.push(fallback);
+    }
   }
 
   IconData _iconFor(NotificationType type) => switch (type) {

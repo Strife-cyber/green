@@ -51,6 +51,12 @@ class BuyerProfileScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           _ProfileLink(
+            icon: Icons.person_outline,
+            title: context.t.editProfile,
+            onTap: () => context.push(AppRoutes.profile),
+          ),
+          const SizedBox(height: 4),
+          _ProfileLink(
             icon: Icons.favorite_border,
             title: context.t.wishlist,
             onTap: () => context.push(AppRoutes.wishlist),

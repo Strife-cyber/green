@@ -4,9 +4,9 @@
 /// To regenerate, run: `dart run slang`
 ///
 /// Locales: 2
-/// Strings: 228 (114 per locale)
+/// Strings: 496 (248 per locale)
 ///
-/// Built on 2026-08-08 at 13:59 UTC
+/// Built on 2026-08-19 at 00:28 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -262,6 +262,148 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
 	String get addToCart => 'Add to cart';
 	String get quantity => 'Quantity';
 	String addedToCart({required Object name, required Object kg}) => '${name} added to cart (${kg} kg)';
+	String get errorNoConnection => 'No internet connection. Check your connection and retry.';
+	String get errorTimeout => 'The request timed out. Please try again.';
+	String get errorUnauthorized => 'Your session has expired. Please sign in again.';
+	String get errorServer => 'The server had a problem. Please try again later.';
+	String get otpSubtitle => 'No password needed — we email you a one-time code';
+	String get enterEmailFirst => 'Enter your email address first.';
+	String get couldNotSendCode => 'Could not send the code. Please try again.';
+	String get codeSentCheckInbox => 'Code sent to your email — check your inbox.';
+	String codeExpiresIn({required Object minutes}) => 'The code expires in ${minutes} minutes.';
+	String get invalidOtpCode => 'That code is not valid. Check it and try again.';
+	String get resendCode => 'Resend code';
+	String resendInSeconds({required Object seconds}) => 'Resend in ${seconds}s';
+	String get backToPasswordSignIn => 'Back to password sign in';
+	String get loginFailed => 'Login failed. Check your credentials and try again.';
+	String get verifyEmailTitle => 'Verify your email';
+	String get verifyEmailSubtitle => 'Almost there — one more step';
+	String get verificationLinkSentTo => 'We sent a verification link to';
+	String get verifyToOrderHint => 'You can browse while you wait, but you will need to verify before placing orders.';
+	String get resendEmail => 'Resend email';
+	String get verifyEmailSent => 'Verification email sent.';
+	String get verifyEmailResendFailed => 'Could not resend. Please try again.';
+	String get checkVerificationStatus => 'I\'ve verified — check status';
+	String get resetTokenLabel => 'Reset token';
+	String get resetTokenHint => 'Paste the link token from your email';
+	String get invalidResetLink => 'The reset link is invalid or has expired. Please request a new one.';
+	String get deliveryCodeEmailHint => 'Code sent to your email — check your inbox.';
+	String get confirmDeliveryTitle => 'Confirm your delivery';
+	String get confirmDeliveryBody => 'Enter the 6-digit code your driver shared with you to confirm the hand-off.';
+	String get confirmationCode => 'Confirmation code';
+	String get confirmDeliveryAction => 'Confirm delivery';
+	String get deliveryConfirmed => 'Delivery confirmed — thank you!';
+	String get confirmFailed => 'Could not confirm — check the code and try again.';
+	String get driverCreatedTitle => 'Driver created';
+	String get shareTempPassword => 'Share this temporary password with the driver — it is shown once and will be reset on their first login.';
+	String get driverCreated => 'Driver account created';
+	String get couldNotCreateDriver => 'Could not create the driver. Try again.';
+	String get agreeTerms => 'I agree to the Terms of Service and Privacy Policy';
+	String get termsRequired => 'Please accept the terms to continue.';
+	String get termsOfService => 'Terms of Service';
+	String get privacyPolicy => 'Privacy Policy';
+	String get identityDocsOptional => 'These documents are optional but recommended. They are reviewed before your farm goes live and can be added later from your profile.';
+	String get nationalIdOptional => 'National ID card (optional)';
+	String get selfieOptional => 'Selfie of you or your market space (optional)';
+	String get signUpFailed => 'Sign-up failed. Please try again.';
+	String get markAllRead => 'Mark all read';
+	String get noNotifications => 'No notifications';
+	String get allCaughtUp => 'You are all caught up.';
+	String get sellerRejectedTitle => 'Application rejected';
+	String get sellerRejectedBody => 'Your farm profile was not approved. Please update your identity documents and re-submit.';
+	String get reUploadNationalId => 'Re-upload National ID';
+	String get reUploadSelfie => 'Re-upload selfie';
+	String get documentsUpdated => 'Documents updated. Your profile will be reviewed again.';
+	String get uploadFailed => 'Upload failed. Please try again.';
+	String get report => 'Report';
+	String get chatTitle => 'Chat';
+	String get chatThreadsTitle => 'Chats';
+	String get chatComposerHint => 'Message…';
+	String get chatSend => 'Send';
+	String get chatSendFailed => 'Could not send the message. Tap retry to try again.';
+	String get chatAttachImage => 'Attach image';
+	String get chatRecordVoice => 'Record voice note';
+	String get chatStopVoice => 'Stop & send voice note';
+	String get chatVoiceWebUnavailable => 'Voice notes are not available on the web yet.';
+	String get chatMicPermission => 'Microphone permission is required for voice notes.';
+	String get chatRecordFailed => 'Could not start recording.';
+	String get chatVoiceFinishFailed => 'Could not finish the voice note.';
+	String get chatVoiceNote => 'Voice note';
+	String get chatNoMessages => 'No messages yet';
+	String get chatNoMessagesHint => 'Say hello to start the conversation.';
+	String get chatNoThreads => 'No conversations yet';
+	String get chatNoThreadsHint => 'When you place an order, a chat thread is created with the seller.';
+	String get chatYou => 'You';
+	String get chatImageGlyph => 'Photo';
+	String get chatVoiceGlyph => 'Voice note';
+	String get chatToday => 'Today';
+	String get chatYesterday => 'Yesterday';
+	String get chatTyping => 'typing…';
+	String get chatOrderContext => 'Order context';
+	String get chatNoThreadForOrder => 'This order has no chat thread yet — new orders automatically get one at checkout.';
+	String get orderStatusPending => 'Pending';
+	String get orderStatusConfirmed => 'Confirmed';
+	String get orderStatusShipped => 'On the way';
+	String get orderStatusDelivered => 'Delivered';
+	String get orderStatusCancelled => 'Cancelled';
+	String get orderPlaced => 'Order placed';
+	String get orderPreparing => 'Preparing';
+	String arrivingAt({required Object time}) => 'arriving ~${time}';
+	String get gotIt => 'Got it';
+	String get driverArrivedTitle => 'Your driver is here';
+	String get driverArrivedBody => 'Confirm that you received your order.';
+	String get gotItCodeHint => 'Enter the 6-digit code sent to your email.';
+	String get items => 'Items';
+	String get subtotal => 'Subtotal';
+	String get delivery => 'Delivery';
+	String get total => 'Total';
+	String get deliveryAddress => 'Delivery address';
+	String get chatWithSeller => 'Chat with seller';
+	String get orderDetails => 'Order details';
+	String get viewReceipt => 'View receipt';
+	String get rateSeller => 'Rate seller';
+	String get cancelOrder => 'Cancel order';
+	String get noOrdersYet => 'No orders yet';
+	String get noOrdersYetHint => 'Your orders will appear here once you check out.';
+	String get checkout => 'Checkout';
+	String get placeOrder => 'Place order';
+	String get nothingToCheckout => 'Nothing to checkout';
+	String get emptyCart => 'Your cart is empty.';
+	String itemCount({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(count,
+		one: '1 item',
+		other: '${count} items',
+	);
+	String get sellerQueueTitle => 'What needs you';
+	String ordersToPrepare({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(count,
+		zero: 'No orders to prepare',
+		one: '${count} order to prepare',
+		other: '${count} orders to prepare',
+	);
+	String awaitingPickup({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(count,
+		one: '${count} awaiting pickup',
+		other: '${count} awaiting pickup',
+	);
+	String get awaitingPickupLabel => 'Awaiting pickup';
+	String readyToWithdraw({required Object amount}) => '${amount} ready to withdraw';
+	String get toPrepare => 'To prepare';
+	String get prepared => 'Prepared';
+	String get noQueueHint => 'New paid orders will appear here.';
+	String pickUpFrom({required Object seller}) => 'Pick up: ${seller}';
+	String dropOffAt({required Object address}) => 'Drop off: ${address}';
+	String distanceKm({required Object distance}) => '${distance} km';
+	String get driverTaskStart => 'Start';
+	String get driverTaskArrived => 'Arrived';
+	String get pickedUp => 'Picked up';
+	String get awaitingBuyerConfirm => 'Awaiting the buyer to confirm';
+	String get codeRequiredNote => 'The buyer must enter a 6-digit code to complete.';
+	String get navQueue => 'Queue';
+	String get chatWithBuyer => 'Chat with buyer';
+	String get currentDelivery => 'Current delivery';
+	String get dropOffUnknown => 'Unknown address';
+	String moreDeliveries({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(count,
+		one: '${count} more delivery',
+		other: '${count} more deliveries',
+	);
 }
 
 // Path: <root>
@@ -404,6 +546,148 @@ class _StringsFr extends Translations {
 	@override String get addToCart => 'Ajouter au panier';
 	@override String get quantity => 'Quantité';
 	@override String addedToCart({required Object name, required Object kg}) => '${name} ajouté au panier (${kg} kg)';
+	@override String get errorNoConnection => 'Pas de connexion internet. Vérifiez votre connexion et réessayez.';
+	@override String get errorTimeout => 'Le délai de la requête est dépassé. Veuillez réessayer.';
+	@override String get errorUnauthorized => 'Votre session a expiré. Veuillez vous reconnecter.';
+	@override String get errorServer => 'Le serveur a rencontré un problème. Veuillez réessayer plus tard.';
+	@override String get otpSubtitle => 'Pas de mot de passe — nous vous envoyons un code unique par email';
+	@override String get enterEmailFirst => 'Saisissez d\'abord votre adresse email.';
+	@override String get couldNotSendCode => 'Impossible d\'envoyer le code. Veuillez réessayer.';
+	@override String get codeSentCheckInbox => 'Code envoyé par email — vérifiez votre boîte de réception.';
+	@override String codeExpiresIn({required Object minutes}) => 'Le code expire dans ${minutes} minutes.';
+	@override String get invalidOtpCode => 'Ce code n\'est pas valide. Vérifiez-le et réessayez.';
+	@override String get resendCode => 'Renvoyer le code';
+	@override String resendInSeconds({required Object seconds}) => 'Renvoyer dans ${seconds}s';
+	@override String get backToPasswordSignIn => 'Retour à la connexion par mot de passe';
+	@override String get loginFailed => 'Échec de la connexion. Vérifiez vos identifiants et réessayez.';
+	@override String get verifyEmailTitle => 'Vérifiez votre email';
+	@override String get verifyEmailSubtitle => 'Encore une étape';
+	@override String get verificationLinkSentTo => 'Nous avons envoyé un lien de vérification à';
+	@override String get verifyToOrderHint => 'Vous pouvez naviguer en attendant, mais vous devrez vérifier votre email avant de passer commande.';
+	@override String get resendEmail => 'Renvoyer l\'email';
+	@override String get verifyEmailSent => 'Email de vérification envoyé.';
+	@override String get verifyEmailResendFailed => 'Impossible de renvoyer. Veuillez réessayer.';
+	@override String get checkVerificationStatus => 'J\'ai vérifié — vérifier le statut';
+	@override String get resetTokenLabel => 'Jeton de réinitialisation';
+	@override String get resetTokenHint => 'Collez le jeton du lien reçu par email';
+	@override String get invalidResetLink => 'Le lien de réinitialisation est invalide ou a expiré. Veuillez en demander un nouveau.';
+	@override String get deliveryCodeEmailHint => 'Code envoyé par email — vérifiez votre boîte de réception.';
+	@override String get confirmDeliveryTitle => 'Confirmez votre livraison';
+	@override String get confirmDeliveryBody => 'Saisissez le code à 6 chiffres que votre livreur vous a communiqué pour confirmer la remise.';
+	@override String get confirmationCode => 'Code de confirmation';
+	@override String get confirmDeliveryAction => 'Confirmer la livraison';
+	@override String get deliveryConfirmed => 'Livraison confirmée — merci !';
+	@override String get confirmFailed => 'Impossible de confirmer — vérifiez le code et réessayez.';
+	@override String get driverCreatedTitle => 'Livreur créé';
+	@override String get shareTempPassword => 'Partagez ce mot de passe temporaire avec le livreur — il n\'est affiché qu\'une fois et sera réinitialisé à sa première connexion.';
+	@override String get driverCreated => 'Compte livreur créé';
+	@override String get couldNotCreateDriver => 'Impossible de créer le livreur. Réessayez.';
+	@override String get agreeTerms => 'J\'accepte les Conditions d\'utilisation et la Politique de confidentialité';
+	@override String get termsRequired => 'Veuillez accepter les conditions pour continuer.';
+	@override String get termsOfService => 'Conditions d\'utilisation';
+	@override String get privacyPolicy => 'Politique de confidentialité';
+	@override String get identityDocsOptional => 'Ces documents sont facultatifs mais recommandés. Ils sont examinés avant la mise en ligne de votre ferme et peuvent être ajoutés plus tard depuis votre profil.';
+	@override String get nationalIdOptional => 'Carte d\'identité nationale (facultatif)';
+	@override String get selfieOptional => 'Selfie de vous ou de votre espace de vente (facultatif)';
+	@override String get signUpFailed => 'Échec de l\'inscription. Veuillez réessayer.';
+	@override String get markAllRead => 'Tout marquer comme lu';
+	@override String get noNotifications => 'Aucune notification';
+	@override String get allCaughtUp => 'Vous êtes à jour.';
+	@override String get sellerRejectedTitle => 'Demande rejetée';
+	@override String get sellerRejectedBody => 'Votre profil de ferme n\'a pas été approuvé. Veuillez mettre à jour vos documents d\'identité et le soumettre à nouveau.';
+	@override String get reUploadNationalId => 'Ré-uploader la carte d\'identité';
+	@override String get reUploadSelfie => 'Ré-uploader le selfie';
+	@override String get documentsUpdated => 'Documents mis à jour. Votre profil sera examiné à nouveau.';
+	@override String get uploadFailed => 'Échec de l\'upload. Veuillez réessayer.';
+	@override String get report => 'Signaler';
+	@override String get chatTitle => 'Discussion';
+	@override String get chatThreadsTitle => 'Discussions';
+	@override String get chatComposerHint => 'Message…';
+	@override String get chatSend => 'Envoyer';
+	@override String get chatSendFailed => 'Impossible d\'envoyer le message. Appuyez sur réessayer pour relancer.';
+	@override String get chatAttachImage => 'Joindre une image';
+	@override String get chatRecordVoice => 'Enregistrer un message vocal';
+	@override String get chatStopVoice => 'Arrêter et envoyer le message vocal';
+	@override String get chatVoiceWebUnavailable => 'Les messages vocaux ne sont pas encore disponibles sur le web.';
+	@override String get chatMicPermission => 'La permission du microphone est requise pour les messages vocaux.';
+	@override String get chatRecordFailed => 'Impossible de démarrer l\'enregistrement.';
+	@override String get chatVoiceFinishFailed => 'Impossible de terminer le message vocal.';
+	@override String get chatVoiceNote => 'Message vocal';
+	@override String get chatNoMessages => 'Aucun message';
+	@override String get chatNoMessagesHint => 'Dites bonjour pour commencer la conversation.';
+	@override String get chatNoThreads => 'Aucune conversation';
+	@override String get chatNoThreadsHint => 'Quand vous passez une commande, une discussion est créée avec le vendeur.';
+	@override String get chatYou => 'Vous';
+	@override String get chatImageGlyph => 'Photo';
+	@override String get chatVoiceGlyph => 'Message vocal';
+	@override String get chatToday => 'Aujourd\'hui';
+	@override String get chatYesterday => 'Hier';
+	@override String get chatTyping => 'écrit…';
+	@override String get chatOrderContext => 'Contexte de la commande';
+	@override String get chatNoThreadForOrder => 'Cette commande n\'a pas encore de discussion — les nouvelles commandes en créent une automatiquement au paiement.';
+	@override String get orderStatusPending => 'En attente';
+	@override String get orderStatusConfirmed => 'Confirmée';
+	@override String get orderStatusShipped => 'En route';
+	@override String get orderStatusDelivered => 'Livrée';
+	@override String get orderStatusCancelled => 'Annulée';
+	@override String get orderPlaced => 'Commande passée';
+	@override String get orderPreparing => 'En préparation';
+	@override String arrivingAt({required Object time}) => 'arrivée vers ${time}';
+	@override String get gotIt => 'J\'ai reçu';
+	@override String get driverArrivedTitle => 'Votre livreur est arrivé';
+	@override String get driverArrivedBody => 'Confirmez que vous avez reçu votre commande.';
+	@override String get gotItCodeHint => 'Saisissez le code à 6 chiffres envoyé par email.';
+	@override String get items => 'Articles';
+	@override String get subtotal => 'Sous-total';
+	@override String get delivery => 'Livraison';
+	@override String get total => 'Total';
+	@override String get deliveryAddress => 'Adresse de livraison';
+	@override String get chatWithSeller => 'Discuter avec le vendeur';
+	@override String get orderDetails => 'Détails de la commande';
+	@override String get viewReceipt => 'Voir le reçu';
+	@override String get rateSeller => 'Évaluer le vendeur';
+	@override String get cancelOrder => 'Annuler la commande';
+	@override String get noOrdersYet => 'Aucune commande';
+	@override String get noOrdersYetHint => 'Vos commandes apparaîtront ici après votre passage en caisse.';
+	@override String get checkout => 'Validation';
+	@override String get placeOrder => 'Passer la commande';
+	@override String get nothingToCheckout => 'Rien à régler';
+	@override String get emptyCart => 'Votre panier est vide.';
+	@override String itemCount({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('fr'))(count,
+		one: '1 article',
+		other: '${count} articles',
+	);
+	@override String get sellerQueueTitle => 'Ce qui vous attend';
+	@override String ordersToPrepare({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('fr'))(count,
+		zero: 'Aucune commande à préparer',
+		one: '${count} commande à préparer',
+		other: '${count} commandes à préparer',
+	);
+	@override String awaitingPickup({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('fr'))(count,
+		one: '${count} en attente de ramassage',
+		other: '${count} en attente de ramassage',
+	);
+	@override String get awaitingPickupLabel => 'En attente de ramassage';
+	@override String readyToWithdraw({required Object amount}) => '${amount} prêt à retirer';
+	@override String get toPrepare => 'À préparer';
+	@override String get prepared => 'Préparé';
+	@override String get noQueueHint => 'Les nouvelles commandes payées apparaîtront ici.';
+	@override String pickUpFrom({required Object seller}) => 'Ramassage : ${seller}';
+	@override String dropOffAt({required Object address}) => 'Dépôt : ${address}';
+	@override String distanceKm({required Object distance}) => '${distance} km';
+	@override String get driverTaskStart => 'Commencer';
+	@override String get driverTaskArrived => 'Arrivé';
+	@override String get pickedUp => 'Ramassé';
+	@override String get awaitingBuyerConfirm => 'En attente de confirmation de l\'acheteur';
+	@override String get codeRequiredNote => 'L\'acheteur doit saisir un code à 6 chiffres pour terminer.';
+	@override String get navQueue => 'File';
+	@override String get chatWithBuyer => 'Discuter avec l\'acheteur';
+	@override String get currentDelivery => 'Livraison en cours';
+	@override String get dropOffUnknown => 'Adresse inconnue';
+	@override String moreDeliveries({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('fr'))(count,
+		one: '${count} autre livraison',
+		other: '${count} autres livraisons',
+	);
 }
 
 /// Flat map(s) containing all translations.
@@ -526,6 +810,148 @@ extension on Translations {
 			case 'addToCart': return 'Add to cart';
 			case 'quantity': return 'Quantity';
 			case 'addedToCart': return ({required Object name, required Object kg}) => '${name} added to cart (${kg} kg)';
+			case 'errorNoConnection': return 'No internet connection. Check your connection and retry.';
+			case 'errorTimeout': return 'The request timed out. Please try again.';
+			case 'errorUnauthorized': return 'Your session has expired. Please sign in again.';
+			case 'errorServer': return 'The server had a problem. Please try again later.';
+			case 'otpSubtitle': return 'No password needed — we email you a one-time code';
+			case 'enterEmailFirst': return 'Enter your email address first.';
+			case 'couldNotSendCode': return 'Could not send the code. Please try again.';
+			case 'codeSentCheckInbox': return 'Code sent to your email — check your inbox.';
+			case 'codeExpiresIn': return ({required Object minutes}) => 'The code expires in ${minutes} minutes.';
+			case 'invalidOtpCode': return 'That code is not valid. Check it and try again.';
+			case 'resendCode': return 'Resend code';
+			case 'resendInSeconds': return ({required Object seconds}) => 'Resend in ${seconds}s';
+			case 'backToPasswordSignIn': return 'Back to password sign in';
+			case 'loginFailed': return 'Login failed. Check your credentials and try again.';
+			case 'verifyEmailTitle': return 'Verify your email';
+			case 'verifyEmailSubtitle': return 'Almost there — one more step';
+			case 'verificationLinkSentTo': return 'We sent a verification link to';
+			case 'verifyToOrderHint': return 'You can browse while you wait, but you will need to verify before placing orders.';
+			case 'resendEmail': return 'Resend email';
+			case 'verifyEmailSent': return 'Verification email sent.';
+			case 'verifyEmailResendFailed': return 'Could not resend. Please try again.';
+			case 'checkVerificationStatus': return 'I\'ve verified — check status';
+			case 'resetTokenLabel': return 'Reset token';
+			case 'resetTokenHint': return 'Paste the link token from your email';
+			case 'invalidResetLink': return 'The reset link is invalid or has expired. Please request a new one.';
+			case 'deliveryCodeEmailHint': return 'Code sent to your email — check your inbox.';
+			case 'confirmDeliveryTitle': return 'Confirm your delivery';
+			case 'confirmDeliveryBody': return 'Enter the 6-digit code your driver shared with you to confirm the hand-off.';
+			case 'confirmationCode': return 'Confirmation code';
+			case 'confirmDeliveryAction': return 'Confirm delivery';
+			case 'deliveryConfirmed': return 'Delivery confirmed — thank you!';
+			case 'confirmFailed': return 'Could not confirm — check the code and try again.';
+			case 'driverCreatedTitle': return 'Driver created';
+			case 'shareTempPassword': return 'Share this temporary password with the driver — it is shown once and will be reset on their first login.';
+			case 'driverCreated': return 'Driver account created';
+			case 'couldNotCreateDriver': return 'Could not create the driver. Try again.';
+			case 'agreeTerms': return 'I agree to the Terms of Service and Privacy Policy';
+			case 'termsRequired': return 'Please accept the terms to continue.';
+			case 'termsOfService': return 'Terms of Service';
+			case 'privacyPolicy': return 'Privacy Policy';
+			case 'identityDocsOptional': return 'These documents are optional but recommended. They are reviewed before your farm goes live and can be added later from your profile.';
+			case 'nationalIdOptional': return 'National ID card (optional)';
+			case 'selfieOptional': return 'Selfie of you or your market space (optional)';
+			case 'signUpFailed': return 'Sign-up failed. Please try again.';
+			case 'markAllRead': return 'Mark all read';
+			case 'noNotifications': return 'No notifications';
+			case 'allCaughtUp': return 'You are all caught up.';
+			case 'sellerRejectedTitle': return 'Application rejected';
+			case 'sellerRejectedBody': return 'Your farm profile was not approved. Please update your identity documents and re-submit.';
+			case 'reUploadNationalId': return 'Re-upload National ID';
+			case 'reUploadSelfie': return 'Re-upload selfie';
+			case 'documentsUpdated': return 'Documents updated. Your profile will be reviewed again.';
+			case 'uploadFailed': return 'Upload failed. Please try again.';
+			case 'report': return 'Report';
+			case 'chatTitle': return 'Chat';
+			case 'chatThreadsTitle': return 'Chats';
+			case 'chatComposerHint': return 'Message…';
+			case 'chatSend': return 'Send';
+			case 'chatSendFailed': return 'Could not send the message. Tap retry to try again.';
+			case 'chatAttachImage': return 'Attach image';
+			case 'chatRecordVoice': return 'Record voice note';
+			case 'chatStopVoice': return 'Stop & send voice note';
+			case 'chatVoiceWebUnavailable': return 'Voice notes are not available on the web yet.';
+			case 'chatMicPermission': return 'Microphone permission is required for voice notes.';
+			case 'chatRecordFailed': return 'Could not start recording.';
+			case 'chatVoiceFinishFailed': return 'Could not finish the voice note.';
+			case 'chatVoiceNote': return 'Voice note';
+			case 'chatNoMessages': return 'No messages yet';
+			case 'chatNoMessagesHint': return 'Say hello to start the conversation.';
+			case 'chatNoThreads': return 'No conversations yet';
+			case 'chatNoThreadsHint': return 'When you place an order, a chat thread is created with the seller.';
+			case 'chatYou': return 'You';
+			case 'chatImageGlyph': return 'Photo';
+			case 'chatVoiceGlyph': return 'Voice note';
+			case 'chatToday': return 'Today';
+			case 'chatYesterday': return 'Yesterday';
+			case 'chatTyping': return 'typing…';
+			case 'chatOrderContext': return 'Order context';
+			case 'chatNoThreadForOrder': return 'This order has no chat thread yet — new orders automatically get one at checkout.';
+			case 'orderStatusPending': return 'Pending';
+			case 'orderStatusConfirmed': return 'Confirmed';
+			case 'orderStatusShipped': return 'On the way';
+			case 'orderStatusDelivered': return 'Delivered';
+			case 'orderStatusCancelled': return 'Cancelled';
+			case 'orderPlaced': return 'Order placed';
+			case 'orderPreparing': return 'Preparing';
+			case 'arrivingAt': return ({required Object time}) => 'arriving ~${time}';
+			case 'gotIt': return 'Got it';
+			case 'driverArrivedTitle': return 'Your driver is here';
+			case 'driverArrivedBody': return 'Confirm that you received your order.';
+			case 'gotItCodeHint': return 'Enter the 6-digit code sent to your email.';
+			case 'items': return 'Items';
+			case 'subtotal': return 'Subtotal';
+			case 'delivery': return 'Delivery';
+			case 'total': return 'Total';
+			case 'deliveryAddress': return 'Delivery address';
+			case 'chatWithSeller': return 'Chat with seller';
+			case 'orderDetails': return 'Order details';
+			case 'viewReceipt': return 'View receipt';
+			case 'rateSeller': return 'Rate seller';
+			case 'cancelOrder': return 'Cancel order';
+			case 'noOrdersYet': return 'No orders yet';
+			case 'noOrdersYetHint': return 'Your orders will appear here once you check out.';
+			case 'checkout': return 'Checkout';
+			case 'placeOrder': return 'Place order';
+			case 'nothingToCheckout': return 'Nothing to checkout';
+			case 'emptyCart': return 'Your cart is empty.';
+			case 'itemCount': return ({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(count,
+				one: '1 item',
+				other: '${count} items',
+			);
+			case 'sellerQueueTitle': return 'What needs you';
+			case 'ordersToPrepare': return ({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(count,
+				zero: 'No orders to prepare',
+				one: '${count} order to prepare',
+				other: '${count} orders to prepare',
+			);
+			case 'awaitingPickup': return ({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(count,
+				one: '${count} awaiting pickup',
+				other: '${count} awaiting pickup',
+			);
+			case 'awaitingPickupLabel': return 'Awaiting pickup';
+			case 'readyToWithdraw': return ({required Object amount}) => '${amount} ready to withdraw';
+			case 'toPrepare': return 'To prepare';
+			case 'prepared': return 'Prepared';
+			case 'noQueueHint': return 'New paid orders will appear here.';
+			case 'pickUpFrom': return ({required Object seller}) => 'Pick up: ${seller}';
+			case 'dropOffAt': return ({required Object address}) => 'Drop off: ${address}';
+			case 'distanceKm': return ({required Object distance}) => '${distance} km';
+			case 'driverTaskStart': return 'Start';
+			case 'driverTaskArrived': return 'Arrived';
+			case 'pickedUp': return 'Picked up';
+			case 'awaitingBuyerConfirm': return 'Awaiting the buyer to confirm';
+			case 'codeRequiredNote': return 'The buyer must enter a 6-digit code to complete.';
+			case 'navQueue': return 'Queue';
+			case 'chatWithBuyer': return 'Chat with buyer';
+			case 'currentDelivery': return 'Current delivery';
+			case 'dropOffUnknown': return 'Unknown address';
+			case 'moreDeliveries': return ({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(count,
+				one: '${count} more delivery',
+				other: '${count} more deliveries',
+			);
 			default: return null;
 		}
 	}
@@ -648,6 +1074,148 @@ extension on _StringsFr {
 			case 'addToCart': return 'Ajouter au panier';
 			case 'quantity': return 'Quantité';
 			case 'addedToCart': return ({required Object name, required Object kg}) => '${name} ajouté au panier (${kg} kg)';
+			case 'errorNoConnection': return 'Pas de connexion internet. Vérifiez votre connexion et réessayez.';
+			case 'errorTimeout': return 'Le délai de la requête est dépassé. Veuillez réessayer.';
+			case 'errorUnauthorized': return 'Votre session a expiré. Veuillez vous reconnecter.';
+			case 'errorServer': return 'Le serveur a rencontré un problème. Veuillez réessayer plus tard.';
+			case 'otpSubtitle': return 'Pas de mot de passe — nous vous envoyons un code unique par email';
+			case 'enterEmailFirst': return 'Saisissez d\'abord votre adresse email.';
+			case 'couldNotSendCode': return 'Impossible d\'envoyer le code. Veuillez réessayer.';
+			case 'codeSentCheckInbox': return 'Code envoyé par email — vérifiez votre boîte de réception.';
+			case 'codeExpiresIn': return ({required Object minutes}) => 'Le code expire dans ${minutes} minutes.';
+			case 'invalidOtpCode': return 'Ce code n\'est pas valide. Vérifiez-le et réessayez.';
+			case 'resendCode': return 'Renvoyer le code';
+			case 'resendInSeconds': return ({required Object seconds}) => 'Renvoyer dans ${seconds}s';
+			case 'backToPasswordSignIn': return 'Retour à la connexion par mot de passe';
+			case 'loginFailed': return 'Échec de la connexion. Vérifiez vos identifiants et réessayez.';
+			case 'verifyEmailTitle': return 'Vérifiez votre email';
+			case 'verifyEmailSubtitle': return 'Encore une étape';
+			case 'verificationLinkSentTo': return 'Nous avons envoyé un lien de vérification à';
+			case 'verifyToOrderHint': return 'Vous pouvez naviguer en attendant, mais vous devrez vérifier votre email avant de passer commande.';
+			case 'resendEmail': return 'Renvoyer l\'email';
+			case 'verifyEmailSent': return 'Email de vérification envoyé.';
+			case 'verifyEmailResendFailed': return 'Impossible de renvoyer. Veuillez réessayer.';
+			case 'checkVerificationStatus': return 'J\'ai vérifié — vérifier le statut';
+			case 'resetTokenLabel': return 'Jeton de réinitialisation';
+			case 'resetTokenHint': return 'Collez le jeton du lien reçu par email';
+			case 'invalidResetLink': return 'Le lien de réinitialisation est invalide ou a expiré. Veuillez en demander un nouveau.';
+			case 'deliveryCodeEmailHint': return 'Code envoyé par email — vérifiez votre boîte de réception.';
+			case 'confirmDeliveryTitle': return 'Confirmez votre livraison';
+			case 'confirmDeliveryBody': return 'Saisissez le code à 6 chiffres que votre livreur vous a communiqué pour confirmer la remise.';
+			case 'confirmationCode': return 'Code de confirmation';
+			case 'confirmDeliveryAction': return 'Confirmer la livraison';
+			case 'deliveryConfirmed': return 'Livraison confirmée — merci !';
+			case 'confirmFailed': return 'Impossible de confirmer — vérifiez le code et réessayez.';
+			case 'driverCreatedTitle': return 'Livreur créé';
+			case 'shareTempPassword': return 'Partagez ce mot de passe temporaire avec le livreur — il n\'est affiché qu\'une fois et sera réinitialisé à sa première connexion.';
+			case 'driverCreated': return 'Compte livreur créé';
+			case 'couldNotCreateDriver': return 'Impossible de créer le livreur. Réessayez.';
+			case 'agreeTerms': return 'J\'accepte les Conditions d\'utilisation et la Politique de confidentialité';
+			case 'termsRequired': return 'Veuillez accepter les conditions pour continuer.';
+			case 'termsOfService': return 'Conditions d\'utilisation';
+			case 'privacyPolicy': return 'Politique de confidentialité';
+			case 'identityDocsOptional': return 'Ces documents sont facultatifs mais recommandés. Ils sont examinés avant la mise en ligne de votre ferme et peuvent être ajoutés plus tard depuis votre profil.';
+			case 'nationalIdOptional': return 'Carte d\'identité nationale (facultatif)';
+			case 'selfieOptional': return 'Selfie de vous ou de votre espace de vente (facultatif)';
+			case 'signUpFailed': return 'Échec de l\'inscription. Veuillez réessayer.';
+			case 'markAllRead': return 'Tout marquer comme lu';
+			case 'noNotifications': return 'Aucune notification';
+			case 'allCaughtUp': return 'Vous êtes à jour.';
+			case 'sellerRejectedTitle': return 'Demande rejetée';
+			case 'sellerRejectedBody': return 'Votre profil de ferme n\'a pas été approuvé. Veuillez mettre à jour vos documents d\'identité et le soumettre à nouveau.';
+			case 'reUploadNationalId': return 'Ré-uploader la carte d\'identité';
+			case 'reUploadSelfie': return 'Ré-uploader le selfie';
+			case 'documentsUpdated': return 'Documents mis à jour. Votre profil sera examiné à nouveau.';
+			case 'uploadFailed': return 'Échec de l\'upload. Veuillez réessayer.';
+			case 'report': return 'Signaler';
+			case 'chatTitle': return 'Discussion';
+			case 'chatThreadsTitle': return 'Discussions';
+			case 'chatComposerHint': return 'Message…';
+			case 'chatSend': return 'Envoyer';
+			case 'chatSendFailed': return 'Impossible d\'envoyer le message. Appuyez sur réessayer pour relancer.';
+			case 'chatAttachImage': return 'Joindre une image';
+			case 'chatRecordVoice': return 'Enregistrer un message vocal';
+			case 'chatStopVoice': return 'Arrêter et envoyer le message vocal';
+			case 'chatVoiceWebUnavailable': return 'Les messages vocaux ne sont pas encore disponibles sur le web.';
+			case 'chatMicPermission': return 'La permission du microphone est requise pour les messages vocaux.';
+			case 'chatRecordFailed': return 'Impossible de démarrer l\'enregistrement.';
+			case 'chatVoiceFinishFailed': return 'Impossible de terminer le message vocal.';
+			case 'chatVoiceNote': return 'Message vocal';
+			case 'chatNoMessages': return 'Aucun message';
+			case 'chatNoMessagesHint': return 'Dites bonjour pour commencer la conversation.';
+			case 'chatNoThreads': return 'Aucune conversation';
+			case 'chatNoThreadsHint': return 'Quand vous passez une commande, une discussion est créée avec le vendeur.';
+			case 'chatYou': return 'Vous';
+			case 'chatImageGlyph': return 'Photo';
+			case 'chatVoiceGlyph': return 'Message vocal';
+			case 'chatToday': return 'Aujourd\'hui';
+			case 'chatYesterday': return 'Hier';
+			case 'chatTyping': return 'écrit…';
+			case 'chatOrderContext': return 'Contexte de la commande';
+			case 'chatNoThreadForOrder': return 'Cette commande n\'a pas encore de discussion — les nouvelles commandes en créent une automatiquement au paiement.';
+			case 'orderStatusPending': return 'En attente';
+			case 'orderStatusConfirmed': return 'Confirmée';
+			case 'orderStatusShipped': return 'En route';
+			case 'orderStatusDelivered': return 'Livrée';
+			case 'orderStatusCancelled': return 'Annulée';
+			case 'orderPlaced': return 'Commande passée';
+			case 'orderPreparing': return 'En préparation';
+			case 'arrivingAt': return ({required Object time}) => 'arrivée vers ${time}';
+			case 'gotIt': return 'J\'ai reçu';
+			case 'driverArrivedTitle': return 'Votre livreur est arrivé';
+			case 'driverArrivedBody': return 'Confirmez que vous avez reçu votre commande.';
+			case 'gotItCodeHint': return 'Saisissez le code à 6 chiffres envoyé par email.';
+			case 'items': return 'Articles';
+			case 'subtotal': return 'Sous-total';
+			case 'delivery': return 'Livraison';
+			case 'total': return 'Total';
+			case 'deliveryAddress': return 'Adresse de livraison';
+			case 'chatWithSeller': return 'Discuter avec le vendeur';
+			case 'orderDetails': return 'Détails de la commande';
+			case 'viewReceipt': return 'Voir le reçu';
+			case 'rateSeller': return 'Évaluer le vendeur';
+			case 'cancelOrder': return 'Annuler la commande';
+			case 'noOrdersYet': return 'Aucune commande';
+			case 'noOrdersYetHint': return 'Vos commandes apparaîtront ici après votre passage en caisse.';
+			case 'checkout': return 'Validation';
+			case 'placeOrder': return 'Passer la commande';
+			case 'nothingToCheckout': return 'Rien à régler';
+			case 'emptyCart': return 'Votre panier est vide.';
+			case 'itemCount': return ({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('fr'))(count,
+				one: '1 article',
+				other: '${count} articles',
+			);
+			case 'sellerQueueTitle': return 'Ce qui vous attend';
+			case 'ordersToPrepare': return ({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('fr'))(count,
+				zero: 'Aucune commande à préparer',
+				one: '${count} commande à préparer',
+				other: '${count} commandes à préparer',
+			);
+			case 'awaitingPickup': return ({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('fr'))(count,
+				one: '${count} en attente de ramassage',
+				other: '${count} en attente de ramassage',
+			);
+			case 'awaitingPickupLabel': return 'En attente de ramassage';
+			case 'readyToWithdraw': return ({required Object amount}) => '${amount} prêt à retirer';
+			case 'toPrepare': return 'À préparer';
+			case 'prepared': return 'Préparé';
+			case 'noQueueHint': return 'Les nouvelles commandes payées apparaîtront ici.';
+			case 'pickUpFrom': return ({required Object seller}) => 'Ramassage : ${seller}';
+			case 'dropOffAt': return ({required Object address}) => 'Dépôt : ${address}';
+			case 'distanceKm': return ({required Object distance}) => '${distance} km';
+			case 'driverTaskStart': return 'Commencer';
+			case 'driverTaskArrived': return 'Arrivé';
+			case 'pickedUp': return 'Ramassé';
+			case 'awaitingBuyerConfirm': return 'En attente de confirmation de l\'acheteur';
+			case 'codeRequiredNote': return 'L\'acheteur doit saisir un code à 6 chiffres pour terminer.';
+			case 'navQueue': return 'File';
+			case 'chatWithBuyer': return 'Discuter avec l\'acheteur';
+			case 'currentDelivery': return 'Livraison en cours';
+			case 'dropOffUnknown': return 'Adresse inconnue';
+			case 'moreDeliveries': return ({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('fr'))(count,
+				one: '${count} autre livraison',
+				other: '${count} autres livraisons',
+			);
 			default: return null;
 		}
 	}

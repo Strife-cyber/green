@@ -63,10 +63,17 @@ class _TicketCard extends ConsumerWidget {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ticket resolved')));
   }
 
+  Future<void> _assign(BuildContext context, WidgetRef ref) async {
+    await ref.read(adminTicketsControllerProvider.notifier).assign(ticket.id);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ticket assigned to you')));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final resolved = ticket.status == TicketStatus.resolved;
+    final open = ticket.status == TicketStatus.open;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -98,9 +105,21 @@ class _TicketCard extends ConsumerWidget {
               const SizedBox(height: 12),
               Align(
                 alignment: Alignment.centerRight,
-                child: FilledButton(
-                  onPressed: () => _resolve(context, ref),
-                  child: const Text('Resolve'),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (open) ...[
+                      OutlinedButton(
+                        onPressed: () => _assign(context, ref),
+                        child: const Text('Assign to me'),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    FilledButton(
+                      onPressed: () => _resolve(context, ref),
+                      child: const Text('Resolve'),
+                    ),
+                  ],
                 ),
               ),
             ],

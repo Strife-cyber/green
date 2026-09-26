@@ -1,55 +1,144 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
+import '../../../l10n/l10n_ext.dart';
 import '../../../theme/app_colors.dart';
 import '../controllers/auth_controller.dart';
 import '../widgets/auth_shell.dart';
 
 /// Post-signup verification prompt (AUTH-03). Unverified accounts may browse
-/// but not order (D7); this screen tells them to confirm their email.
-class VerifyEmailScreen extends ConsumerWidget {
+/// but not order (D7); this screen tells them to confirm their email, lets
+/// them resend the link (with a cooldown) and re-check their status once
+/// they have clicked it.
+class VerifyEmailScreen extends ConsumerStatefulWidget {
   const VerifyEmailScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
+}
+
+class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
+  /// Cooldown between verification-email resends, in seconds.
+  static const int _resendCooldownSeconds = 30;
+
+  bool _resending = false;
+  int _cooldown = 0;
+  Timer? _cooldownTimer;
+
+  @override
+  void dispose() {
+    _cooldownTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _resend(String email) async {
+    if (_cooldown > 0 || _resending) return;
+    setState(() => _resending = true);
+    try {
+      await ref.read(authControllerProvider.notifier).resendVerification(email);
+      if (mounted) {
+        _startCooldown();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.t.verifyEmailSent)),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.t.verifyEmailResendFailed)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _resending = false);
+    }
+  }
+
+  Future<void> _checkStatus() async {
+    setState(() => _resending = true);
+    await ref.read(authControllerProvider.notifier).refreshSession();
+    if (!mounted) return;
+    setState(() => _resending = false);
+    final verified =
+        ref.read(authControllerProvider).valueOrNull?.user?.emailVerified ?? false;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          verified
+              ? 'Your email is verified — welcome!'
+              : 'Not verified yet. Check your inbox for the link.',
+        ),
+      ),
+    );
+  }
+
+  void _startCooldown() {
+    _cooldownTimer?.cancel();
+    setState(() => _cooldown = _resendCooldownSeconds);
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        _cooldown--;
+        if (_cooldown <= 0) timer.cancel();
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final user = ref.watch(authControllerProvider).valueOrNull?.user;
+    final email = user?.email;
 
     return AuthShell(
-      title: 'Verify your email',
-      subtitle: 'Almost there — one more step',
+      title: context.t.verifyEmailTitle,
+      subtitle: context.t.verifyEmailSubtitle,
       child: Column(
         children: [
           const Icon(Icons.mark_email_unread_outlined, size: 56, color: AppColors.orange),
           const SizedBox(height: 16),
           Text(
-            'We sent a verification link to',
+            context.t.verificationLinkSentTo,
             style: theme.textTheme.bodyMedium,
           ),
           const SizedBox(height: 4),
           Text(
-            user?.email ?? 'your email address',
+            email ?? 'your email address',
             style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 12),
           Text(
-            'You can browse while you wait, but you will need to verify before placing orders.',
+            context.t.verifyToOrderHint,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall?.copyWith(color: AppColors.tanDark),
           ),
           const SizedBox(height: 24),
-          OutlinedButton(
-            onPressed: () async {
-              // Resend — backend not live yet (AUTH-03 email channel).
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Verification email sent.')),
-              );
-            },
-            child: const Text('Resend email'),
-          ),
+          if (email != null && email.isNotEmpty)
+            OutlinedButton(
+              onPressed: _resending || _cooldown > 0 ? null : () => _resend(email),
+              child: Text(
+                _cooldown > 0
+                    ? context.t.resendInSeconds(seconds: _cooldown)
+                    : context.t.resendEmail,
+              ),
+            )
+          else
+            OutlinedButton(
+              onPressed: () => context.go(AppRoutes.login),
+              child: const Text('Back to sign in'),
+            ),
           const SizedBox(height: 8),
+          TextButton(
+            onPressed: _resending ? null : _checkStatus,
+            child: Text(context.t.checkVerificationStatus),
+          ),
+          const SizedBox(height: 4),
           TextButton(
             onPressed: () => context.go(AppRoutes.login),
             child: const Text('Back to sign in'),

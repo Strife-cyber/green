@@ -419,7 +419,10 @@ class MockWalletRepository implements WalletRepository {
   @override
   Future<Wallet> me() async {
     await _delay();
-    return MockStore.wallet;
+    // The wallet screen is the seller's (AppRoutes.sellerWallet), so the demo
+    // surfaces the seller's balance — including the "ready to withdraw" figure
+    // on the seller home queue.
+    return MockStore.sellerWallet;
   }
 
   @override
@@ -438,11 +441,57 @@ class MockPaymentRepository implements PaymentRepository {
   @override
   Future<PaymentResult> initiate(String orderId, PaymentChannel channel) async {
     await _delay();
-    return PaymentResult(
+    final result = PaymentResult(
       orderId: orderId,
       status: PaymentResultStatus.success,
       reference: '${channel == PaymentChannel.mtnMomo ? 'MOMO' : 'OM'}-${_id('ref')}',
     );
+    // Mirror the backend: a successful payment confirms the order, holds the
+    // funds in escrow and auto-assigns a driver (DEL-02) — the buyer never
+    // picks one, and the seller never assigns manually.
+    _settlePayment(orderId);
+    return result;
+  }
+
+  void _settlePayment(String orderId) {
+    final index = store.orders.indexWhere((o) => o.id == orderId);
+    if (index < 0) return;
+    final order = store.orders[index];
+    store.orders[index] = Order(
+      id: order.id,
+      buyerId: order.buyerId,
+      sellerId: order.sellerId,
+      sellerName: order.sellerName,
+      status: OrderStatus.confirmed,
+      paymentStatus: PaymentStatus.escrowHeld,
+      subtotal: order.subtotal,
+      deliveryFee: order.deliveryFee,
+      totalAmount: order.totalAmount,
+      deliveryAddressLabel: order.deliveryAddressLabel,
+      items: order.items,
+      placedAt: order.placedAt,
+      deliveredAt: order.deliveredAt,
+    );
+    if (store.deliveries.any((d) => d.orderId == orderId)) return;
+    store.deliveries.add(Delivery(
+      id: _id('d'),
+      orderId: orderId,
+      driverId: 'u-driver-1',
+      driverName: 'Samuel Awa',
+      assignedAt: DateTime.now(),
+      orderStatus: OrderStatus.confirmed,
+      codeRequired: order.totalAmount > 25000,
+      deliveryAddress: Address(
+        id: 'a-${order.deliveryAddressLabel ?? 'checkout'}',
+        label: order.deliveryAddressLabel ?? 'Delivery',
+        recipientName: 'Marie Ngon',
+        phone: '655000001',
+        region: 'Littoral',
+        addressLine: '${order.deliveryAddressLabel ?? 'Akwa'}, Douala',
+        latitude: 4.0511,
+        longitude: 9.7679,
+      ),
+    ));
   }
 
   @override
@@ -497,6 +546,31 @@ class MockDeliveryRepository implements DeliveryRepository {
     ];
   }
 
+  /// The code-required threshold shared with the backend (order total above
+  /// 25 000 FCFA requires the buyer to enter the emailed 6-digit code).
+  static bool isCodeRequired(Order? order) => order != null && order.totalAmount > 25000;
+
+  Order? _orderFor(String orderId) {
+    for (final o in store.orders) {
+      if (o.id == orderId) return o;
+    }
+    return null;
+  }
+
+  /// Fills `orderStatus`/`codeRequired`/`sellerName` from the linked order when
+  /// a response doesn't already carry them (newly assigned deliveries, list
+  /// items). `sellerName` powers the driver's "Pick up" task line — the live
+  /// delivery payload has no seller, so the mock derives it.
+  Delivery _enrich(Delivery d) {
+    final order = _orderFor(d.orderId);
+    if (order == null) return d;
+    return d.copyWith(
+      orderStatus: d.orderStatus ?? order.status,
+      codeRequired: d.codeRequired || isCodeRequired(order),
+      sellerName: d.sellerName ?? order.sellerName,
+    );
+  }
+
   @override
   Future<Delivery> assign(String orderId, String driverId) async {
     await _delay();
@@ -508,12 +582,16 @@ class MockDeliveryRepository implements DeliveryRepository {
         break;
       }
     }
+    final order = _orderFor(orderId);
     final delivery = Delivery(
       id: _id('d'),
       orderId: orderId,
+      sellerName: order?.sellerName,
       driverId: driverId,
       driverName: driverName ?? 'Assigned driver',
       assignedAt: DateTime.now(),
+      orderStatus: order?.status,
+      codeRequired: isCodeRequired(order),
     );
     store.deliveries.add(delivery);
     return delivery;
@@ -522,13 +600,13 @@ class MockDeliveryRepository implements DeliveryRepository {
   @override
   Future<List<Delivery>> driverOrders() async {
     await _delay();
-    return List.of(store.deliveries);
+    return [for (final d in store.deliveries) _enrich(d)];
   }
 
   @override
   Future<Delivery> get(String id) async {
     await _delay();
-    return store.deliveries.firstWhere((d) => d.id == id);
+    return _enrich(store.deliveries.firstWhere((d) => d.id == id));
   }
 
   @override
@@ -536,18 +614,18 @@ class MockDeliveryRepository implements DeliveryRepository {
     await _delay();
     final index = store.deliveries.indexWhere((d) => d.id == id);
     final current = store.deliveries[index];
-    final updated = Delivery(
-      id: current.id,
-      orderId: current.orderId,
-      driverId: current.driverId,
-      driverName: current.driverName,
-      assignedAt: current.assignedAt,
-      pickupConfirmedAt: DateTime.now(),
-      deliveredAt: current.deliveredAt,
-      currentLatitude: current.currentLatitude,
-      currentLongitude: current.currentLongitude,
-      locationUpdatedAt: current.locationUpdatedAt,
-      deliveryAddress: current.deliveryAddress,
+    // Mirror the backend: pickup flips PENDING|CONFIRMED → SHIPPED in one
+    // transaction (DEL-01) — the driver's action, not a seller button.
+    final order = _orderFor(current.orderId);
+    if (order != null) {
+      final oi = store.orders.indexWhere((o) => o.id == order.id);
+      if (oi >= 0) {
+        store.orders[oi] = _orderCopy(order, status: OrderStatus.shipped);
+      }
+    }
+    final updated = current.copyWith(
+      pickupConfirmedAt: current.pickupConfirmedAt ?? DateTime.now(),
+      orderStatus: OrderStatus.shipped,
     );
     store.deliveries[index] = updated;
     return updated;
@@ -558,74 +636,108 @@ class MockDeliveryRepository implements DeliveryRepository {
     await _delay();
     final index = store.deliveries.indexWhere((d) => d.id == id);
     final current = store.deliveries[index];
-    // The backend generates the code server-side and sends it to the buyer —
-    // the mock uses a fixed code so the demo/tests can confirm it.
-    store.deliveryCodes[id] = '482913';
-    final updated = Delivery(
-      id: current.id,
-      orderId: current.orderId,
-      driverId: current.driverId,
-      driverName: current.driverName,
-      assignedAt: current.assignedAt,
+    final order = _orderFor(current.orderId);
+    // Mirror the backend: complete requires the order to be SHIPPED (picked
+    // up). The code is generated server-side and emailed to the buyer; the
+    // mock stores the fixed `482913` only for code-required orders.
+    if (!current.isPickupConfirmed || order?.status != OrderStatus.shipped) {
+      throw Exception('The delivery must be picked up before completing it.');
+    }
+    if (isCodeRequired(order)) {
+      store.deliveryCodes[id] = '482913';
+    }
+    final updated = current.copyWith(
+      confirmationCodeIssued: true,
       pickupConfirmedAt: current.pickupConfirmedAt ?? DateTime.now(),
-      deliveredAt: current.deliveredAt,
-      currentLatitude: current.currentLatitude,
-      currentLongitude: current.currentLongitude,
-      locationUpdatedAt: current.locationUpdatedAt,
-      deliveryAddress: current.deliveryAddress,
     );
     store.deliveries[index] = updated;
     return updated;
   }
 
   @override
-  Future<Delivery> confirm(String id, String code) async {
+  Future<Delivery> confirm(String id, {String? code}) async {
     await _delay();
-    final expected = store.deliveryCodes[id];
-    if (expected == null) {
-      throw Exception('No confirmation code has been issued for this delivery.');
-    }
-    if (expected != code) {
-      throw Exception('Invalid confirmation code.');
-    }
     final index = store.deliveries.indexWhere((d) => d.id == id);
     final current = store.deliveries[index];
-    final updated = Delivery(
-      id: current.id,
-      orderId: current.orderId,
-      driverId: current.driverId,
-      driverName: current.driverName,
-      assignedAt: current.assignedAt,
-      pickupConfirmedAt: current.pickupConfirmedAt,
+    final order = _orderFor(current.orderId);
+    // One-tap "Got it": the code check is skipped entirely when the order is
+    // below the code-required threshold. Code-required orders validate the
+    // 6-digit code (wrong code / missing code are rejected).
+    if (isCodeRequired(order)) {
+      final expected = store.deliveryCodes[id];
+      if (expected == null) {
+        throw Exception('No confirmation code has been issued for this delivery.');
+      }
+      if (code == null || expected != code) {
+        throw Exception('Invalid confirmation code.');
+      }
+      store.deliveryCodes.remove(id);
+    }
+    // Confirm is the ONLY path to DELIVERED (releases escrow + receipt).
+    if (order != null) {
+      final oi = store.orders.indexWhere((o) => o.id == order.id);
+      if (oi >= 0) {
+        store.orders[oi] = _orderCopy(
+          order,
+          status: OrderStatus.delivered,
+          paymentStatus: PaymentStatus.settled,
+          deliveredAt: DateTime.now(),
+        );
+      }
+    }
+    final updated = current.copyWith(
       deliveredAt: DateTime.now(),
-      currentLatitude: current.currentLatitude,
-      currentLongitude: current.currentLongitude,
-      locationUpdatedAt: current.locationUpdatedAt,
-      deliveryAddress: current.deliveryAddress,
+      orderStatus: OrderStatus.delivered,
     );
     store.deliveries[index] = updated;
-    store.deliveryCodes.remove(id);
     return updated;
   }
+
+  Order _orderCopy(
+    Order order, {
+    OrderStatus? status,
+    PaymentStatus? paymentStatus,
+    DateTime? deliveredAt,
+  }) =>
+      Order(
+        id: order.id,
+        buyerId: order.buyerId,
+        sellerId: order.sellerId,
+        sellerName: order.sellerName,
+        status: status ?? order.status,
+        paymentStatus: paymentStatus ?? order.paymentStatus,
+        subtotal: order.subtotal,
+        deliveryFee: order.deliveryFee,
+        totalAmount: order.totalAmount,
+        deliveryAddressLabel: order.deliveryAddressLabel,
+        items: order.items,
+        placedAt: order.placedAt,
+        deliveredAt: deliveredAt ?? order.deliveredAt,
+      );
 }
 
 // ---- chat ------------------------------------------------------------------
 
 class MockChatRepository implements ChatRepository {
   final MockStore store;
+
+  /// Threads the mock user has opened — their badge stays cleared until a new
+  /// message lands (mirrors the realtime `message:read` clearing the badge).
+  final Set<String> _readThreads = {};
+
   MockChatRepository(this.store);
 
   @override
   Future<List<ChatThread>> threads() async {
     await _delay();
-    return List.of(store.chatThreads);
+    return [for (final t in store.chatThreads) _enrich(t)];
   }
 
   @override
   Future<ChatThread?> threadForOrder(String orderId) async {
     await _delay();
     for (final t in store.chatThreads) {
-      if (t.orderId == orderId) return t;
+      if (t.orderId == orderId) return _enrich(t);
     }
     return null;
   }
@@ -647,14 +759,70 @@ class MockChatRepository implements ChatRepository {
       content: input.content,
       fileUrl: input.filePath,
       sentAt: DateTime.now(),
+      // The mock delivers instantly so the tick progression is visible.
+      deliveredAt: DateTime.now(),
     );
     store.chatMessages.putIfAbsent(threadId, () => []).add(message);
+    // Keep the thread list preview in sync with the new message.
+    final index = store.chatThreads.indexWhere((t) => t.id == threadId);
+    if (index != -1) {
+      final t = store.chatThreads[index];
+      store.chatThreads[index] = t.copyWith(
+        lastMessage: ChatThreadLastMessage(
+          content: message.content,
+          type: message.type,
+          sentAt: message.sentAt,
+          mine: true,
+        ),
+        updatedAt: message.sentAt,
+      );
+    }
     return message;
   }
 
   @override
   Future<void> markRead(String threadId) async {
     await _delay();
+    _readThreads.add(threadId);
+  }
+
+  /// Fills the enriched display fields the backend now packs into
+  /// `GET /chat/threads` — the mock derives them from the in-memory store so
+  /// the thread list and order-context header stay fully functional without
+  /// the backend.
+  ChatThread _enrich(ChatThread t) {
+    final messages = store.chatMessages[t.id] ?? const <ChatMessage>[];
+    ChatMessage? last;
+    for (final m in messages) {
+      if (last == null || m.sentAt.isAfter(last.sentAt)) last = m;
+    }
+    Order? order;
+    for (final o in store.orders) {
+      if (o.id == t.orderId) {
+        order = o;
+        break;
+      }
+    }
+    final unread = _readThreads.contains(t.id)
+        ? 0
+        : messages.where((m) => m.senderId != 'u-buyer-1' && m.readAt == null).length;
+    return t.copyWith(
+      orderStatus: order?.status,
+      orderTotal: order?.totalAmount ?? 0,
+      productPreview: order == null || order.items.isEmpty
+          ? null
+          : ChatThreadProductPreview(name: order.items.first.productName),
+      lastMessage: last == null
+          ? null
+          : ChatThreadLastMessage(
+              content: last.content,
+              type: last.type,
+              sentAt: last.sentAt,
+              mine: last.senderId == 'u-buyer-1',
+            ),
+      unreadCount: unread,
+      updatedAt: last?.sentAt ?? t.createdAt,
+    );
   }
 }
 
@@ -773,6 +941,11 @@ class MockSellerProfileRepository implements SellerProfileRepository {
     await _delay();
     return 'mock://selfie';
   }
+
+  @override
+  Future<void> resubmit() async {
+    await _delay(); // No-op — the mock seller is already approved.
+  }
 }
 
 class MockUserRepository implements UserRepository {
@@ -882,6 +1055,24 @@ class MockAdminRepository implements AdminRepository {
   }
 
   @override
+  Future<void> assignTicket(String id) async {
+    await _delay();
+    // Flip the ticket to ASSIGNED so the admin shell reflects the state change.
+    final index = store.tickets.indexWhere((t) => t.id == id);
+    if (index >= 0) {
+      final current = store.tickets[index];
+      store.tickets[index] = SupportTicket(
+        id: current.id,
+        userId: current.userId,
+        subject: current.subject,
+        description: current.description,
+        status: TicketStatus.assigned,
+        createdAt: current.createdAt,
+      );
+    }
+  }
+
+  @override
   Future<void> resolveTicket(String id) async {
     await _delay();
   }
@@ -910,8 +1101,10 @@ class MockAdminRepository implements AdminRepository {
   }
 
   @override
-  Future<void> createDriver(CreateDriverInput input) async {
+  Future<String?> createDriver(CreateDriverInput input) async {
     await _delay();
+    // Simulates the backend generating a temporary password for the driver.
+    return 'Temp${DateTime.now().millisecondsSinceEpoch % 100000}@';
   }
 
   @override

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'error_view.dart';
+import 'error_view.dart' show ErrorView, friendlyErrorMessage;
 
 /// Like [AsyncView] but with a pull-to-refresh gesture.
 ///
@@ -40,8 +40,10 @@ class RefreshableAsyncView<T> extends StatelessWidget {
         return RefreshIndicator(onRefresh: onRefresh, child: child);
       },
       loading: () => loading ?? const Center(child: CircularProgressIndicator()),
-      error: (error, _) =>
-          ErrorView(message: errorMessage ?? _friendly(error), onRetry: onRetry),
+      error: (error, _) => ErrorView(
+            message: errorMessage ?? friendlyErrorMessage(error, context),
+            onRetry: onRetry,
+          ),
     );
   }
 
@@ -59,9 +61,4 @@ class RefreshableAsyncView<T> extends StatelessWidget {
     );
   }
 
-  String _friendly(Object error) {
-    final text = error.toString();
-    // Strip the leading 'Exception: ' noise from ApiException.toString.
-    return text.contains(': ') ? text.substring(text.indexOf(': ') + 2) : text;
-  }
 }

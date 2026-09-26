@@ -6,12 +6,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:green/app.dart';
+import 'package:green/core/realtime/socket_service.dart';
 import 'package:green/core/storage/token_storage.dart';
 import 'package:green/data/repositories/providers.dart';
 import 'package:green/features/buyer/screens/buyer_home_screen.dart';
 import 'package:green/shared/widgets/custom_bottom_nav_bar.dart';
 import 'package:green/shared/widgets/product_card.dart';
 
+import 'helpers/fake_socket_service.dart';
 import 'helpers/test_token_storage.dart';
 
 void main() {
@@ -23,6 +25,9 @@ void main() {
           tokenStorageProvider.overrideWithValue(storage),
           // Keep using the in-memory mocks — no real network in tests.
           useMocksProvider.overrideWithValue(true),
+          // Screens eagerly connect the socket (e.g. the chat tab in the role
+          // shells); dotenv is unloaded in tests, so use a no-op service.
+          socketServiceProvider.overrideWithValue(FakeSocketService()),
         ],
         child: const GreenApp(),
       ),
@@ -57,7 +62,7 @@ void main() {
     expect(Navigator.of(homeEl).canPop(), isFalse);
   });
 
-  testWidgets('seller sign-up lands on the seller home',
+  testWidgets('seller sign-up lands on email verification',
       (WidgetTester tester) async {
     final storage = InMemoryTokenStorage();
     await tester.pumpWidget(
@@ -65,6 +70,7 @@ void main() {
         overrides: [
           tokenStorageProvider.overrideWithValue(storage),
           useMocksProvider.overrideWithValue(true),
+          socketServiceProvider.overrideWithValue(FakeSocketService()),
         ],
         child: const GreenApp(),
       ),
@@ -119,10 +125,10 @@ void main() {
     await tester.tap(submit);
     await tester.pumpAndSettle();
 
-    // New seller lands on the seller home (Dashboard tab) with the
-    // pending-approval banner (AUTH-07).
-    expect(find.text('Dashboard'), findsWidgets);
-    expect(find.textContaining('pending approval'), findsWidgets);
+    // A fresh account is unverified (AUTH-03), so the router parks the new
+    // seller on the email-verification screen rather than the seller home —
+    // the pending-approval queue banner is only reachable after verification.
+    expect(find.text('Verify your email'), findsWidgets);
   });
 
   testWidgets('buyer browses the product grid and opens a detail screen',
@@ -136,6 +142,7 @@ void main() {
         overrides: [
           tokenStorageProvider.overrideWithValue(storage),
           useMocksProvider.overrideWithValue(true),
+          socketServiceProvider.overrideWithValue(FakeSocketService()),
         ],
         child: const GreenApp(),
       ),

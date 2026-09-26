@@ -110,6 +110,12 @@ class MockAuthRepository implements AuthRepository {
     await Future<void>.delayed(const Duration(milliseconds: 400));
   }
 
+  @override
+  Future<void> resendVerification(String email) async {
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    // Simulates re-sending the verification email (AUTH-03).
+  }
+
   AuthSession _sessionFor(String email, {required bool approvedSeller}) {
     final user = MockData.userForEmail(email);
     return AuthSession(

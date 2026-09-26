@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +10,7 @@ import '../../../data/models/category.dart';
 import '../../../data/models/enums.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/providers.dart';
+import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/form_text_field.dart';
 import '../../../shared/widgets/password_strength_bar.dart';
 import '../../../shared/widgets/photo_picker.dart';
@@ -64,7 +66,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (!_agreeTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please accept the terms to continue.')),
+        SnackBar(content: Text(context.t.termsRequired)),
       );
       return;
     }
@@ -98,12 +100,37 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sign-up failed. Please try again.')),
+          SnackBar(content: Text(context.t.signUpFailed)),
         );
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
+  }
+
+  /// Opens a short terms summary dialog from the tappable terms link. In a
+  /// real deployment this would load the hosted legal pages; the dialog keeps
+  /// the flow self-contained and non-blocking.
+  void _showTermsDialog(String title) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: const Text(
+          'Green connects farmers directly to buyers. Sellers keep the rights to '
+          'their farm, products and content. By using the platform you agree to '
+          'fair dealing, accurate product descriptions and safe handling of '
+          'perishable goods. Full terms and the privacy policy are provided at '
+          'the end of the onboarding flow.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// The main-category dropdown, fed by the backend's real categories. While
@@ -245,18 +272,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 Text('Identity verification', style: Theme.of(context).textTheme.titleSmall),
                 const SizedBox(height: 4),
                 Text(
-                  'These documents are reviewed by our team before your farm goes live.',
+                  context.t.identityDocsOptional,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.tanDark),
                 ),
                 const SizedBox(height: 12),
                 _IdentityRow(
-                  label: 'National ID card',
+                  label: context.t.nationalIdOptional,
                   imagePath: _nationalIdUrl,
                   onPicked: (path) => setState(() => _nationalIdUrl = path),
                 ),
                 const SizedBox(height: 8),
                 _IdentityRow(
-                  label: 'Selfie of you or your market space',
+                  label: context.t.selfieOptional,
                   imagePath: _selfieUrl,
                   onPicked: (path) => setState(() => _selfieUrl = path),
                 ),
@@ -291,8 +318,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 onChanged: _submitting ? null : (v) => setState(() => _agreeTerms = v ?? false),
                 contentPadding: EdgeInsets.zero,
                 controlAffinity: ListTileControlAffinity.leading,
-                title: Text('I agree to the Terms of Service and Privacy Policy',
-                    style: theme.textTheme.bodySmall),
+                title: _TermsRichText(onShowTerms: _showTermsDialog),
               ),
               const SizedBox(height: 8),
               FilledButton(
@@ -352,6 +378,69 @@ class _IdentityRow extends StatelessWidget {
           child: Text(label, style: theme.textTheme.bodyMedium),
         ),
       ],
+    );
+  }
+}
+
+/// The "I agree to the Terms of Service and Privacy Policy" label with the
+/// two legal terms rendered as tappable links (each opens [onShowTerms]).
+/// Falls back to plain text if the localized sentence can't be split on the
+/// terms' own translations.
+class _TermsRichText extends ConsumerStatefulWidget {
+  final void Function(String title) onShowTerms;
+
+  const _TermsRichText({required this.onShowTerms});
+
+  @override
+  ConsumerState<_TermsRichText> createState() => _TermsRichTextState();
+}
+
+class _TermsRichTextState extends ConsumerState<_TermsRichText> {
+  TapGestureRecognizer? _tosRecognizer;
+  TapGestureRecognizer? _ppRecognizer;
+
+  @override
+  void dispose() {
+    _tosRecognizer?.dispose();
+    _ppRecognizer?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final full = context.t.agreeTerms;
+    final tos = context.t.termsOfService;
+    final pp = context.t.privacyPolicy;
+
+    final tosIndex = full.indexOf(tos);
+    final ppIndex = full.indexOf(pp);
+    if (tosIndex < 0 || ppIndex < 0) {
+      // Sentence doesn't embed the term labels — render it as plain text.
+      return Text(full, style: theme.textTheme.bodySmall);
+    }
+
+    final linkStyle = TextStyle(
+      color: AppColors.greenDark,
+      fontWeight: FontWeight.w700,
+      decoration: TextDecoration.underline,
+    );
+    _tosRecognizer ??= TapGestureRecognizer()
+      ..onTap = () => widget.onShowTerms(tos);
+    _ppRecognizer ??= TapGestureRecognizer()
+      ..onTap = () => widget.onShowTerms(pp);
+
+    return Text.rich(
+      TextSpan(
+        style: theme.textTheme.bodySmall,
+        children: [
+          TextSpan(text: full.substring(0, tosIndex)),
+          TextSpan(text: tos, style: linkStyle, recognizer: _tosRecognizer),
+          TextSpan(text: full.substring(tosIndex + tos.length, ppIndex)),
+          TextSpan(text: pp, style: linkStyle, recognizer: _ppRecognizer),
+          TextSpan(text: full.substring(ppIndex + pp.length)),
+        ],
+      ),
     );
   }
 }

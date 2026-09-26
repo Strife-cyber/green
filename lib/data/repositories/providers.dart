@@ -54,8 +54,10 @@ final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
 });
 
 /// Lazily-fetched product categories (BUY-03) — shared by the catalog filter,
-/// the product form and the sign-up category dropdown.
-final categoriesProvider = FutureProvider<List<Category>>(
+/// the product form and the sign-up category dropdown. `autoDispose` so the
+/// list refetches on each screen visit instead of caching stale categories
+/// after admin create/rename/delete (ADM-16).
+final categoriesProvider = FutureProvider.autoDispose<List<Category>>(
   (ref) => ref.watch(categoryRepositoryProvider).list(),
 );
 

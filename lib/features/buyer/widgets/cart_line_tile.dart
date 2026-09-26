@@ -23,7 +23,8 @@ class CartLineTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final maxKg = line.product.quantityKg > 0 ? line.product.quantityKg : 1000.0;
+    // Cap the stepper at live stock — 0 kg (sold out) disables both buttons.
+    final maxKg = line.product.quantityKg;
 
     return Card(
       child: Padding(

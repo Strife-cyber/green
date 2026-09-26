@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/utils/validators.dart';
+import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/form_text_field.dart';
 import '../../../shared/widgets/password_strength_bar.dart';
 import '../../../theme/app_colors.dart';
@@ -27,6 +28,29 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   bool _done = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Pre-fill the token from the reset deep link (`/reset-password?token=…`
+    // or `/reset-password/<token>`), so the user never has to copy/paste it.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final uri = GoRouter.of(context).routerDelegate.currentConfiguration.uri;
+      final queryToken = uri.queryParameters['token'];
+      String? pathToken;
+      if (uri.path != AppRoutes.resetPassword && uri.pathSegments.isNotEmpty) {
+        pathToken = uri.pathSegments.last;
+      }
+      final token = (queryToken?.isNotEmpty ?? false)
+          ? queryToken
+          : (pathToken?.isNotEmpty ?? false) ? pathToken : null;
+      if (token != null) {
+        _token.text = token;
+        setState(() {});
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _token.dispose();
     _password.dispose();
@@ -46,7 +70,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Reset failed. The link may be invalid or expired.')),
+          SnackBar(content: Text(context.t.invalidResetLink)),
         );
       }
     } finally {
@@ -85,8 +109,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                 children: [
                   FormTextField(
                     controller: _token,
-                    label: 'Reset token',
-                    hintText: 'Paste the link token from your email',
+                    label: context.t.resetTokenLabel,
+                    hintText: context.t.resetTokenHint,
                     textInputAction: TextInputAction.next,
                     prefixIcon: const Icon(Icons.vpn_key_outlined),
                     validator: (v) => validateRequired(v, 'Token'),

@@ -5,13 +5,16 @@ import '../../../data/models/product.dart';
 import '../../../data/repositories/providers.dart';
 
 /// Lazily-fetched product categories for the catalog filter chips (BUY-03).
-final categoryListProvider = FutureProvider<List<Category>>(
+/// `autoDispose` so the chips refresh on each screen visit.
+final categoryListProvider = FutureProvider.autoDispose<List<Category>>(
   (ref) => ref.watch(categoryRepositoryProvider).list(),
 );
 
 /// The full active product catalog. Used by the wishlist to resolve saved
-/// product ids back into full products.
-final productCatalogProvider = FutureProvider<List<Product>>(
+/// product ids back into full products. `autoDispose` so the catalog refetches
+/// on each visit instead of caching stale products after seller create/update/
+/// delete (SELL-01).
+final productCatalogProvider = FutureProvider.autoDispose<List<Product>>(
   (ref) async {
     final page = await ref
         .watch(productRepositoryProvider)

@@ -5,6 +5,10 @@ class Report {
   final String id;
   final String reporterId;
   final String reportedId;
+
+  /// Best-effort display name of the reported user, when the backend includes
+  /// it (`reportedName` / `reported_name`). Falls back to [reportedId].
+  final String? reportedName;
   final ReportTargetType targetType;
   final String? targetId;
   final String reason;
@@ -16,6 +20,7 @@ class Report {
     required this.id,
     required this.reporterId,
     required this.reportedId,
+    this.reportedName,
     required this.targetType,
     this.targetId,
     required this.reason,
@@ -30,6 +35,7 @@ class Report {
         id: json['id'] as String,
         reporterId: json['reporterId'] as String? ?? json['reporter_id'] as String? ?? '',
         reportedId: json['reportedId'] as String? ?? json['reported_id'] as String? ?? '',
+        reportedName: json['reportedName'] as String? ?? json['reported_name'] as String?,
         targetType: ReportTargetType.fromApi(json['targetType'] as String? ?? json['target_type'] as String? ?? 'profile'),
         targetId: json['targetId'] as String? ?? json['target_id'] as String?,
         reason: json['reason'] as String? ?? '',

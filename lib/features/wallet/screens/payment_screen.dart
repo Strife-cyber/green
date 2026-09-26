@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
+import '../../../data/models/enums.dart';
 import '../../../data/models/order.dart';
 import '../../../data/repositories/payment_repository.dart';
 import '../../../data/repositories/providers.dart';
+import '../../../data/repositories/user_repository.dart';
 import '../../../shared/widgets/amount_text.dart';
 import '../../../shared/widgets/async_view.dart';
 import '../../../theme/app_colors.dart';
+import '../../auth/controllers/auth_controller.dart';
 import '../../buyer/controllers/buyer_order_list_controller.dart';
 import '../controllers/payment_controller.dart';
 import '../controllers/wallet_controller.dart';
@@ -47,25 +50,66 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         .pay(orderId: widget.orderId, channel: _channel);
   }
 
+  /// Other unpaid order ids (excluding the one this screen is paying). The
+  /// buyer order list is what the multi-order checkout pushes through — after
+  /// paying order 1 of 2, this still lists order 2 so we can continue.
+  List<String> _remainingUnpaidOrderIds() {
+    final orders =
+        ref.read(buyerOrderListControllerProvider).valueOrNull ?? const <Order>[];
+    return [
+      for (final o in orders)
+        if (o.paymentStatus == PaymentStatus.unpaid && o.id != widget.orderId)
+          o.id,
+    ];
+  }
+
+  /// Continue paying the next unpaid order, or finish when there are none.
+  void _continue() {
+    final remaining = _remainingUnpaidOrderIds();
+    ref.invalidate(buyerOrderListControllerProvider);
+    ref.invalidate(walletControllerProvider);
+    if (remaining.isNotEmpty) {
+      context.go(AppRoutes.payment(remaining.first));
+    } else {
+      context.go(AppRoutes.buyerOrders);
+    }
+  }
+
+  /// Straight to the Orders tab (fresh data), skipping any unpaid orders.
+  void _finish() {
+    ref.invalidate(buyerOrderListControllerProvider);
+    ref.invalidate(walletControllerProvider);
+    context.go(AppRoutes.buyerOrders);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final order = ref.watch(paymentOrderProvider(widget.orderId));
     final payment = ref.watch(paymentControllerProvider(widget.orderId));
+    // Watch the buyer list so payment can continue through any other unpaid
+    // orders created during the same checkout (kept invisible: this screen
+    // shows only the one order being paid).
+    final unpaidOrders = ref.watch(buyerOrderListControllerProvider).valueOrNull ??
+        const <Order>[];
+    final unpaidIds = [
+      for (final o in unpaidOrders)
+        if (o.paymentStatus == PaymentStatus.unpaid) o.id,
+    ];
+    final remaining = [for (final id in unpaidIds) if (id != widget.orderId) id];
 
     final body = switch (payment) {
       PaymentIdle() => _buildCheckout(theme, order),
       PaymentInitiating() => const _PaymentLoading(),
       PaymentSuccess(:final result) => _PaymentSuccessView(
-            result: result,
-            onDone: () {
-              // Fresh data when the buyer lands on the Orders tab / wallet.
-              ref.invalidate(buyerOrderListControllerProvider);
-              ref.invalidate(walletControllerProvider);
-              context.go(AppRoutes.buyerOrders);
-            },
-          ),
-      PaymentFailure(:final message) => _PaymentError(message: message, onRetry: _pay),
+          result: result,
+          nextOrderId: remaining.isEmpty ? null : remaining.first,
+          remainingCount: remaining.length,
+          onPayNext: _continue,
+          onFinish: _finish,
+        ),
+      PaymentFailure(:final message) =>
+        _PaymentError(message: message, onRetry: _pay),
     };
 
     return Scaffold(
@@ -96,6 +140,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 12),
+          const _PhoneCard(),
           const SizedBox(height: 16),
           Text('Choose payment channel', style: theme.textTheme.titleSmall),
           const SizedBox(height: 8),
@@ -150,13 +196,23 @@ class _PaymentLoading extends StatelessWidget {
 
 class _PaymentSuccessView extends StatelessWidget {
   final PaymentResult result;
-  final VoidCallback onDone;
+  final String? nextOrderId;
+  final int remainingCount;
+  final VoidCallback onPayNext;
+  final VoidCallback onFinish;
 
-  const _PaymentSuccessView({required this.result, required this.onDone});
+  const _PaymentSuccessView({
+    required this.result,
+    this.nextOrderId,
+    this.remainingCount = 0,
+    required this.onPayNext,
+    required this.onFinish,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final hasNext = nextOrderId != null && remainingCount > 0;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -169,15 +225,135 @@ class _PaymentSuccessView extends StatelessWidget {
             const SizedBox(height: 8),
             if (result.reference != null)
               Text('Reference: ${result.reference}', style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.tanDark)),
+            if (hasNext) ...[
+              const SizedBox(height: 8),
+              Text(
+                'You still have $remainingCount unpaid '
+                'order${remainingCount == 1 ? '' : 's'}.',
+                style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.tanDark),
+              ),
+            ],
             const SizedBox(height: 24),
             FilledButton(
-              onPressed: onDone,
+              onPressed: hasNext ? onPayNext : onFinish,
               style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14)),
-              child: const Text('Done'),
+              child: Text(hasNext ? 'Pay next order ($remainingCount left)' : 'Done'),
             ),
+            if (hasNext) ...[
+              const SizedBox(height: 8),
+              TextButton(onPressed: onFinish, child: const Text('Done for now')),
+            ],
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Shows which mobile-money number will be charged (the buyer's profile phone)
+/// and lets them see / edit it before paying.
+class _PhoneCard extends ConsumerWidget {
+  const _PhoneCard();
+
+  Future<void> _editPhone(BuildContext context, WidgetRef ref) async {
+    final user = ref.read(authControllerProvider).valueOrNull?.user;
+    final phone = await showDialog<String>(
+      context: context,
+      builder: (context) => _PhoneDialog(initialPhone: user?.phone ?? ''),
+    );
+    if (phone == null || phone.isEmpty || !context.mounted) return;
+    try {
+      await ref
+          .read(userRepositoryProvider)
+          .updateProfile(UpdateProfileInput(phone: phone));
+      // The auth session owns the profile — refetch it to reflect the change.
+      ref.invalidate(authControllerProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Payment number updated')),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not update your phone number.')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final user = ref.watch(authControllerProvider).valueOrNull?.user;
+    final phone = user?.phone;
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.phone_android, color: AppColors.green),
+        title: Text('Charged to', style: theme.textTheme.bodySmall),
+        subtitle: Text(
+          (phone == null || phone.isEmpty)
+              ? 'No number on your profile — add one'
+              : phone,
+          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        trailing: IconButton(
+          tooltip: 'Edit number',
+          icon: const Icon(Icons.edit_outlined),
+          onPressed: () => _editPhone(context, ref),
+        ),
+      ),
+    );
+  }
+}
+
+class _PhoneDialog extends StatefulWidget {
+  final String initialPhone;
+
+  const _PhoneDialog({required this.initialPhone});
+
+  @override
+  State<_PhoneDialog> createState() => _PhoneDialogState();
+}
+
+class _PhoneDialogState extends State<_PhoneDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialPhone);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Mobile money number'),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        keyboardType: TextInputType.phone,
+        decoration: const InputDecoration(
+          labelText: 'Phone (e.g. 6XX XXX XXX)',
+          hintText: '650 123 456',
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _controller.text.trim()),
+          child: const Text('Save'),
+        ),
+      ],
     );
   }
 }

@@ -29,6 +29,9 @@ abstract class AuthRepository {
   Future<void> resetPassword({required String token, required String newPassword});
 
   Future<void> verifyEmail(String token);
+
+  /// Resends the email-verification link to the given address (AUTH-03).
+  Future<void> resendVerification(String email);
 }
 
 /// Sign-up payload (AUTH-01). Sellers additionally provide farm details and

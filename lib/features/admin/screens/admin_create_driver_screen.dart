@@ -35,23 +35,72 @@ class _AdminCreateDriverScreenState extends ConsumerState<AdminCreateDriverScree
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    final ok = await ref.read(adminCreateDriverControllerProvider.notifier).submit(
-          CreateDriverInput(
-            firstName: _firstName.text.trim(),
-            lastName: _lastName.text.trim(),
-            email: _email.text.trim(),
-            phone: _phone.text.trim(),
-            region: _region!,
-          ),
-        );
+    final tempPassword =
+        await ref.read(adminCreateDriverControllerProvider.notifier).submit(
+              CreateDriverInput(
+                firstName: _firstName.text.trim(),
+                lastName: _lastName.text.trim(),
+                email: _email.text.trim(),
+                phone: _phone.text.trim(),
+                region: _region!,
+              ),
+            );
     if (!mounted) return;
-    if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Driver account created')));
+    if (tempPassword != null) {
+      // Show the one-time temporary password so the admin can share it with
+      // the driver before leaving the screen.
+      await _showTempPassword(tempPassword);
+      if (!mounted) return;
       context.pop();
     } else {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Could not create the driver. Try again.')));
     }
+  }
+
+  Future<void> _showTempPassword(String tempPassword) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Driver created'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Share this temporary password with the driver — it is shown once and will be reset on their first login.',
+                style: Theme.of(dialogContext).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(dialogContext).colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  tempPassword,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(dialogContext).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2,
+                      ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Done'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

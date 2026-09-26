@@ -7,17 +7,20 @@ import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/app_shell.dart';
 import '../../../theme/app_colors.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../../chat/screens/chat_threads_screen.dart';
 import '../controllers/seller_dashboard_controller.dart';
 import '../controllers/seller_order_list_controller.dart';
 import '../controllers/seller_product_list_controller.dart';
 import '../controllers/seller_profile_controller.dart';
 import 'seller_dashboard_screen.dart';
-import 'seller_orders_screen.dart';
 import 'seller_products_screen.dart';
 import 'seller_profile_screen.dart';
+import 'seller_queue_screen.dart';
 
-/// Seller role home: a BraidsBook-style [AppShell] over the dashboard,
-/// products, orders, wallet and profile screens (AUTH-06).
+/// Seller role home: a BraidsBook-style [AppShell] where the first tab is the
+/// "what needs you now" queue, with catalog, analytics, chat and profile
+/// behind tabs (AUTH-06). The seller only prepares orders — the driver picks
+/// up — so there are no confirm/ship/assign actions anywhere on this flow.
 class SellerHomeScreen extends ConsumerStatefulWidget {
   const SellerHomeScreen({super.key});
 
@@ -41,19 +44,21 @@ class _SellerHomeScreenState extends ConsumerState<SellerHomeScreen> {
     ref.listen(sellerTabProvider, (previous, next) {
       if (previous == next) return;
       switch (next) {
-        case 0: ref.invalidate(sellerDashboardControllerProvider); break;
+        case 0: ref.invalidate(sellerOrderListControllerProvider); break;
         case 1: ref.invalidate(sellerProductListControllerProvider); break;
-        case 2: ref.invalidate(sellerOrderListControllerProvider); break;
-        case 3: ref.invalidate(sellerProfileControllerProvider); break;
+        case 2: ref.invalidate(sellerDashboardControllerProvider); break;
+        case 3: break; // Chat is self-managing.
+        case 4: ref.invalidate(sellerProfileControllerProvider); break;
       }
     });
     return AppShell(
       tabProvider: sellerTabProvider,
       persistKey: 'seller',
       tabs: [
-        AppShellTab(label: t.navDashboard, icon: Icons.dashboard_outlined, page: const SellerDashboardScreen()),
-        AppShellTab(label: t.navProducts, icon: Icons.inventory_2_outlined, page: const SellerProductsScreen()),
-        AppShellTab(label: t.navOrders, icon: Icons.receipt_long_outlined, page: const SellerOrdersScreen()),
+        AppShellTab(label: t.navQueue, icon: Icons.inventory_2_outlined, page: const SellerQueueScreen()),
+        AppShellTab(label: t.navProducts, icon: Icons.storefront_outlined, page: const SellerProductsScreen()),
+        AppShellTab(label: t.navDashboard, icon: Icons.analytics_outlined, page: const SellerDashboardScreen()),
+        AppShellTab(label: t.navChat, icon: Icons.chat_bubble_outline, page: const ChatThreadsScreen()),
         AppShellTab(label: t.navProfile, icon: Icons.person_outline, page: const SellerProfileScreen()),
       ],
     );

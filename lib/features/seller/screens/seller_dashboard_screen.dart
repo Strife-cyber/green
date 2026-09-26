@@ -90,7 +90,7 @@ class SellerDashboardScreen extends ConsumerWidget {
                   QuickAction(
                     icon: Icons.receipt_long_outlined,
                     label: context.t.qaOrders,
-                    onTap: () => ref.read(sellerTabProvider.notifier).state = 2,
+                    onTap: () => ref.read(sellerTabProvider.notifier).state = 0,
                   ),
                   QuickAction(
                     icon: Icons.account_balance_wallet_outlined,

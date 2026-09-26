@@ -9,6 +9,8 @@ import '../../../shared/widgets/category_chips.dart';
 import '../../../shared/widgets/debounced_search_bar.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/refreshable_async_view.dart';
+import '../../../theme/app_colors.dart';
+import '../../chat/screens/chat_threads_screen.dart';
 import '../controllers/buyer_order_list_controller.dart';
 import '../controllers/cart_controller.dart';
 import '../controllers/product_list_controller.dart';
@@ -17,9 +19,9 @@ import 'buyer_orders_screen.dart';
 import 'buyer_profile_screen.dart';
 import 'cart_screen.dart';
 
-/// The buyer's landing shell: a BraidsBook-style [AppShell] over four core
-/// tabs — Home feed, Cart (with live badge), Orders, Profile. Search lives on
-/// the Home feed (search bar + quick action), so the bar stays at 4 items.
+/// The buyer's landing shell: a BraidsBook-style [AppShell] over five tabs —
+/// Home feed, Cart (with live badge), Orders, Chat, Profile. Search lives on
+/// the Home feed (search bar + quick action), so the bar stays at 5 items.
 class BuyerHomeScreen extends ConsumerWidget {
   const BuyerHomeScreen({super.key});
 
@@ -33,7 +35,7 @@ class BuyerHomeScreen extends ConsumerWidget {
       switch (next) {
         case 0: ref.invalidate(productListControllerProvider); break;
         case 2: ref.invalidate(buyerOrderListControllerProvider); break;
-        // 1 = Cart (local state), 3 = Profile — nothing to refetch.
+        // 1 = Cart (local state), 3 = Chat (self-managing), 4 = Profile.
       }
     });
     return AppShell(
@@ -48,6 +50,7 @@ class BuyerHomeScreen extends ConsumerWidget {
           page: const CartScreen(),
         ),
         AppShellTab(label: t.navOrders, icon: Icons.receipt_long_outlined, page: const BuyerOrdersScreen()),
+        AppShellTab(label: t.navChat, icon: Icons.chat_bubble_outline, page: const ChatThreadsScreen()),
         AppShellTab(label: t.navProfile, icon: Icons.person_outline, page: const BuyerProfileScreen()),
       ],
     );
@@ -92,8 +95,26 @@ class _HomeFeed extends ConsumerWidget {
                 }
               },
             ),
-            loading: () => const SizedBox(height: 40),
-            error: (_, _) => const SizedBox(height: 40),
+            loading: () => const _CategoryChipsSkeleton(),
+            error: (_, _) => Row(
+              children: [
+                const SizedBox(width: 16),
+                const Icon(Icons.error_outline,
+                    size: 18, color: AppColors.orangeDark),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Could not load categories',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => ref.invalidate(categoryListProvider),
+                  child: const Text('Retry'),
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
           ),
           const SizedBox(height: 4),
           Expanded(
@@ -106,6 +127,32 @@ class _HomeFeed extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Lightweight placeholder for the category chip row while it loads — cream
+/// pills at the same height as the real [CategoryChips] (40px).
+class _CategoryChipsSkeleton extends StatelessWidget {
+  const _CategoryChipsSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: 6,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (_, _) => Container(
+          width: 76,
+          decoration: BoxDecoration(
+            color: AppColors.tan.withValues(alpha: 0.45),
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
       ),
     );
   }
