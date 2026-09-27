@@ -3,7 +3,6 @@ import '../../../core/utils/formatters.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/delivery.dart';
-import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/async_view.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../../../theme/app_colors.dart';
@@ -11,9 +10,11 @@ import '../controllers/delivery_tracking_controller.dart';
 import '../controllers/driver_delivery_detail_controller.dart';
 import '../widgets/live_delivery_map.dart';
 
-/// Driver view of one delivery: live map, status and the Start → Arrived
-/// actions (DRV-03/04). The confirmation code is issued by the backend and sent
-/// to the buyer (DEL-07) — the driver never sees it, and there is no buyer chat.
+/// Driver view of one delivery: live map, the destination (recipient, phone,
+/// address, coordinates) and ONE contextual action — "Confirm pickup" until
+/// picked up, then "I've arrived — send buyer the code" (DEL-07/DRV-03/04).
+/// Position publishing runs app-wide from the driver home screen, so opening
+/// this page is never required for the buyer to see movement.
 class DriverDeliveryDetailScreen extends ConsumerStatefulWidget {
   final String id;
 
@@ -32,20 +33,6 @@ class _DriverDeliveryDetailScreenState extends ConsumerState<DriverDeliveryDetai
 
   @override
   Widget build(BuildContext context) {
-    // The driver publishes their mock position once the delivery is known, and
-    // stops once it is delivered.
-    ref.listen(deliveryTrackingControllerProvider(_trackingRequest), (previous, next) {
-      final delivery = next.delivery;
-      if (delivery == null) return;
-      if (delivery.isDelivered) {
-        ref.read(deliveryTrackingControllerProvider(_trackingRequest).notifier)
-            .stopPublishing();
-      } else if (!next.publishing) {
-        ref.read(deliveryTrackingControllerProvider(_trackingRequest).notifier)
-            .startPublishing();
-      }
-    });
-
     final delivery = ref.watch(driverDeliveryDetailControllerProvider(widget.id));
     final tracking = ref.watch(deliveryTrackingControllerProvider(_trackingRequest));
 
@@ -61,10 +48,79 @@ class _DriverDeliveryDetailScreenState extends ConsumerState<DriverDeliveryDetai
           padding: const EdgeInsets.all(16),
           children: [
             LiveDeliveryMap(delivery: tracking.delivery ?? data),
+            if (data.deliveryAddress != null) ...[
+              const SizedBox(height: 16),
+              _destinationCard(context, data),
+            ],
             const SizedBox(height: 16),
             _infoCard(context, data),
             const SizedBox(height: 16),
             ..._actions(context, data),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// The drop-off, prominent for the driver: recipient, phone and the full
+  /// address line plus region — plus raw coordinates for the map-savvy.
+  Widget _destinationCard(BuildContext context, Delivery delivery) {
+    final theme = Theme.of(context);
+    final address = delivery.deliveryAddress!;
+    final where = [
+      if (address.addressLine.isNotEmpty) address.addressLine,
+      if (address.region.isNotEmpty) address.region,
+    ].join(' · ');
+    final lat = address.latitude;
+    final lng = address.longitude;
+    return Card(
+      color: AppColors.green.withValues(alpha: 0.06),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.flag_outlined, size: 18, color: AppColors.greenDark),
+                const SizedBox(width: 8),
+                Text(
+                  'Destination',
+                  style: theme.textTheme.labelLarge?.copyWith(color: AppColors.greenDark),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            if (address.recipientName.isNotEmpty)
+              Text(
+                address.recipientName,
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            if (address.recipientName.isNotEmpty) const SizedBox(height: 2),
+            if (where.isNotEmpty) Text(where, style: theme.textTheme.bodyMedium),
+            if (address.phone.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.phone_outlined, size: 16, color: AppColors.tanDark),
+                  const SizedBox(width: 6),
+                  Text(address.phone, style: theme.textTheme.bodyMedium),
+                ],
+              ),
+            ],
+            if (lat != null && lng != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.my_location, size: 14, color: AppColors.tanDark),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${lat.toStringAsFixed(5)}, ${lng.toStringAsFixed(5)}',
+                    style: theme.textTheme.bodySmall?.copyWith(color: AppColors.tanDark),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -124,34 +180,32 @@ class _DriverDeliveryDetailScreenState extends ConsumerState<DriverDeliveryDetai
     return const StatusBadge(label: 'Assigned', color: AppColors.tanDark);
   }
 
+  /// One contextual primary action: not picked up → "Confirm pickup";
+  /// picked up → "I've arrived — send buyer the code"; delivered → nothing.
+  /// The confirmation code is issued by the backend and sent to the buyer
+  /// (DEL-07) — the driver never sees it.
   List<Widget> _actions(BuildContext context, Delivery delivery) {
-    final t = context.t;
-    final actions = <Widget>[];
-    if (!delivery.isDelivered) {
-      actions.add(
-        FilledButton(
-          onPressed: delivery.isPickupConfirmed || _busy
+    if (delivery.isDelivered) return const [];
+    return [
+      SizedBox(
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: _busy
               ? null
-              : _confirmPickup,
-          child: Text(t.driverTaskStart),
-        ),
-      );
-      actions.add(const SizedBox(height: 12));
-      if (delivery.isPickupConfirmed) {
-        // Hand-off: the backend issues a 6-digit code to the buyer (when the
-        // order requires one) and the order is delivered once the buyer
-        // confirms it (DEL-07).
-        actions.add(
-          FilledButton.icon(
-            onPressed: _busy ? null : _completeDelivery,
-            icon: const Icon(Icons.qr_code_2),
-            label: Text(t.driverTaskArrived),
+              : (delivery.isPickupConfirmed ? _completeDelivery : _confirmPickup),
+          icon: Icon(delivery.isPickupConfirmed
+              ? Icons.qr_code_2
+              : Icons.inventory_2_outlined),
+          label: Text(delivery.isPickupConfirmed
+              ? "I've arrived — send buyer the code"
+              : 'Confirm pickup'),
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 14),
           ),
-        );
-        actions.add(const SizedBox(height: 12));
-      }
-    }
-    return actions;
+        ),
+      ),
+      const SizedBox(height: 12),
+    ];
   }
 
   Future<void> _confirmPickup() async {

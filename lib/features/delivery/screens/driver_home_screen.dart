@@ -18,9 +18,26 @@ import '../../../shared/widgets/user_avatar.dart';
 import '../../../theme/app_colors.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../order/order_status_text.dart';
+import '../controllers/delivery_tracking_controller.dart';
 import '../controllers/driver_delivery_detail_controller.dart';
 import '../controllers/driver_delivery_list_controller.dart';
 import '../utils/route_planner.dart';
+
+/// Undelivered deliveries oldest-first — the driver works one task at a
+/// time, so index 0 is always the current task.
+List<Delivery> _activeDeliveries(List<Delivery> deliveries) {
+  return [
+    for (final d in deliveries)
+      if (!d.isDelivered) d,
+  ]..sort(
+      (a, b) => (a.assignedAt ?? DateTime.fromMillisecondsSinceEpoch(0))
+          .compareTo(b.assignedAt ?? DateTime.fromMillisecondsSinceEpoch(0)),
+    );
+}
+
+/// The driver's current task (the oldest undelivered delivery).
+Delivery? _firstActiveDelivery(List<Delivery> deliveries) =>
+    _activeDeliveries(deliveries).firstOrNull;
 
 /// Driver shell (DRV-01, reworked): one task at a time. The driver sees a
 /// single big card for the oldest undelivered assignment — pick up at the
@@ -32,6 +49,28 @@ class DriverHomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.t;
+    // Hands-free position publishing, anchored app-wide: the oldest
+    // undelivered delivery is the current task — broadcast the driver's
+    // position for it while the app is open, without requiring the detail
+    // screen to be open (DRV-04). Publishing stops on delivered.
+    final deliveries =
+        ref.watch(driverDeliveryListControllerProvider).valueOrNull ??
+            const <Delivery>[];
+    final current = _firstActiveDelivery(deliveries);
+    final trackingRequest =
+        DeliveryTrackingRequest(deliveryId: current?.id ?? '');
+    ref.listen(deliveryTrackingControllerProvider(trackingRequest),
+        (previous, next) {
+      final delivery = next.delivery;
+      if (delivery == null) return;
+      final notifier = ref.read(
+          deliveryTrackingControllerProvider(trackingRequest).notifier);
+      if (delivery.isDelivered) {
+        notifier.stopPublishing();
+      } else if (!next.publishing) {
+        notifier.startPublishing();
+      }
+    });
     // Auto-refresh the active tab's data whenever the user switches tabs.
     ref.listen(driverTabProvider, (previous, next) {
       if (previous == next) return;
@@ -88,13 +127,7 @@ class _TaskTab extends ConsumerWidget {
         ),
         builder: (data) {
           // Oldest assignment first — that is the current task.
-          final active = [
-            for (final d in data)
-              if (!d.isDelivered) d,
-          ]..sort(
-              (a, b) => (a.assignedAt ?? DateTime.fromMillisecondsSinceEpoch(0))
-                  .compareTo(b.assignedAt ?? DateTime.fromMillisecondsSinceEpoch(0)),
-            );
+          final active = _activeDeliveries(data);
           if (active.isEmpty) {
             return ListView(
               physics: const AlwaysScrollableScrollPhysics(),

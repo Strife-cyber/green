@@ -786,6 +786,11 @@ class ApiDeliveryRepository implements DeliveryRepository {
     }
   }
 
+  /// Position updates ride the `location:update` socket event (see
+  /// DeliveryTrackingController._emitLocation); no REST endpoint exists.
+  @override
+  Future<void> reportPosition(String id, double latitude, double longitude) async {}
+
   @override
   Future<Delivery> pickup(String id) => _action(id, Endpoints.deliveryPickup);
 

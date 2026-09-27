@@ -18,6 +18,13 @@ abstract class DeliveryRepository {
   /// delivered until the buyer confirms that code via [confirm].
   Future<Delivery> complete(String id);
 
+  /// Records the driver's latest published position (DEL-04). The live
+  /// backend receives it via the `location:update` socket event (the client
+  /// emits that separately), so the API implementation is a no-op — the mock
+  /// implementation writes the shared store so every role's poll sees the
+  /// same simulated movement.
+  Future<void> reportPosition(String id, double latitude, double longitude);
+
   /// Buyer confirms receipt of the delivery (DEL-07).
   ///
   /// The 6-digit [code] is required only when the order total is above the
