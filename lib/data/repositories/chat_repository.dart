@@ -9,6 +9,11 @@ abstract class ChatRepository {
   /// are backend-generated and independent of order ids — never guess them.
   Future<ChatThread?> threadForOrder(String orderId);
 
+  /// Opens (or reuses) a direct buyer↔seller thread for a farm's seller —
+  /// `POST /chat/threads {sellerId}` (CHAT-02 seller contact, order-free).
+  /// Null when the backend has no direct-thread endpoint yet.
+  Future<ChatThread?> threadForSeller(String sellerId);
+
   Future<List<ChatMessage>> messages(String threadId);
   Future<ChatMessage> send(String threadId, SendMessageInput input);
   Future<void> markRead(String threadId);

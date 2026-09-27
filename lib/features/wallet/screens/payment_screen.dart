@@ -1,11 +1,16 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
+import '../../../core/utils/file_download.dart';
+import '../../../core/utils/money.dart';
 import '../../../data/models/enums.dart';
 import '../../../data/models/order.dart';
 import '../../../data/repositories/payment_repository.dart';
+import '../../../l10n/l10n_ext.dart';
 import '../../../data/repositories/providers.dart';
 import '../../../data/repositories/user_repository.dart';
 import '../../../shared/widgets/amount_text.dart';
@@ -107,6 +112,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       PaymentInitiating() => const _PaymentLoading(),
       PaymentSuccess(:final result) => _PaymentSuccessView(
           result: result,
+          orderId: widget.orderId,
           nextOrderId: remaining.isEmpty ? null : remaining.first,
           remainingCount: remaining.length,
           onPayNext: _continue,
@@ -134,6 +140,15 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         // change, a cancelled or already-paid order must never be charged.
         final payable = o.paymentStatus == PaymentStatus.unpaid &&
             o.status != OrderStatus.cancelled;
+        final wallet = ref.watch(walletControllerProvider).valueOrNull;
+        final walletCovers =
+            wallet != null && wallet.balance >= o.totalAmount;
+        final phone = ref
+            .watch(authControllerProvider)
+            .valueOrNull
+            ?.user
+            ?.phone;
+        final hasNumber = phone != null && phone.isNotEmpty;
         return ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -143,7 +158,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Order total', style: theme.textTheme.titleSmall),
+                  Text(context.t.orderTotal, style: theme.textTheme.titleSmall),
                   AmountText(o.totalAmount, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
                 ],
               ),
@@ -152,11 +167,29 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           const SizedBox(height: 12),
           const _PhoneCard(),
           const SizedBox(height: 16),
-          Text('Choose payment channel', style: theme.textTheme.titleSmall),
+          Text(context.t.choosePaymentChannel,
+              style: theme.textTheme.titleSmall),
+          const SizedBox(height: 8),
+          // Greenish Wallet pays from the escrow-backed balance — greyed out
+          // with the missing amount when it can't cover the order (PAY-01).
+          _ChannelCard(
+            title: context.t.greenishWallet,
+            subtitle: walletCovers
+                ? context.t.walletBalanceLine(
+                    balance: formatMoney(wallet.balance))
+                : context.t.walletBalanceInsufficient(
+                    balance: formatMoney(wallet?.balance ?? 0)),
+            icon: Icons.account_balance_wallet_outlined,
+            selected: _channel == PaymentChannel.wallet,
+            enabled: walletCovers,
+            onTap: () => setState(() => _channel = PaymentChannel.wallet),
+          ),
           const SizedBox(height: 8),
           _ChannelCard(
             title: 'MTN Mobile Money',
-            subtitle: 'Pay with your MTN MoMo wallet',
+            subtitle: hasNumber
+                ? context.t.payWithMtn(phone: phone)
+                : context.t.addMtnNumber,
             icon: Icons.phone_android,
             selected: _channel == PaymentChannel.mtnMomo,
             onTap: () => setState(() => _channel = PaymentChannel.mtnMomo),
@@ -164,7 +197,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           const SizedBox(height: 8),
           _ChannelCard(
             title: 'Orange Money',
-            subtitle: 'Pay with your Orange wallet',
+            subtitle: hasNumber
+                ? context.t.payWithOrange(phone: phone)
+                : context.t.addOrangeNumber,
             icon: Icons.smartphone,
             selected: _channel == PaymentChannel.orangeMoney,
             onTap: () => setState(() => _channel = PaymentChannel.orangeMoney),
@@ -181,7 +216,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           FilledButton.icon(
             onPressed: payable ? _pay : null,
             icon: const Icon(Icons.lock_outline),
-            label: const Text('Pay'),
+            label: Text(context.t.payNow),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
@@ -212,8 +247,12 @@ class _PaymentLoading extends StatelessWidget {
   }
 }
 
-class _PaymentSuccessView extends StatelessWidget {
+/// Post-payment confirmation (design 19): escrow explainer, the `GRN-…`
+/// receipt number, the 6-digit delivery code the driver will ask for, and
+/// track/download CTAs.
+class _PaymentSuccessView extends ConsumerWidget {
   final PaymentResult result;
+  final String orderId;
   final String? nextOrderId;
   final int remainingCount;
   final VoidCallback onPayNext;
@@ -221,46 +260,127 @@ class _PaymentSuccessView extends StatelessWidget {
 
   const _PaymentSuccessView({
     required this.result,
+    required this.orderId,
     this.nextOrderId,
     this.remainingCount = 0,
     required this.onPayNext,
     required this.onFinish,
   });
 
+  /// Downloads the receipt PDF via `GET /receipts/:id/download` (the app
+  /// resolves the receipt id from the order first).
+  Future<void> _downloadReceipt(BuildContext context, WidgetRef ref) async {
+    try {
+      final bytes = await ref
+          .read(receiptRepositoryProvider)
+          .downloadOrderPdf(orderId);
+      if (!context.mounted) return;
+      if (bytes == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.t.receiptNotReady)),
+        );
+        return;
+      }
+      await downloadFile(
+        bytes: Uint8List.fromList(bytes),
+        filename: 'receipt-$orderId.pdf',
+        mimeType: 'application/pdf',
+      );
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.t.downloadFailed)),
+        );
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final t = context.t;
     final hasNext = nextOrderId != null && remainingCount > 0;
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle_outline, color: AppColors.green, size: 72),
+            const Icon(Icons.check_circle_outline,
+                color: AppColors.green, size: 72),
             const SizedBox(height: 16),
-            Text('Payment successful', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+            Text(t.paymentSuccessful,
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
-            if (result.reference != null)
-              Text('Reference: ${result.reference}', style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.tanDark)),
+            // Escrow explainer — the money is held until delivery is
+            // confirmed (design 19).
+            Text(
+              t.escrowExplainer,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: AppColors.tanDark),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '${t.receiptNumber}: ${result.receiptNumber ?? result.reference ?? '—'}',
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            if (result.deliveryCode != null) ...[
+              const SizedBox(height: 12),
+              Text(t.deliveryCodeLabel, style: theme.textTheme.bodySmall),
+              const SizedBox(height: 4),
+              // Big spaced digits — the buyer reads these to the driver.
+              Text(
+                result.deliveryCode!.split('').join(' '),
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  letterSpacing: 6,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.greenDark,
+                ),
+              ),
+            ],
             if (hasNext) ...[
               const SizedBox(height: 8),
               Text(
-                'You still have $remainingCount unpaid '
-                'order${remainingCount == 1 ? '' : 's'}.',
-                style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.tanDark),
+                t.unpaidOrdersLeft(count: remainingCount),
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(color: AppColors.tanDark),
               ),
             ],
             const SizedBox(height: 24),
             FilledButton(
               onPressed: hasNext ? onPayNext : onFinish,
-              style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14)),
-              child: Text(hasNext ? 'Pay next order ($remainingCount left)' : 'Done'),
+              style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 32, vertical: 14)),
+              child: Text(
+                hasNext
+                    ? t.payNextOrder(count: remainingCount)
+                    : t.done,
+              ),
             ),
-            if (hasNext) ...[
-              const SizedBox(height: 8),
-              TextButton(onPressed: onFinish, child: const Text('Done for now')),
-            ],
+            const SizedBox(height: 8),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 8,
+              children: [
+                TextButton.icon(
+                  onPressed: () =>
+                      context.push(AppRoutes.deliveryTracking(orderId)),
+                  icon: const Icon(Icons.local_shipping_outlined, size: 18),
+                  label: Text(t.trackThisDelivery),
+                ),
+                TextButton.icon(
+                  onPressed: () => _downloadReceipt(context, ref),
+                  icon: const Icon(Icons.download_outlined, size: 18),
+                  label: Text(t.downloadReceipt),
+                ),
+              ],
+            ),
+            if (hasNext)
+              TextButton(onPressed: onFinish, child: Text(t.doneForNow)),
           ],
         ),
       ),
@@ -410,24 +530,31 @@ class _ChannelCard extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
+  /// False renders the channel greyed out and untappable (e.g. wallet balance
+  /// that can't cover the order).
+  final bool enabled;
+
   const _ChannelCard({
     required this.title,
     required this.subtitle,
     required this.icon,
     required this.selected,
     required this.onTap,
+    this.enabled = true,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
+    return Opacity(
+      opacity: enabled ? 1 : 0.5,
+      child: Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: selected ? AppColors.green : AppColors.tan, width: selected ? 2 : 1),
       ),
       child: InkWell(
-        onTap: onTap,
+        onTap: enabled ? onTap : null,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -451,6 +578,7 @@ class _ChannelCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

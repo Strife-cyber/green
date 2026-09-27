@@ -17,6 +17,7 @@ import 'device_token_repository.dart';
 import 'notification_repository.dart';
 import 'order_repository.dart';
 import 'payment_repository.dart';
+import 'platform_config_repository.dart';
 import 'product_repository.dart';
 import 'rating_repository.dart';
 import 'receipt_repository.dart';
@@ -155,3 +156,16 @@ final adminRepositoryProvider = Provider<AdminRepository>((ref) {
   if (ref.watch(useMocksProvider)) return MockAdminRepository(ref.watch(mockStoreProvider));
   return ApiAdminRepository(ref.watch(apiClientProvider));
 });
+
+final platformConfigRepositoryProvider = Provider<PlatformConfigRepository>((ref) {
+  if (ref.watch(useMocksProvider)) return MockPlatformConfigRepository();
+  return ApiPlatformConfigRepository(ref.watch(apiClientProvider));
+});
+
+/// A runtime business parameter (`delivery_fee_flat`, `min_withdrawal`, …) —
+/// null when the backend hasn't configured the key. `autoDispose` so edits
+/// admins make are picked up on the next visit.
+final platformConfigProvider =
+    FutureProvider.autoDispose.family<String?, String>(
+  (ref, key) async => (await ref.watch(platformConfigRepositoryProvider).get(key))?.value,
+);

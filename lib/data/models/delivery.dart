@@ -15,6 +15,22 @@ class Delivery {
 
   final String? driverId;
   final String? driverName;
+
+  /// Driver contact/vehicle extras — present when the backend enriches the
+  /// delivery with driver details (tracker card). Null when not sent.
+  final String? driverPhone;
+  final String? driverVehicle;
+  final double? driverRating;
+
+  /// Buyer details for the driver's task card / code hand-off — from the
+  /// nested `order` (`buyer: {firstName, lastName, phone}`).
+  final String? buyerId;
+  final String? buyerName;
+  final String? buyerPhone;
+
+  /// Delivery fee on the linked order (FCFA) — feeds the driver's "My day"
+  /// total when the backend reports it.
+  final int? deliveryFee;
   final DateTime? assignedAt;
   final DateTime? pickupConfirmedAt;
   final DateTime? deliveredAt;
@@ -57,6 +73,13 @@ class Delivery {
     this.currentLatitude,
     this.currentLongitude,
     this.locationUpdatedAt,
+    this.driverPhone,
+    this.driverVehicle,
+    this.driverRating,
+    this.buyerId,
+    this.buyerName,
+    this.buyerPhone,
+    this.deliveryFee,
     this.deliveryAddress,
     this.confirmationCodeIssued = false,
     this.orderStatus,
@@ -83,6 +106,8 @@ class Delivery {
   /// Parses the backend `DeliveryListItemDto` — camelCase.
   factory Delivery.fromJson(Map<String, dynamic> json) {
     final order = json['order'];
+    final driver = json['driver'];
+    final buyer = order is Map<String, dynamic> ? order['buyer'] : null;
     return Delivery(
       id: json['id'] as String,
       orderId: json['orderId'] as String? ?? json['order_id'] as String? ?? '',
@@ -90,7 +115,21 @@ class Delivery {
           json['seller_name'] as String? ??
           (order is Map<String, dynamic> ? order['sellerName'] as String? : null),
       driverId: json['driverId'] as String? ?? json['driver_id'] as String?,
-      driverName: json['driverName'] as String? ?? json['driver_name'] as String?,
+      driverName: json['driverName'] as String? ??
+          json['driver_name'] as String? ??
+          _fullName(driver),
+      driverPhone: json['driverPhone'] as String? ??
+          (driver is Map<String, dynamic> ? driver['phone'] as String? : null),
+      driverVehicle: json['driverVehicle'] as String? ??
+          json['vehicle'] as String? ??
+          (driver is Map<String, dynamic> ? driver['vehicle'] as String? : null),
+      driverRating: _toDoubleOrNull(json['driverRating'] ??
+          (driver is Map<String, dynamic> ? driver['rating'] : null)),
+      buyerId: buyer is Map<String, dynamic> ? buyer['id'] as String? : null,
+      buyerName: _fullName(buyer),
+      buyerPhone: buyer is Map<String, dynamic> ? buyer['phone'] as String? : null,
+      deliveryFee: _toIntOrNull(json['deliveryFee'] ??
+          (order is Map<String, dynamic> ? order['deliveryFee'] : null)),
       assignedAt: _dateOrNull(json['assignedAt'] ?? json['assigned_at']),
       pickupConfirmedAt: _dateOrNull(json['pickupConfirmedAt'] ?? json['pickup_confirmed_at']),
       deliveredAt: _dateOrNull(json['deliveredAt'] ?? json['delivered_at']),
@@ -139,6 +178,22 @@ class Delivery {
         orderStatus: orderStatus ?? this.orderStatus,
         codeRequired: codeRequired ?? this.codeRequired,
       );
+
+  /// `{firstName,lastName}` → "First Last", null when the object is absent or
+  /// both parts are blank.
+  static String? _fullName(dynamic user) {
+    if (user is! Map<String, dynamic>) return null;
+    final first = (user['firstName'] as String? ?? '').trim();
+    final last = (user['lastName'] as String? ?? '').trim();
+    final full = '$first $last'.trim();
+    return full.isEmpty ? null : full;
+  }
+
+  static int? _toIntOrNull(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.round();
+    return int.tryParse(value.toString()) ?? double.tryParse(value.toString())?.round();
+  }
 
   static OrderStatus? _orderStatusFrom(Object? topLevel, Object? nested) {
     final raw = topLevel ?? (nested is Map<String, dynamic> ? nested['status'] : null);

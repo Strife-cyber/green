@@ -16,6 +16,7 @@ class FormTextField extends StatelessWidget {
   final String? Function(String?)? validator;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onFieldSubmitted;
+  final int maxLines;
 
   const FormTextField({
     super.key,
@@ -32,6 +33,7 @@ class FormTextField extends StatelessWidget {
     this.validator,
     this.onChanged,
     this.onFieldSubmitted,
+    this.maxLines = 1,
   });
 
   @override
@@ -42,6 +44,7 @@ class FormTextField extends StatelessWidget {
       autocorrect: autocorrect,
       keyboardType: keyboardType,
       textInputAction: textInputAction,
+      maxLines: maxLines,
       decoration: InputDecoration(
         labelText: label,
         hintText: hintText,

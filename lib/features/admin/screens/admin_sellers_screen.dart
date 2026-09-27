@@ -5,6 +5,8 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/network/endpoints.dart';
 import '../../../data/mock/mock_data.dart';
 import '../../../data/models/seller_profile.dart';
+import '../../../data/repositories/providers.dart';
+import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/image_network.dart';
 import '../../../shared/widgets/refreshable_async_view.dart';
@@ -94,6 +96,19 @@ class _SellerCard extends ConsumerWidget {
       context,
       () => ref.read(adminSellersControllerProvider.notifier).reject(seller.userId),
       success: '${seller.farmName} rejected',
+    );
+  }
+
+  /// Design 37 — asks the seller to re-upload a document
+  /// (`POST /admin/seller-profiles/:userId/request-document {kind}`).
+  Future<void> _requestDocument(
+      BuildContext context, WidgetRef ref, String kind) async {
+    await _run(
+      context,
+      () => ref
+          .read(adminRepositoryProvider)
+          .requestSellerDocument(seller.userId, kind),
+      success: context.t.documentRequested,
     );
   }
 
@@ -204,7 +219,7 @@ class _SellerCard extends ConsumerWidget {
                   _IdentityImage(
                     label: 'National ID',
                     userId: seller.userId,
-                    kind: 'nationalId',
+                    kind: 'national_id',
                     token: accessToken,
                     hasDoc: seller.nationalIdUrl != null,
                   ),
@@ -235,6 +250,28 @@ class _SellerCard extends ConsumerWidget {
               ),
             ],
             const SizedBox(height: 12),
+            // Design 37 — "Ask for a new photo" pings the seller to re-upload
+            // a document instead of rejecting outright (POST
+            // /admin/seller-profiles/:userId/request-document {kind}).
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton.icon(
+                    onPressed: () => _requestDocument(context, ref, 'national_id'),
+                    icon: const Icon(Icons.badge_outlined, size: 16),
+                    label: Text(context.t.askNewIdPhoto),
+                  ),
+                ),
+                Expanded(
+                  child: TextButton.icon(
+                    onPressed: () => _requestDocument(context, ref, 'selfie'),
+                    icon: const Icon(Icons.face_outlined, size: 16),
+                    label: Text(context.t.askNewSelfiePhoto),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(

@@ -19,6 +19,16 @@ abstract class AdminRepository {
   Future<void> approveSeller(String userId);
   Future<void> rejectSeller(String userId);
 
+  /// Asks the seller for a fresh identity document photo
+  /// (`POST /admin/seller-profiles/{userId}/request-document {kind}`) —
+  /// `kind` is `nationalId` or `selfie`.
+  Future<void> requestSellerDocument(String userId, String kind);
+
+  // Admin accounts & roles (ADM-13) — super-admin only.
+  Future<List<User>> admins();
+  Future<void> createAdmin(CreateAdminInput input);
+  Future<void> updateAdminRole(String userId, AdminRole role);
+
   // Withdrawals
   Future<List<Withdrawal>> pendingWithdrawals();
   Future<void> processWithdrawal(String id, {bool reject = false});
@@ -71,5 +81,21 @@ class CreateDriverInput {
     required this.email,
     required this.phone,
     required this.region,
+  });
+}
+
+/// New admin account (`POST /admin/admins`) — super-admin only. The backend
+/// generates the password like it does for drivers.
+class CreateAdminInput {
+  final String firstName;
+  final String lastName;
+  final String email;
+  final AdminRole role;
+
+  const CreateAdminInput({
+    required this.firstName,
+    required this.lastName,
+    required this.email,
+    required this.role,
   });
 }

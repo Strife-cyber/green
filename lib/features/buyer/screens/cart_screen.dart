@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
+import '../../../core/utils/money.dart';
+import '../../../data/repositories/providers.dart';
+import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/amount_text.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../theme/app_colors.dart';
@@ -65,6 +68,12 @@ class CartScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final cart = ref.watch(cartControllerProvider);
     final controller = ref.read(cartControllerProvider.notifier);
+    final groups = cart.sellerGroups;
+    // Per-order flat delivery fee — from platform config `delivery_fee_flat`
+    // with the app-wide default while config isn't loaded (design 13/14).
+    final feeConfig = ref.watch(platformConfigProvider('delivery_fee_flat'));
+    final deliveryFee =
+        int.tryParse(feeConfig.valueOrNull ?? '') ?? kDefaultDeliveryFee;
 
     return Scaffold(
       appBar: AppBar(
@@ -91,19 +100,90 @@ class CartScreen extends ConsumerWidget {
           : Column(
               children: [
                 Expanded(
-                  child: ListView.separated(
+                  child: ListView(
                     padding: const EdgeInsets.all(16),
-                    itemCount: cart.lines.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final line = cart.lines[index];
-                      return CartLineTile(
-                        line: line,
-                        onQuantityChanged: (quantity) =>
-                            controller.adjust(line.product.id, quantity),
-                        onRemove: () => controller.remove(line.product.id),
-                      );
-                    },
+                    children: [
+                      // Multi-farm explainer: each farm checks out as its own
+                      // order with its own flat delivery fee (design 13).
+                      if (groups.length > 1)
+                        Card(
+                          color: AppColors.greenPale,
+                          child: ListTile(
+                            leading: const Icon(
+                              Icons.storefront_outlined,
+                              color: AppColors.green,
+                            ),
+                            title: Text(
+                              context.t.multiFarmExplainer(
+                                  count: groups.length),
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          ),
+                        ),
+                      for (final group in groups) ...[
+                        if (groups.length > 1)
+                          Padding(
+                            padding:
+                                const EdgeInsets.fromLTRB(4, 12, 4, 4),
+                            child: Text(
+                              group.sellerName ?? context.t.roleSeller,
+                              style: theme.textTheme.titleSmall,
+                            ),
+                          ),
+                        for (final line in group.lines)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: CartLineTile(
+                              line: line,
+                              onQuantityChanged: (quantity) => controller
+                                  .adjust(line.product.id, quantity),
+                              onRemove: () =>
+                                  controller.remove(line.product.id),
+                            ),
+                          ),
+                        if (groups.length > 1)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  context.t.orderSubtotal,
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                                AmountText(
+                                  group.subtotal,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        // The flat delivery fee applies per order (per farm).
+                        Row(
+                          children: [
+                            const Icon(Icons.local_shipping_outlined,
+                                size: 16, color: AppColors.tanDark),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                context.t.deliveryFeeLabel,
+                                style: theme.textTheme.bodySmall
+                                    ?.copyWith(color: AppColors.tanDark),
+                              ),
+                            ),
+                            AmountText(
+                              deliveryFee,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: AppColors.tanDark,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 SafeArea(

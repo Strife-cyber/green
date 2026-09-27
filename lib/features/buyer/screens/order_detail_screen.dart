@@ -69,16 +69,23 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   }
 
   Future<void> _rateSeller(Order order) async {
-    final rating = await showDialog<int>(
+    final rating = await showDialog<_SellerRatingResult>(
       context: context,
       builder: (context) => _RateSellerDialog(order: order),
     );
     if (rating == null || !mounted) return;
+    // Tag chips have no dedicated contract field — they fold into the review
+    // text ahead of the free-form comment.
+    final reviewText = [
+      rating.tags.join(' · '),
+      rating.reviewText,
+    ].where((part) => part.isNotEmpty).join(' — ');
     try {
       await ref.read(ratingRepositoryProvider).create(CreateRatingInput(
             orderId: order.id,
             sellerId: order.sellerId,
-            rating: rating,
+            rating: rating.stars,
+            reviewText: reviewText.isEmpty ? null : reviewText,
           ));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -376,7 +383,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       ref.invalidate(buyerOrderListControllerProvider);
       // Confirming releases escrow — refresh the wallet surfaces too.
       ref.invalidate(walletControllerProvider);
-      ref.invalidate(ledgerControllerProvider);
+      ref.invalidate(ledgerControllerProvider(null));
       await ref
           .read(deliveryTrackingControllerProvider(_trackingRequest).notifier)
           .refreshNow();
@@ -521,7 +528,17 @@ class _ChatPill extends ConsumerWidget {
   }
 }
 
-/// Star + optional-review rating dialog (one rating per delivered order).
+/// The dialog's result — stars plus the selected tag chips and free text.
+class _SellerRatingResult {
+  final int stars;
+  final Set<String> tags;
+  final String reviewText;
+
+  const _SellerRatingResult(this.stars, this.tags, this.reviewText);
+}
+
+/// Star + tag-chips + optional-review rating dialog (design 16) with an
+/// escape to report the seller (CHAT-03-style moderation, POST /reports).
 class _RateSellerDialog extends ConsumerStatefulWidget {
   final Order order;
 
@@ -533,6 +550,7 @@ class _RateSellerDialog extends ConsumerStatefulWidget {
 
 class _RateSellerDialogState extends ConsumerState<_RateSellerDialog> {
   int _rating = 5;
+  final _tags = <String>{};
   final _review = TextEditingController();
 
   @override
@@ -543,40 +561,84 @@ class _RateSellerDialogState extends ConsumerState<_RateSellerDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.t;
+    // Design 16's tag row — kept in English here; each chip is also the
+    // string folded into the submitted review text.
+    final tagLabels = [
+      t.tagFresh,
+      t.tagOnTime,
+      t.tagWellPacked,
+      t.tagGoodPrice,
+    ];
     return AlertDialog(
-      title: Text('Rate ${widget.order.sellerName ?? 'seller'}'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (var i = 1; i <= 5; i++)
-                IconButton(
-                  icon: Icon(
-                    i <= _rating ? Icons.star : Icons.star_border,
-                    color: AppColors.orange,
+      title: Text(t.rateSellerTitle(name: widget.order.sellerName ?? t.roleSeller)),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (var i = 1; i <= 5; i++)
+                  IconButton(
+                    icon: Icon(
+                      i <= _rating ? Icons.star : Icons.star_border,
+                      color: AppColors.orange,
+                    ),
+                    onPressed: () => setState(() => _rating = i),
                   ),
-                  onPressed: () => setState(() => _rating = i),
+              ],
+            ),
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final tag in tagLabels)
+                  FilterChip(
+                    label: Text(tag),
+                    selected: _tags.contains(tag),
+                    onSelected: (selected) => setState(
+                      () => selected ? _tags.add(tag) : _tags.remove(tag),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _review,
+              maxLines: 3,
+              maxLength: 240,
+              decoration: InputDecoration(labelText: t.reviewOptional),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => showReportDialog(
+                  context,
+                  ref,
+                  reportedId: widget.order.sellerId,
+                  targetType: ReportTargetType.profile,
                 ),
-            ],
-          ),
-          TextField(
-            controller: _review,
-            maxLines: 3,
-            maxLength: 240,
-            decoration: const InputDecoration(labelText: 'Review (optional)'),
-          ),
-        ],
+                icon: const Icon(Icons.flag_outlined, size: 16),
+                label: Text(t.reportSellerProblem),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.orangeDark,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(t.cancel),
         ),
         FilledButton(
-          onPressed: () => Navigator.pop(context, _rating),
-          child: const Text('Submit'),
+          onPressed: () => Navigator.pop(
+            context,
+            _SellerRatingResult(_rating, _tags, _review.text.trim()),
+          ),
+          child: Text(t.submit),
         ),
       ],
     );

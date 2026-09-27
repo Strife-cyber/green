@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:go_router/go_router.dart';
+
+import '../../../core/router/app_router.dart';
+import '../../../data/models/chat.dart';
 import '../../../data/models/enums.dart';
 import '../../../data/models/product.dart';
 import '../../../data/models/rating_review.dart';
+import '../../../data/repositories/providers.dart';
+import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/amount_text.dart';
 import '../../../shared/widgets/async_view.dart';
 import '../../../shared/widgets/image_network.dart';
@@ -136,6 +142,23 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   const SizedBox(height: 4),
                   Text(product.description!, style: theme.textTheme.bodyMedium),
                 ],
+                if (product.farmRegion != null) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Icon(Icons.place_outlined,
+                          size: 18, color: AppColors.tanDark),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          '${context.t.farmLocation}: ${product.farmRegion}',
+                          style: theme.textTheme.bodyMedium
+                              ?.copyWith(color: AppColors.tanDark),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 16),
                 if (!soldOut)
                   Row(
@@ -152,10 +175,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     ],
                   ),
                 const SizedBox(height: 16),
-                _SellerCard(
-                  sellerId: product.sellerId,
-                  sellerName: product.sellerName,
-                ),
+                _SellerCard(product: product),
                 const SizedBox(height: 20),
                 FilledButton.icon(
                   onPressed: soldOut ? null : () => _addToCart(product),
@@ -177,39 +197,93 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   String _trimKg(double v) => v == v.roundToDouble() ? '${v.toInt()}' : '$v';
 }
 
-/// Compact seller card with the aggregated seller rating (BUY-11).
+/// The tappable seller card (design 11): farm name · ★rating · N reviews ·
+/// a Chat button opening the buyer↔seller thread, plus a report affordance.
 class _SellerCard extends ConsumerWidget {
-  final String sellerId;
-  final String? sellerName;
+  final Product product;
 
-  const _SellerCard({required this.sellerId, this.sellerName});
+  const _SellerCard({required this.product});
+
+  /// Opens the direct buyer↔seller thread — falls back to a snackbar while
+  /// the backend's seller-thread endpoint is still pending.
+  Future<void> _chatWithSeller(BuildContext context, WidgetRef ref) async {
+    ChatThread? thread;
+    try {
+      thread = await ref
+          .read(chatRepositoryProvider)
+          .threadForSeller(product.sellerId);
+    } catch (_) {
+      thread = null;
+    }
+    if (!context.mounted) return;
+    if (thread != null) {
+      context.push(AppRoutes.chat(thread.id));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.t.chatUnavailableSeller)),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final t = context.t;
+    final sellerId = product.sellerId;
+    final sellerName = product.sellerName ?? t.roleSeller;
     final summary = ref.watch(sellerRatingProvider(sellerId));
     return Card(
-      child: ListTile(
-        leading: UserAvatar(name: sellerName ?? 'Seller', radius: 24),
-        title: Text(sellerName ?? 'Seller', style: theme.textTheme.titleSmall),
-        subtitle: summary.when(
-          data: (SellerRatingSummary s) => Text(
-            s.count == 0
-                ? 'No ratings yet'
-                : '${s.average.toStringAsFixed(1)} ★ · ${s.count} ratings',
-          ),
-          loading: () => const Text('Loading rating…'),
-          error: (_, _) => const Text('Seller'),
-        ),
-        trailing: IconButton(
-          tooltip: 'Report this seller',
-          icon: const Icon(Icons.flag_outlined, size: 20),
-          onPressed: () => showReportDialog(
-            context,
-            ref,
-            reportedId: sellerId,
-            targetType: ReportTargetType.profile,
-          ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                UserAvatar(name: sellerName, radius: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(sellerName, style: theme.textTheme.titleSmall),
+                      summary.when(
+                        data: (SellerRatingSummary s) => Text(
+                          s.count == 0
+                              ? t.noRatingsYet
+                              : '${s.average.toStringAsFixed(1)} ★ · ${t.reviewsCount(count: s.count)}',
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: AppColors.tanDark),
+                        ),
+                        loading: () => Text(t.loadingRating,
+                            style: theme.textTheme.bodySmall),
+                        error: (_, _) => Text(t.roleSeller,
+                            style: theme.textTheme.bodySmall),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: t.reportSeller,
+                  icon: const Icon(Icons.flag_outlined, size: 20),
+                  onPressed: () => showReportDialog(
+                    context,
+                    ref,
+                    reportedId: sellerId,
+                    targetType: ReportTargetType.profile,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _chatWithSeller(context, ref),
+                icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                label: Text(t.chatWithSeller),
+              ),
+            ),
+          ],
         ),
       ),
     );

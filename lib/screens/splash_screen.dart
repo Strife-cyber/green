@@ -44,7 +44,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     await _exit.forward();
     if (!mounted) return;
     final user = ref.read(authControllerProvider).valueOrNull?.user;
-    context.go(user == null ? AppRoutes.login : AppRoutes.homeFor(user.role));
+    context.go(user == null ? AppRoutes.welcome : AppRoutes.homeFor(user.role));
   }
 
   @override

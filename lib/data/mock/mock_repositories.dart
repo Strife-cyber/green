@@ -8,6 +8,7 @@ import '../models/delivery.dart';
 import '../models/enums.dart';
 import '../models/order.dart';
 import '../models/page.dart';
+import '../models/platform_config.dart';
 import '../models/product.dart';
 import '../models/rating_review.dart';
 import '../models/receipt.dart';
@@ -30,6 +31,7 @@ import '../repositories/device_token_repository.dart';
 import '../repositories/notification_repository.dart';
 import '../repositories/order_repository.dart';
 import '../repositories/payment_repository.dart';
+import '../repositories/platform_config_repository.dart';
 import '../repositories/product_repository.dart';
 import '../repositories/rating_repository.dart';
 import '../repositories/receipt_repository.dart';
@@ -426,9 +428,39 @@ class MockWalletRepository implements WalletRepository {
   }
 
   @override
-  Future<List<WalletTransaction>> transactions() async {
+  Future<List<WalletTransaction>> transactions({TransactionType? type}) async {
     await _delay();
-    return List.of(store.transactions);
+    if (type == null) return List.of(store.transactions);
+    return [for (final tx in store.transactions) if (tx.type == type) tx];
+  }
+
+  @override
+  Future<CsvExport> exportTransactions() async {
+    await _delay();
+    final lines = [
+      'id,type,amount,status,createdAt',
+      for (final tx in store.transactions)
+        '${tx.id},${tx.type.apiValue},${tx.amount},${tx.status.name.toUpperCase()},${tx.createdAt.toIso8601String()}',
+    ];
+    return CsvExport(lines.join('\n').codeUnits, 'greenish-transactions.csv');
+  }
+}
+
+// ---- platform config --------------------------------------------------------
+
+/// Mock business parameters — mirrors the keys the admin dashboard edits.
+class MockPlatformConfigRepository implements PlatformConfigRepository {
+  static const _values = {
+    'delivery_fee_flat': '500',
+    'min_withdrawal': '5000',
+  };
+
+  @override
+  Future<PlatformConfig?> get(String key) async {
+    await _delay();
+    final value = _values[key];
+    if (value == null) return null;
+    return PlatformConfig(key: key, value: value);
   }
 }
 
@@ -444,7 +476,12 @@ class MockPaymentRepository implements PaymentRepository {
     final result = PaymentResult(
       orderId: orderId,
       status: PaymentResultStatus.success,
-      reference: '${channel == PaymentChannel.mtnMomo ? 'MOMO' : 'OM'}-${_id('ref')}',
+      reference: switch (channel) {
+        PaymentChannel.mtnMomo => 'MOMO-${_id('ref')}',
+        PaymentChannel.orangeMoney => 'OM-${_id('ref')}',
+        PaymentChannel.wallet => 'WALLET-${_id('ref')}',
+      },
+      receiptNumber: 'GRN-${DateTime.now().millisecondsSinceEpoch % 1000000}',
     );
     // Mirror the backend: a successful payment confirms the order, holds the
     // funds in escrow and auto-assigns a driver (DEL-02) — the buyer never
@@ -762,6 +799,25 @@ class MockChatRepository implements ChatRepository {
   }
 
   @override
+  Future<ChatThread?> threadForSeller(String sellerId) async {
+    await _delay();
+    for (final t in store.chatThreads) {
+      if (t.sellerId == sellerId) return _enrich(t);
+    }
+    // Spin up a buyer↔seller thread so the product-detail Chat button works
+    // in demos — the backend's `POST /chat/threads {sellerId}` does the same.
+    final thread = ChatThread(
+      id: _id('t'),
+      orderId: '',
+      buyerId: 'u-buyer-1',
+      sellerId: sellerId,
+      createdAt: DateTime.now(),
+    );
+    store.chatThreads.add(thread);
+    return _enrich(thread);
+  }
+
+  @override
   Future<List<ChatMessage>> messages(String threadId) async {
     await _delay();
     return List.of(store.chatMessages[threadId] ?? const []);
@@ -881,9 +937,21 @@ class MockReceiptRepository implements ReceiptRepository {
   }
 
   @override
-  Future<String?> downloadPdf(String orderId) async {
+  Future<List<Receipt>> mine() async {
+    await _delay();
+    return [seedReceipt];
+  }
+
+  @override
+  Future<List<int>?> downloadPdfBytes(String receiptId) async {
     await _delay();
     return null; // PDF generation is deferred to the backend.
+  }
+
+  @override
+  Future<List<int>?> downloadOrderPdf(String orderId) async {
+    await _delay();
+    return null;
   }
 }
 
@@ -940,11 +1008,30 @@ class MockSellerProfileRepository implements SellerProfileRepository {
   }
 
   @override
+  Future<List<SellerSearchItem>> search(String query) async {
+    await _delay();
+    const farms = [
+      SellerSearchItem(id: 'u-seller-1', farmName: 'Nfon Farm', region: 'Littoral', rating: 4.8, ratingCount: 12),
+      SellerSearchItem(id: 'u-seller-3', farmName: 'Minkoulou Farm', region: 'Centre', rating: 4.5, ratingCount: 8),
+    ];
+    final needle = query.trim().toLowerCase();
+    if (needle.isEmpty) return farms;
+    return [
+      for (final f in farms)
+        if (f.farmName.toLowerCase().contains(needle) ||
+            (f.region ?? '').toLowerCase().contains(needle))
+          f,
+    ];
+  }
+
+  @override
   Future<void> update({
     required String farmName,
     required int mainCategoryId,
     String? farmDescription,
     String? businessLicense,
+    double? farmLatitude,
+    double? farmLongitude,
   }) async {
     await _delay(); // No-op — profile data is already seeded in the mock.
   }
@@ -1047,6 +1134,30 @@ class MockAdminRepository implements AdminRepository {
 
   @override
   Future<void> rejectSeller(String userId) async {
+    await _delay();
+  }
+
+  @override
+  Future<void> requestSellerDocument(String userId, String kind) async {
+    await _delay();
+  }
+
+  @override
+  Future<List<User>> admins() async {
+    await _delay();
+    return const [
+      User(id: 'u-admin-1', firstName: 'Devin', lastName: 'Admin', email: 'admin@greenish.cm', role: UserRole.admin, adminRole: AdminRole.superAdmin, emailVerified: true),
+      User(id: 'u-admin-2', firstName: 'Nadia', lastName: 'Bissek', email: 'finance@greenish.cm', role: UserRole.admin, adminRole: AdminRole.finance, emailVerified: true),
+    ];
+  }
+
+  @override
+  Future<void> createAdmin(CreateAdminInput input) async {
+    await _delay();
+  }
+
+  @override
+  Future<void> updateAdminRole(String userId, AdminRole role) async {
     await _delay();
   }
 

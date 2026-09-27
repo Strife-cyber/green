@@ -63,3 +63,39 @@ class SellerProfile {
   static DateTime? _dateOrNull(dynamic value) =>
       value == null ? null : DateTime.tryParse(value.toString());
 }
+
+/// A farm hit from `GET /seller-profiles?search=` — the Farms section of the
+/// buyer search (BUY-02). `{data:{items:[{id,farmName,region,rating,ratingCount}]}}`.
+class SellerSearchItem {
+  final String id;
+  final String farmName;
+  final String? region;
+  final double rating;
+  final int ratingCount;
+
+  const SellerSearchItem({
+    required this.id,
+    required this.farmName,
+    this.region,
+    this.rating = 0,
+    this.ratingCount = 0,
+  });
+
+  factory SellerSearchItem.fromJson(Map<String, dynamic> json) =>
+      SellerSearchItem(
+        id: json['id'] as String? ?? json['userId'] as String? ?? '',
+        farmName: json['farmName'] as String? ?? json['farm_name'] as String? ?? '',
+        region: json['region'] as String?,
+        rating: _toDouble(json['rating'] ?? json['averageRating'] ?? json['avg']),
+        ratingCount: (json['ratingCount'] as num?)?.toInt() ??
+            (json['rating_count'] as num?)?.toInt() ??
+            (json['reviewsCount'] as num?)?.toInt() ??
+            0,
+      );
+
+  static double _toDouble(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? 0;
+  }
+}

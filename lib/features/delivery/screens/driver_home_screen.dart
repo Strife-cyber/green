@@ -2,21 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/router/nav_providers.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/money.dart';
 import '../../../data/models/delivery.dart';
 import '../../../data/models/enums.dart';
+import '../../../data/repositories/providers.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/app_shell.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/language_action.dart';
 import '../../../shared/widgets/language_selector.dart';
 import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../../../theme/app_colors.dart';
+import '../widgets/buyer_code_dialog.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../../chat/screens/chat_threads_screen.dart';
 import '../../order/order_status_text.dart';
 import '../controllers/delivery_tracking_controller.dart';
 import '../controllers/driver_delivery_detail_controller.dart';
@@ -39,10 +45,15 @@ List<Delivery> _activeDeliveries(List<Delivery> deliveries) {
 Delivery? _firstActiveDelivery(List<Delivery> deliveries) =>
     _activeDeliveries(deliveries).firstOrNull;
 
+/// Hands-free position broadcasting master switch (design 26): on by
+/// default — the driver stops it when they're off duty so the buyer's map
+/// stops moving instead of tracking an idle phone.
+final driverBroadcastProvider = StateProvider<bool>((ref) => true);
+
 /// Driver shell (DRV-01, reworked): one task at a time. The driver sees a
 /// single big card for the oldest undelivered assignment — pick up at the
 /// seller, drop off at the buyer, distance, and Start → Picked up → Arrived.
-/// No buyer chat, no manual driver-picking — the buyer confirms the hand-off.
+/// Messages is a third tab (order chat works server-side for drivers).
 class DriverHomeScreen extends ConsumerWidget {
   const DriverHomeScreen({super.key});
 
@@ -57,6 +68,7 @@ class DriverHomeScreen extends ConsumerWidget {
         ref.watch(driverDeliveryListControllerProvider).valueOrNull ??
             const <Delivery>[];
     final current = _firstActiveDelivery(deliveries);
+    final broadcast = ref.watch(driverBroadcastProvider);
     final trackingRequest =
         DeliveryTrackingRequest(deliveryId: current?.id ?? '');
     ref.listen(deliveryTrackingControllerProvider(trackingRequest),
@@ -65,7 +77,7 @@ class DriverHomeScreen extends ConsumerWidget {
       if (delivery == null) return;
       final notifier = ref.read(
           deliveryTrackingControllerProvider(trackingRequest).notifier);
-      if (delivery.isDelivered) {
+      if (delivery.isDelivered || !broadcast) {
         notifier.stopPublishing();
       } else if (!next.publishing) {
         notifier.startPublishing();
@@ -87,6 +99,11 @@ class DriverHomeScreen extends ConsumerWidget {
           label: t.navDeliveries,
           icon: Icons.local_shipping_outlined,
           page: const _TaskTab(),
+        ),
+        AppShellTab(
+          label: t.navMessages,
+          icon: Icons.chat_bubble_outline,
+          page: const ChatThreadsScreen(),
         ),
         AppShellTab(
           label: t.navProfile,
@@ -146,6 +163,8 @@ class _TaskTab extends ConsumerWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
             children: [
+              _MyDayHeader(deliveries: data),
+              const _BroadcastToggle(),
               _TaskCard(delivery: current),
               if (active.length > 1) ...[
                 const SizedBox(height: 16),
@@ -249,6 +268,30 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
               if (d.codeRequired) ...[
                 const SizedBox(height: 10),
                 _taskLine(context, Icons.qr_code_2, t.codeRequiredNote, tinted: true),
+              ],
+              const SizedBox(height: 16),
+              // Navigate → Google Maps directions to the destination coords.
+              if (d.hasDestination)
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _navigate,
+                    icon: const Icon(Icons.navigation_outlined),
+                    label: Text(t.navigate),
+                  ),
+                ),
+              // "Enter code" shortcut once picked up — the driver types the
+              // buyer's 6-digit code instead of waiting for the buyer.
+              if (d.isPickupConfirmed && !d.isDelivered && d.codeRequired) ...[
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _busy ? null : _enterBuyerCode,
+                    icon: const Icon(Icons.pin_outlined),
+                    label: Text(t.enterBuyerCode),
+                  ),
+                ),
               ],
               const SizedBox(height: 20),
               _progression(context),
@@ -377,6 +420,42 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
     );
   }
 
+  /// Google Maps directions to the delivery destination (design 26).
+  Future<void> _navigate() async {
+    final lat = delivery.destinationLatitude;
+    final lng = delivery.destinationLongitude;
+    if (lat == null || lng == null) return;
+    final url = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng',
+    );
+    await launchUrl(url, mode: LaunchMode.externalApplication);
+  }
+
+  /// The driver-side code hand-off (design 24): ask the buyer for the 6-digit
+  /// code and confirm the delivery directly.
+  Future<void> _enterBuyerCode() async {
+    final code = await showDialog<String>(
+      context: context,
+      builder: (context) => const BuyerCodeDialog(),
+    );
+    if (code == null || code.length != 6 || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(deliveryRepositoryProvider)
+          .confirm(delivery.id, code: code);
+      if (mounted) ref.invalidate(driverDeliveryListControllerProvider);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(friendlyErrorMessage(error, context))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   double? _distanceKm(Delivery d) {
     final curLat = d.currentLatitude;
     final curLng = d.currentLongitude;
@@ -392,6 +471,101 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
     if (d.isDelivered) return OrderStatus.delivered;
     if (d.isPickupConfirmed) return OrderStatus.shipped;
     return OrderStatus.confirmed;
+  }
+}
+
+/// "My day" header (design 26): today's deliveries, km covered and fees
+/// earned — computed client-side from the delivery list.
+class _MyDayHeader extends StatelessWidget {
+  final List<Delivery> deliveries;
+
+  const _MyDayHeader({required this.deliveries});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.t;
+    final theme = Theme.of(context);
+    final today = DateTime.now();
+    final todays = [
+      for (final d in deliveries)
+        if (_sameDay(d.deliveredAt ?? d.assignedAt ?? d.locationUpdatedAt,
+            today))
+          d,
+    ];
+    // Distance: sum pickup→destination legs where both ends are known.
+    var km = 0.0;
+    var fees = 0;
+    for (final d in todays) {
+      final lat = d.destinationLatitude;
+      final lng = d.destinationLongitude;
+      final curLat = d.currentLatitude;
+      final curLng = d.currentLongitude;
+      if (lat != null && lng != null && curLat != null && curLng != null) {
+        km += haversineKm(LatLng(curLat, curLng), LatLng(lat, lng));
+      }
+      fees += d.deliveryFee ?? 0;
+    }
+    return Card(
+      color: AppColors.greenPale,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(t.myDay,
+                style: theme.textTheme.labelLarge
+                    ?.copyWith(color: AppColors.greenDark)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _stat(context, Icons.local_shipping_outlined,
+                    t.dayDeliveries(count: todays.length)),
+                _stat(context, Icons.route_outlined,
+                    t.dayKm(km: km.toStringAsFixed(1))),
+                _stat(context, Icons.payments_outlined, formatMoney(fees)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _stat(BuildContext context, IconData icon, String label) {
+    return Expanded(
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: AppColors.tanDark),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(label,
+                style: Theme.of(context).textTheme.bodySmall,
+                overflow: TextOverflow.ellipsis),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _sameDay(DateTime? a, DateTime b) =>
+      a != null && a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
+/// Broadcast on/off (design 26) — gates the app-wide position publisher.
+class _BroadcastToggle extends ConsumerWidget {
+  const _BroadcastToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final on = ref.watch(driverBroadcastProvider);
+    return SwitchListTile(
+      value: on,
+      onChanged: (v) => ref.read(driverBroadcastProvider.notifier).state = v,
+      title: Text(context.t.broadcasting),
+      subtitle: Text(on ? context.t.broadcastingOn : context.t.broadcastingOff),
+      dense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+    );
   }
 }
 

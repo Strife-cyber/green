@@ -25,6 +25,7 @@ import '../../../shared/widgets/report_dialog.dart';
 import '../../../theme/app_colors.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../controllers/chat_controller.dart';
+import '../widgets/chat_admin_disclosure.dart';
 
 /// Loads the thread (by id or order id) so the chat can report the other
 /// participant and render the order-context header (D8).
@@ -129,6 +130,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
       body: Column(
         children: [
+          const ChatAdminDisclosure(),
           ?_orderHeader(thread),
           // WhatsApp-style light chat backdrop behind the message list.
           Expanded(
@@ -396,20 +398,28 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Future<void> _startRecording() async {
-    // The `record` package has no web implementation — hide the feature on
-    // web instead of crashing on the first platform call.
-    if (kIsWeb) {
-      if (mounted) _showSnack(context.t.chatVoiceWebUnavailable);
-      return;
-    }
+    // `record` ≥6 supports web via getUserMedia/MediaRecorder — the file
+    // `path` is ignored there and `stop()` returns a blob URL that
+    // `XFile.readAsBytes` can upload. On browsers without mic support we
+    // degrade to the disabled-state snackbar instead of crashing.
     try {
       if (!await _recorder.hasPermission()) {
-        if (mounted) _showSnack(context.t.chatMicPermission);
+        if (mounted) {
+          _showSnack(kIsWeb
+              ? context.t.chatVoiceWebUnavailable
+              : context.t.chatMicPermission);
+        }
         return;
       }
-      // dart:io system temp avoids a path_provider dependency for the mock.
-      final path = '${Directory.systemTemp.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
-      await _recorder.start(const RecordConfig(), path: path);
+      // dart:io system temp avoids a path_provider dependency; on web the
+      // path is unused but must still be non-empty.
+      final path = kIsWeb
+          ? 'voice_${DateTime.now().millisecondsSinceEpoch}.m4a'
+          : '${Directory.systemTemp.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      await _recorder.start(
+        const RecordConfig(encoder: AudioEncoder.aacLc),
+        path: path,
+      );
       if (mounted) {
         setState(() {
           _recording = true;
@@ -794,8 +804,9 @@ class _VoiceBubbleState extends State<_VoiceBubble> {
   Source? _source() {
     final fileUrl = widget.message.fileUrl;
     if (fileUrl == null || fileUrl.isEmpty) return null;
-    final isLocal = fileUrl.startsWith('/') || RegExp(r'^[A-Za-z]:').hasMatch(fileUrl);
-    return isLocal ? DeviceFileSource(fileUrl) : UrlSource(resolveMediaUrl(fileUrl));
+    return isLocalMediaPath(fileUrl)
+        ? DeviceFileSource(fileUrl)
+        : UrlSource(resolveMediaUrl(fileUrl));
   }
 
   String _durationLabel() {
@@ -858,9 +869,7 @@ class _ImageContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final filePath = message.fileUrl;
-    final isLocal = filePath != null &&
-        (filePath.startsWith('/') || RegExp(r'^[A-Za-z]:').hasMatch(filePath));
-    if (isLocal) {
+    if (filePath != null && isLocalMediaPath(filePath)) {
       // `Image.file` can't render blob URLs on web — LocalFileImage reads the
       // picked file's bytes cross-platform instead.
       return ClipRRect(

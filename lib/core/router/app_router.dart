@@ -9,7 +9,10 @@ import '../../features/admin/screens/admin_categories_screen.dart';
 import '../../features/admin/screens/admin_create_driver_screen.dart';
 import '../../features/admin/screens/admin_deliveries_screen.dart';
 import '../../features/admin/screens/admin_drivers_screen.dart';
+import '../../features/admin/screens/admin_admins_screen.dart';
+import '../../features/admin/screens/admin_chat_threads_screen.dart';
 import '../../features/admin/screens/admin_home_screen.dart';
+import '../../features/admin/screens/admin_receipts_screen.dart';
 import '../../features/admin/screens/admin_reports_screen.dart';
 import '../../features/admin/screens/admin_sellers_screen.dart';
 import '../../features/admin/screens/admin_tickets_screen.dart';
@@ -19,8 +22,10 @@ import '../../features/auth/screens/forgot_password_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/otp_login_screen.dart';
 import '../../features/auth/screens/reset_password_screen.dart';
+import '../../features/auth/screens/seller_pending_screen.dart';
 import '../../features/auth/screens/signup_screen.dart';
 import '../../features/auth/screens/verify_email_screen.dart';
+import '../../features/auth/screens/welcome_screen.dart';
 import '../../features/buyer/screens/addresses_screen.dart';
 import '../../features/buyer/screens/buyer_home_screen.dart';
 import '../../features/buyer/screens/buyer_orders_screen.dart';
@@ -60,6 +65,7 @@ import '../../screens/splash_screen.dart';
 abstract final class AppRoutes {
   // Auth
   static const String splash = '/splash';
+  static const String welcome = '/welcome';
   static const String login = '/login';
   static const String otpLogin = '/login-otp';
   static const String signup = '/signup';
@@ -81,6 +87,7 @@ abstract final class AppRoutes {
 
   // Seller
   static const String sellerHome = '/seller/home';
+  static const String sellerPending = '/seller/pending';
   static const String sellerProducts = '/seller/products';
   static const String sellerOrders = '/seller/orders';
   static const String sellerDashboard = '/seller/dashboard';
@@ -101,6 +108,9 @@ abstract final class AppRoutes {
   static const String adminActivity = '/admin/activity';
   static const String adminCategories = '/admin/categories';
   static const String adminDrivers = '/admin/drivers';
+  static const String adminChat = '/admin/chat';
+  static const String adminReceipts = '/admin/receipts';
+  static const String adminAdmins = '/admin/admins';
 
   // Shared
   static const String chatThreads = '/chat';
@@ -111,7 +121,15 @@ abstract final class AppRoutes {
   static const String profile = '/profile';
 
   /// Pages reachable while logged out.
-  static const Set<String> _public = {login, otpLogin, signup, forgotPassword, resetPassword, verifyEmail};
+  static const Set<String> _public = {
+    welcome,
+    login,
+    otpLogin,
+    signup,
+    forgotPassword,
+    resetPassword,
+    verifyEmail,
+  };
 
   static bool isPublic(String location) => _public.contains(location);
 
@@ -218,7 +236,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: AppRoutes.splash, builder: (_, _) => const SplashScreen()),
       GoRoute(path: AppRoutes.login, builder: (_, _) => const LoginScreen()),
       GoRoute(path: AppRoutes.otpLogin, builder: (_, _) => const OtpLoginScreen()),
-      GoRoute(path: AppRoutes.signup, builder: (_, _) => const SignupScreen()),
+      GoRoute(path: AppRoutes.welcome, builder: (_, _) => const WelcomeScreen()),
+      GoRoute(
+        path: AppRoutes.signup,
+        builder: (_, s) => SignupScreen(
+          initialRole: UserRole.fromApi(s.uri.queryParameters['role'] ?? 'buyer'),
+        ),
+      ),
       GoRoute(path: AppRoutes.forgotPassword, builder: (_, _) => const ForgotPasswordScreen()),
       GoRoute(path: AppRoutes.resetPassword, builder: (_, _) => const ResetPasswordScreen()),
       GoRoute(path: AppRoutes.verifyEmail, builder: (_, _) => const VerifyEmailScreen()),
@@ -242,6 +266,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // ---- seller ----
       GoRoute(path: AppRoutes.sellerHome, builder: (_, _) => const SellerHomeScreen()),
+      GoRoute(path: AppRoutes.sellerPending, builder: (_, _) => const SellerPendingScreen()),
       GoRoute(path: AppRoutes.sellerProducts, builder: (_, _) => const SellerProductsScreen()),
       GoRoute(path: '/seller/products/new', builder: (_, _) => const ProductFormScreen()),
       GoRoute(path: '/seller/products/:id/edit', builder: (_, s) => ProductFormScreen(id: s.pathParameters['id'])),
@@ -263,7 +288,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: AppRoutes.adminDeliveries, builder: (_, _) => const AdminDeliveriesScreen()),
       GoRoute(path: AppRoutes.adminTickets, builder: (_, _) => const AdminTicketsScreen()),
       GoRoute(path: AppRoutes.adminReports, builder: (_, _) => const AdminReportsScreen()),
+      GoRoute(path: AppRoutes.adminChat, builder: (_, _) => const AdminChatThreadsScreen()),
       GoRoute(path: '/admin/chat/:threadId', builder: (_, s) => AdminChatScreen(threadId: s.pathParameters['threadId']!)),
+      GoRoute(path: AppRoutes.adminReceipts, builder: (_, _) => const AdminReceiptsScreen()),
+      GoRoute(path: AppRoutes.adminAdmins, builder: (_, _) => const AdminAdminsScreen()),
       GoRoute(path: AppRoutes.adminCreateDriver, builder: (_, _) => const AdminCreateDriverScreen()),
       GoRoute(path: AppRoutes.adminActivity, builder: (_, _) => const AdminActivityScreen()),
       GoRoute(path: AppRoutes.adminCategories, builder: (_, _) => const AdminCategoriesScreen()),

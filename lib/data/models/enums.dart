@@ -168,6 +168,16 @@ enum TransactionType {
         escrowHold || commission || withdrawal => false,
       };
 
+  /// Uppercase wire value (`ESCROW_HOLD`) for `?type=` transaction filters.
+  String get apiValue => switch (this) {
+        paymentIn => 'PAYMENT_IN',
+        escrowHold => 'ESCROW_HOLD',
+        escrowRelease => 'ESCROW_RELEASE',
+        commission => 'COMMISSION',
+        withdrawal => 'WITHDRAWAL',
+        refund => 'REFUND',
+      };
+
   /// API values are uppercase (`ESCROW_HOLD`) — match case-insensitively.
   static TransactionType fromApi(String value) => switch (value.toLowerCase()) {
         'payment_in' => TransactionType.paymentIn,
@@ -178,8 +188,6 @@ enum TransactionType {
             orElse: () => TransactionType.paymentIn,
           ),
       };
-
-  String get apiValue => name.toUpperCase();
 }
 
 enum TransactionStatus {
@@ -198,26 +206,31 @@ enum TransactionStatus {
       };
 }
 
-/// withdrawals.channel (D4).
+/// withdrawals.channel (D4). Bank transfer is the manual payout rail
+/// (Afriland First Bank — processed in 2–3 days).
 enum WithdrawalChannel {
   mtnMomo,
-  orangeMoney;
+  orangeMoney,
+  bank;
 
   String get label => switch (this) {
         mtnMomo => 'MTN Mobile Money',
         orangeMoney => 'Orange Money',
+        bank => 'Bank transfer',
       };
 
   /// API values are uppercase (`MTN_MOMO`) — match case-insensitively.
   static WithdrawalChannel fromApi(String value) => switch (value.toLowerCase()) {
         'mtn_momo' => WithdrawalChannel.mtnMomo,
         'orange_money' => WithdrawalChannel.orangeMoney,
+        'bank' || 'bank_transfer' => WithdrawalChannel.bank,
         _ => WithdrawalChannel.mtnMomo,
       };
 
   String get apiValue => switch (this) {
         mtnMomo => 'MTN_MOMO',
         orangeMoney => 'ORANGE_MONEY',
+        bank => 'BANK',
       };
 }
 

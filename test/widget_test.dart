@@ -10,7 +10,6 @@ import 'package:green/core/realtime/socket_service.dart';
 import 'package:green/core/storage/token_storage.dart';
 import 'package:green/data/repositories/providers.dart';
 import 'package:green/features/buyer/screens/buyer_home_screen.dart';
-import 'package:green/features/seller/screens/seller_home_screen.dart';
 import 'package:green/shared/widgets/custom_bottom_nav_bar.dart';
 import 'package:green/shared/widgets/product_card.dart';
 
@@ -43,7 +42,12 @@ void main() {
     }
     await tester.pumpAndSettle();
 
-    // Land on the login screen (not authenticated).
+    // The design's Welcome screen is the gate (not authenticated).
+    expect(find.text('I want to buy produce'), findsOneWidget);
+
+    // Returning user → login.
+    await tester.tap(find.widgetWithText(TextButton, 'Sign in'));
+    await tester.pumpAndSettle();
     expect(find.text('Welcome back'), findsOneWidget);
 
     // Sign in as the demo buyer.
@@ -82,55 +86,48 @@ void main() {
     }
     await tester.pumpAndSettle();
 
-    // Go to sign-up.
-    await tester.tap(find.text('Create one'));
-    await tester.pumpAndSettle();
-    expect(find.text('Create account'), findsWidgets);
-
-    // Pick Seller.
-    await tester.tap(find.text('Seller'));
+    // Welcome → the seller card pre-fills the signup wizard.
+    await tester.tap(find.text('I want to sell my harvest'));
     await tester.pumpAndSettle();
 
-    // Fill required fields (buyer + seller fields shown for the Seller tab).
+    // Step 01 — account: name/contact/region/password + terms.
     final fields = find.byType(TextFormField);
     await tester.enterText(fields.at(0), 'Jeanne');
     await tester.enterText(fields.at(1), 'Mbarga');
     await tester.enterText(fields.at(2), 'seller-new@greenish.cm');
     await tester.enterText(fields.at(3), '655987654');
-    // Region dropdown
     await tester.ensureVisible(find.byType(DropdownButtonFormField<String>).first);
     await tester.tap(find.byType(DropdownButtonFormField<String>).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Centre').last);
     await tester.pumpAndSettle();
-    // Farm name
-    await tester.ensureVisible(fields.at(4));
-    await tester.enterText(fields.at(4), 'Mbarga Organic Farm');
-    // Main category dropdown
-    await tester.ensureVisible(find.byType(DropdownButtonFormField<int>).first);
-    await tester.tap(find.byType(DropdownButtonFormField<int>).first);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Organic').last);
-    await tester.pumpAndSettle();
-    // Password + confirm (license at index 5 is optional and left blank).
     await tester.enterText(find.widgetWithText(TextFormField, 'Password'), 'SellerPass1!');
     await tester.enterText(find.widgetWithText(TextFormField, 'Confirm password'), 'SellerPass1!');
-    // Accept terms
     await tester.ensureVisible(find.byType(CheckboxListTile));
     await tester.tap(find.byType(CheckboxListTile));
     await tester.pumpAndSettle();
-
-    // Submit (the button, not the screen title).
-    final submit = find.widgetWithText(FilledButton, 'Create account');
-    await tester.ensureVisible(submit);
-    await tester.tap(submit);
+    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Continue'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
     await tester.pumpAndSettle();
 
-    // A fresh account is unverified (AUTH-03), but D7 is browse-only: the
-    // new seller lands inside the app under the persistent "verify your
-    // email" banner — order actions are gated at checkout, not by a wall.
-    expect(find.byType(SellerHomeScreen), findsOneWidget);
-    expect(find.text('Resend email'), findsOneWidget);
+    // Step 02 — farm details: farm name + a category chip (licence optional).
+    await tester.enterText(find.widgetWithText(TextFormField, 'Farm name'),
+        'Mbarga Organic Farm');
+    await tester.ensureVisible(find.widgetWithText(ChoiceChip, 'Organic'));
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Organic'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Continue'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+    await tester.pumpAndSettle();
+
+    // Step 03 — identity: the "Do this later" escape submits without photos.
+    await tester.ensureVisible(find.text('Do this later'));
+    await tester.tap(find.text('Do this later'));
+    await tester.pumpAndSettle();
+
+    // Step 04 is the pending-approval screen (the wizard's final step).
+    expect(find.text('Application received'), findsOneWidget);
+    expect(find.text('Draft your first product'), findsOneWidget);
   });
 
   testWidgets('buyer browses the product grid and opens a detail screen',
@@ -153,6 +150,10 @@ void main() {
     for (var i = 0; i < 60; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
+    await tester.pumpAndSettle();
+
+    // Welcome → returning user goes to login.
+    await tester.tap(find.widgetWithText(TextButton, 'Sign in'));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextFormField).at(0), 'buyer@greenish.cm');
