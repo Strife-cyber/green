@@ -33,6 +33,17 @@ class _DriverDeliveryDetailScreenState extends ConsumerState<DriverDeliveryDetai
 
   @override
   Widget build(BuildContext context) {
+    // The buyer's confirm lands on the tracking poll/socket first — refresh
+    // the detail when the delivery reports delivered so the card doesn't sit
+    // on "En route" until the driver navigates away.
+    ref.listen(deliveryTrackingControllerProvider(_trackingRequest),
+        (previous, next) {
+      final wasDelivered = previous?.delivery?.isDelivered ?? false;
+      if (!wasDelivered && (next.delivery?.isDelivered ?? false)) {
+        ref.invalidate(driverDeliveryDetailControllerProvider(widget.id));
+      }
+    });
+
     final delivery = ref.watch(driverDeliveryDetailControllerProvider(widget.id));
     final tracking = ref.watch(deliveryTrackingControllerProvider(_trackingRequest));
 
