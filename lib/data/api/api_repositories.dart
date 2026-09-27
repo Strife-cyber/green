@@ -242,6 +242,19 @@ class ApiAuthRepository implements AuthRepository {
       _fail(e);
     }
   }
+
+  @override
+  Future<bool> emailVerified() async {
+    try {
+      // `GET /auth/me` — the minimal principal; carries `emailVerified` under
+      // the current contract. A missing flag counts as still unverified.
+      final res = await _dio.get(Endpoints.me);
+      final map = _unwrap(res.data);
+      return map is Map<String, dynamic> && map['emailVerified'] == true;
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
 }
 
 /// ────────────────────────────────────────────────────────────────────────────
@@ -695,6 +708,7 @@ class ApiWithdrawalRepository implements WithdrawalRepository {
         'amount': _money(input.amount),
         'channel': input.channel.apiValue,
         'accountReference': input.accountReference,
+        'password': input.password,
       });
       return Withdrawal.fromJson(_unwrap(res.data) as Map<String, dynamic>);
     } on DioException catch (e) {

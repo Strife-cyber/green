@@ -58,7 +58,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         ref.read(buyerOrderListControllerProvider).valueOrNull ?? const <Order>[];
     return [
       for (final o in orders)
-        if (o.paymentStatus == PaymentStatus.unpaid && o.id != widget.orderId)
+        if (o.paymentStatus == PaymentStatus.unpaid &&
+            o.status != OrderStatus.cancelled &&
+            o.id != widget.orderId)
           o.id,
     ];
   }
@@ -94,7 +96,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         const <Order>[];
     final unpaidIds = [
       for (final o in unpaidOrders)
-        if (o.paymentStatus == PaymentStatus.unpaid) o.id,
+        if (o.paymentStatus == PaymentStatus.unpaid &&
+            o.status != OrderStatus.cancelled)
+          o.id,
     ];
     final remaining = [for (final id in unpaidIds) if (id != widget.orderId) id];
 
@@ -125,7 +129,12 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     return AsyncView<Order>(
       value: order,
       onRetry: () => ref.invalidate(paymentOrderProvider(widget.orderId)),
-      builder: (o) => ListView(
+      builder: (o) {
+        // Last-line guard: even if a Pay-now entry point raced a status
+        // change, a cancelled or already-paid order must never be charged.
+        final payable = o.paymentStatus == PaymentStatus.unpaid &&
+            o.status != OrderStatus.cancelled;
+        return ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Card(
@@ -161,8 +170,16 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             onTap: () => setState(() => _channel = PaymentChannel.orangeMoney),
           ),
           const SizedBox(height: 24),
+          if (!payable) ...[
+            Text(
+              'This order can no longer be paid.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.tanDark),
+            ),
+            const SizedBox(height: 8),
+          ],
           FilledButton.icon(
-            onPressed: _pay,
+            onPressed: payable ? _pay : null,
             icon: const Icon(Icons.lock_outline),
             label: const Text('Pay'),
             style: FilledButton.styleFrom(
@@ -171,7 +188,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             ),
           ),
         ],
-      ),
+        );
+      },
     );
   }
 }

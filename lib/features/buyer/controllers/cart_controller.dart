@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/storage/local_store.dart';
 import '../../../data/models/product.dart';
+import '../../auth/controllers/auth_controller.dart';
 
 /// One line on the buyer's cart — a product plus the kg quantity. Money is
 /// `int` FCFA (line totals are rounded from `pricePerKg * quantityKg`).
@@ -40,19 +41,32 @@ class Cart {
   int get subtotal => lines.fold(0, (sum, line) => sum + line.lineTotal);
 }
 
-const _cartStorageKey = 'greenish.cart.v1';
+const _cartStorageKeyPrefix = 'greenish.cart.v1';
 
 /// Owns the buyer's cart: add / adjust / remove / clear plus totals. The cart
-/// is hydrated from and persisted to [localStoreProvider] so it survives app
-/// restarts (BUY-06). Persistence is best-effort — a not-yet-ready
+/// is hydrated from and persisted to [localStoreProvider] under a per-account
+/// key so it survives app restarts but never leaks across a logout → login as
+/// a different user (BUY-06). Persistence is best-effort — a not-yet-ready
 /// SharedPreferences instance falls back to an in-memory cart.
 class CartController extends Notifier<Cart> {
-  bool _hydrated = false;
+  /// The account the in-memory cart belongs to (null = guest). The notifier
+  /// instance survives rebuilds, so this — not a one-shot flag — decides when
+  /// to re-hydrate.
+  String? _hydratedFor;
+
+  String? get _userId => _hydratedFor;
+
+  String get _storageKey =>
+      '$_cartStorageKeyPrefix.${_userId ?? 'guest'}';
 
   @override
   Cart build() {
-    if (!_hydrated) {
-      _hydrated = true;
+    // Watching the signed-in user's id re-runs build on every account switch
+    // (logout, login, session expiry): the cart empties immediately and the
+    // new account's persisted lines load — no cross-account leakage.
+    final userId = ref.watch(currentUserIdProvider);
+    if (userId != _hydratedFor) {
+      _hydratedFor = userId;
       _hydrate();
     }
     return const Cart();
@@ -122,9 +136,12 @@ class CartController extends Notifier<Cart> {
   // ---- persistence ---------------------------------------------------------
 
   Future<void> _hydrate() async {
+    // If the account changes mid-load, drop this result — the newer build
+    // already queued its own hydrate for the right user.
+    final forUser = _userId;
     try {
       final store = await ref.read(localStoreProvider.future);
-      final raw = store.getString(_cartStorageKey);
+      final raw = store.getString(_storageKey);
       if (raw == null || raw.isEmpty) return;
       final decoded = jsonDecode(raw);
       if (decoded is! List) return;
@@ -132,7 +149,9 @@ class CartController extends Notifier<Cart> {
         for (final item in decoded)
           if (item is Map<String, dynamic>) _lineFromJson(item),
       ];
-      if (lines.isNotEmpty) state = Cart(lines: lines);
+      if (_userId == forUser && lines.isNotEmpty) {
+        state = Cart(lines: lines);
+      }
     } catch (_) {
       // SharedPreferences not ready — start with an empty cart.
     }
@@ -142,7 +161,7 @@ class CartController extends Notifier<Cart> {
     try {
       final store = await ref.read(localStoreProvider.future);
       await store.setString(
-        _cartStorageKey,
+        _storageKey,
         jsonEncode([for (final line in state.lines) _lineToJson(line)]),
       );
     } catch (_) {

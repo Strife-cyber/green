@@ -177,21 +177,30 @@ final routerProvider = Provider<GoRouter>((ref) {
         return AppRoutes.login;
       }
 
-      // Logged in but not email-verified (AUTH-03): funnel to /verify-email so
-      // the user never lands on their role home unverified. The verification
-      // screen itself is allowed, and public auth screens stay reachable as the
-      // sign-out / re-auth escape hatch — except right after a fresh
-      // login/signup, when they'd park the user on a form.
+      // Logged in but not email-verified (AUTH-03, D7 browse-only): the user
+      // lands INSIDE the app — a fresh login/signup bounces the public form to
+      // the role home — and browses the catalog freely behind the persistent
+      // "verify your email" banner (VerifyEmailGate in app.dart). Only order
+      // placement is gated, client-side on the checkout screen. /verify-email
+      // stays reachable for the deep link and a manual status check, and the
+      // public auth pages remain the sign-out / re-auth escape hatch.
       if (user.emailVerified == false) {
         if (location == AppRoutes.verifyEmail) {
           justAuthenticated = false;
           return null;
         }
-        if (justAuthenticated && AppRoutes.isPublic(location)) {
-          return AppRoutes.verifyEmail;
+        if (location == AppRoutes.splash ||
+            (justAuthenticated && AppRoutes.isPublic(location))) {
+          return AppRoutes.homeFor(user.role);
         }
         if (AppRoutes.isPublic(location)) return null;
-        return AppRoutes.verifyEmail;
+        // Once they're inside the app, fresh-auth is consumed — a later visit
+        // to a public page (e.g. "Back to sign in") is allowed through.
+        justAuthenticated = false;
+        if (_roleMismatch(location, user.role)) {
+          return AppRoutes.homeFor(user.role);
+        }
+        return null;
       }
 
       // Logged in: never land on public pages or a foreign role's home. The

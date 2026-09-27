@@ -10,6 +10,7 @@ import 'core/router/app_router.dart';
 import 'data/models/enums.dart';
 import 'data/repositories/providers.dart';
 import 'features/auth/controllers/auth_controller.dart';
+import 'features/auth/widgets/verify_email_banner.dart';
 import 'l10n/l10n.dart';
 import 'theme/app_theme.dart';
 
@@ -71,6 +72,11 @@ class GreenApp extends ConsumerWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         routerConfig: router,
+        // D7 browse-only: while the account's email is unverified, the whole
+        // app renders under a persistent "verify your email" strip (resend +
+        // status check). Only order placement is blocked — at checkout.
+        builder: (context, child) =>
+            VerifyEmailGate(child: child ?? const SizedBox.shrink()),
       ),
     );
   }

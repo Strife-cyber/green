@@ -2,12 +2,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/app_notification.dart';
 import '../../../data/repositories/providers.dart';
+import '../../auth/controllers/auth_controller.dart';
 
 /// In-app notification centre (NOT-01..06). Marks items read in place so the
 /// list updates without a full refetch.
 class NotificationController extends AsyncNotifier<List<AppNotification>> {
   @override
-  Future<List<AppNotification>> build() => ref.watch(notificationRepositoryProvider).list();
+  Future<List<AppNotification>> build() async {
+    if (ref.watch(currentUserIdProvider) == null) {
+      return const [];
+    }
+    return ref.watch(notificationRepositoryProvider).list();
+  }
 
   /// Mark a single notification as read (NOT-03).
   Future<void> markRead(String id) async {

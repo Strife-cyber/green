@@ -18,8 +18,11 @@ import '../../delivery/widgets/live_delivery_map.dart';
 import '../../order/order_status_text.dart';
 import '../../../shared/widgets/amount_text.dart';
 import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/report_dialog.dart';
 import '../../../theme/app_colors.dart';
+import '../../wallet/controllers/ledger_controller.dart';
+import '../../wallet/controllers/wallet_controller.dart';
 import '../controllers/buyer_order_list_controller.dart';
 import '../controllers/order_detail_controller.dart';
 
@@ -279,12 +282,14 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   }
 
   /// The "Got it" card — shown once the driver has picked up (order SHIPPED)
-  /// but the buyer hasn't confirmed yet. Code-required orders ask for the
-  /// 6-digit code from the email; everything else confirms with one tap.
+  /// but the buyer hasn't confirmed yet. The 6-digit input appears while the
+  /// order is code-required or a code has been issued (backend sends
+  /// `codeRequired`/`confirmationCodeIssued`); below the threshold the card
+  /// stays a one-tap confirm.
   Widget _gotItCard(BuildContext context, Delivery delivery) {
     final theme = Theme.of(context);
     final t = context.t;
-    final codeRequired = delivery.codeRequired;
+    final needsCode = delivery.codeRequired || delivery.confirmationCodeIssued;
     final code = _codeController.text.trim();
     return Card(
       color: AppColors.greenContainer,
@@ -307,7 +312,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               t.driverArrivedBody,
               style: theme.textTheme.bodySmall?.copyWith(color: AppColors.tanDark),
             ),
-            if (codeRequired) ...[
+            if (needsCode) ...[
               const SizedBox(height: 12),
               Text(
                 t.gotItCodeHint,
@@ -324,7 +329,13 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                   prefixIcon: const Icon(Icons.pin_outlined),
                   counterText: '',
                 ),
-                onChanged: (_) => setState(() {}),
+                onChanged: (_) {
+                  setState(() {});
+                  // Auto-submit on the 6th digit — one fewer tap.
+                  if (_codeController.text.trim().length == 6 && !_confirming) {
+                    _confirmGotIt(delivery);
+                  }
+                },
                 onSubmitted: (_) {
                   if (code.length == 6) _confirmGotIt(delivery);
                 },
@@ -332,7 +343,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             ],
             const SizedBox(height: 12),
             FilledButton.icon(
-              onPressed: (!codeRequired || code.length == 6) && !_confirming
+              onPressed: (!needsCode || code.length == 6) && !_confirming
                   ? () => _confirmGotIt(delivery)
                   : null,
               icon: const Icon(Icons.check),
@@ -346,25 +357,31 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   }
 
   Future<void> _confirmGotIt(Delivery delivery) async {
+    final needsCode = delivery.codeRequired || delivery.confirmationCodeIssued;
     final code = _codeController.text.trim();
+    if (needsCode && code.length != 6) return;
     setState(() => _confirming = true);
     try {
       await ref
           .read(deliveryRepositoryProvider)
-          .confirm(delivery.id, code: code.isEmpty ? null : code);
+          .confirm(delivery.id, code: needsCode ? code : null);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.t.deliveryConfirmed)),
       );
       ref.invalidate(orderDetailControllerProvider);
       ref.invalidate(buyerOrderListControllerProvider);
+      // Confirming releases escrow — refresh the wallet surfaces too.
+      ref.invalidate(walletControllerProvider);
+      ref.invalidate(ledgerControllerProvider);
       await ref
           .read(deliveryTrackingControllerProvider(_trackingRequest).notifier)
           .refreshNow();
-    } catch (_) {
+    } catch (error) {
+      // API errors verbatim — e.g. a wrong code's "attempts left" message.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.t.confirmFailed)),
+          SnackBar(content: Text(friendlyErrorMessage(error, context))),
         );
       }
     } finally {
@@ -410,11 +427,17 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final t = context.t;
     final unpaid = order.paymentStatus == PaymentStatus.unpaid;
     final pending = order.status == OrderStatus.pending;
+    final cancelled = order.status == OrderStatus.cancelled;
     final shipped = order.status == OrderStatus.shipped;
     final delivered = order.status == OrderStatus.delivered;
 
+    // Gate on BOTH fields — a cancelled order stays UNPAID (mustn't offer
+    // Pay) and a paid-but-pending order mustn't offer Cancel.
+    final canCancel = pending && unpaid;
+    final canPay = unpaid && !cancelled;
+
     final buttons = <Widget>[];
-    if (pending) {
+    if (canCancel) {
       buttons.add(
         OutlinedButton.icon(
           onPressed: () => _cancelOrder(order),
@@ -427,7 +450,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         ),
       );
     }
-    if (unpaid) {
+    if (canPay) {
       buttons.add(
         FilledButton.icon(
           onPressed: () => context.push(AppRoutes.payment(order.id)),

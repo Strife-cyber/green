@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/repositories/providers.dart';
+import '../../auth/controllers/auth_controller.dart';
 
 /// The set of product ids the current buyer has saved (BUY-05).
 class WishlistController extends AsyncNotifier<Set<String>> {
@@ -10,7 +11,10 @@ class WishlistController extends AsyncNotifier<Set<String>> {
   final Set<String> _pending = {};
 
   @override
-  Future<Set<String>> build() {
+  Future<Set<String>> build() async {
+    if (ref.watch(currentUserIdProvider) == null) {
+      return const {};
+    }
     return ref.watch(wishlistRepositoryProvider).savedProductIds();
   }
 

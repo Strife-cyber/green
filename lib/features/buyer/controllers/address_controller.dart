@@ -3,12 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/address.dart';
 import '../../../data/repositories/address_repository.dart';
 import '../../../data/repositories/providers.dart';
+import '../../auth/controllers/auth_controller.dart';
 
 /// CRUD for the buyer's saved delivery addresses (BUY-08). Each mutation
-/// reloads the list so screens always reflect the persisted state.
+/// reloads the list so screens always reflect the persisted state. Scoped to
+/// the signed-in user — a logout → login refetches instead of serving the
+/// previous account's addresses.
 class AddressController extends AsyncNotifier<List<Address>> {
   @override
-  Future<List<Address>> build() {
+  Future<List<Address>> build() async {
+    if (ref.watch(currentUserIdProvider) == null) {
+      return const [];
+    }
     return ref.watch(addressRepositoryProvider).list();
   }
 

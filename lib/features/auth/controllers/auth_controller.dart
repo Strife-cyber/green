@@ -190,6 +190,13 @@ class AuthController extends AsyncNotifier<AuthState> {
     return ref.read(authRepositoryProvider).resendVerification(email.trim());
   }
 
+  /// Consumes the emailed verification token (AUTH-03, deep link
+  /// `/verify-email?token=…`) — validates it server-side, then the next
+  /// [checkEmailVerification] poll flips the session.
+  Future<void> verifyEmailToken(String token) {
+    return ref.read(authRepositoryProvider).verifyEmail(token.trim());
+  }
+
   /// Re-fetches the current session (used by the "I've verified — check
   /// status" affordance on the verification screen). If the backend now reports
   /// `emailVerified: true`, the router's redirect can let the user through.
@@ -201,7 +208,44 @@ class AuthController extends AsyncNotifier<AuthState> {
       // Token may be stale — the user can sign in again.
     }
   }
+
+  /// One-shot "did they verify?" check — a single `GET /auth/me` poll per tap,
+  /// NOT a provider invalidate (a full rebuild briefly reports
+  /// [AuthStatus.unknown], which bounced the router through splash). When the
+  /// backend reports verified, the session's user is updated in place so the
+  /// browse-only banner lifts and order actions unlock.
+  Future<bool> checkEmailVerification() async {
+    final session = state.valueOrNull?.session;
+    if (session == null) return false;
+    try {
+      final verified = await ref.read(authRepositoryProvider).emailVerified();
+      if (!verified) return false;
+      state = AsyncData(
+        AuthState.authenticated(
+          AuthSession(
+            accessToken: session.accessToken,
+            refreshToken: session.refreshToken,
+            user: session.user.copyWith(emailVerified: true),
+            sellerProfile: session.sellerProfile,
+          ),
+        ),
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 }
 
 final authControllerProvider =
     AsyncNotifierProvider<AuthController, AuthState>(AuthController.new);
+
+/// The signed-in user's id, or null while unauthenticated. User-scoped
+/// providers watch THIS (not the full auth state) so they only rebuild on an
+/// actual account switch — logout, login, session expiry — instead of
+/// refetching on every auth emission (e.g. the verify banner's status check).
+final currentUserIdProvider = Provider<String?>(
+  (ref) => ref.watch(
+    authControllerProvider.select((a) => a.valueOrNull?.user?.id),
+  ),
+);

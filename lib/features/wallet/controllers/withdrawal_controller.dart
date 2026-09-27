@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/api_exception.dart';
 import '../../../data/models/enums.dart';
 import '../../../data/repositories/providers.dart';
 import '../../../data/repositories/withdrawal_repository.dart';
+import '../../auth/controllers/auth_controller.dart';
 
 /// Flow state of a wallet withdrawal request.
 sealed class WithdrawalState {
@@ -29,12 +31,17 @@ class WithdrawalError extends WithdrawalState {
 /// Submits a wallet withdrawal request (PAY-05).
 class WithdrawalController extends Notifier<WithdrawalState> {
   @override
-  WithdrawalState build() => const WithdrawalIdle();
+  WithdrawalState build() {
+    // Resets leftover submit/error state on account switch.
+    ref.watch(currentUserIdProvider);
+    return const WithdrawalIdle();
+  }
 
   Future<void> request({
     required int amount,
     required WithdrawalChannel channel,
     required String accountReference,
+    required String password,
   }) async {
     state = const WithdrawalSubmitting();
     try {
@@ -43,12 +50,26 @@ class WithdrawalController extends Notifier<WithdrawalState> {
               amount: amount,
               channel: channel,
               accountReference: accountReference.trim(),
+              password: password,
             ),
           );
       state = const WithdrawalDone();
-    } catch (_) {
-      state = const WithdrawalError('Could not submit the withdrawal. Please try again.');
+    } catch (error) {
+      state = WithdrawalError(_messageFor(error));
     }
+  }
+
+  /// Surfaces the server's own message verbatim ("incorrect password",
+  /// "Minimum withdrawal is X FCFA", insufficient balance, …); opaque errors
+  /// fall back to a generic line.
+  static String _messageFor(Object error) {
+    if (error is ApiException && error.message.isNotEmpty) return error.message;
+    final text = error.toString().trim();
+    const prefix = 'Exception: ';
+    if (text.startsWith(prefix)) return text.substring(prefix.length);
+    return text.isEmpty
+        ? 'Could not submit the withdrawal. Please try again.'
+        : text;
   }
 }
 

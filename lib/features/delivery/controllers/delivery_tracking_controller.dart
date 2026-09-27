@@ -82,6 +82,12 @@ class DeliveryTrackingController
   @override
   DeliveryTrackingState build(DeliveryTrackingRequest request) {
     _disposed = false;
+    // Scoped to the signed-in user: the rebuild on logout/login disposes the
+    // poller/socket and a signed-out tracker stays idle instead of polling
+    // with a dead token.
+    if (ref.watch(currentUserIdProvider) == null) {
+      return const DeliveryTrackingState();
+    }
     final socket = ref.read(socketServiceProvider);
     // Connect (awaiting session restore on cold start, so the token is never
     // empty) and join the deliveries room — rooms are re-joined automatically

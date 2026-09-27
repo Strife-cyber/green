@@ -10,6 +10,7 @@ import 'package:green/core/realtime/socket_service.dart';
 import 'package:green/core/storage/token_storage.dart';
 import 'package:green/data/repositories/providers.dart';
 import 'package:green/features/buyer/screens/buyer_home_screen.dart';
+import 'package:green/features/seller/screens/seller_home_screen.dart';
 import 'package:green/shared/widgets/custom_bottom_nav_bar.dart';
 import 'package:green/shared/widgets/product_card.dart';
 
@@ -62,7 +63,7 @@ void main() {
     expect(Navigator.of(homeEl).canPop(), isFalse);
   });
 
-  testWidgets('seller sign-up lands on email verification',
+  testWidgets('seller sign-up lands in-app with the verify banner',
       (WidgetTester tester) async {
     final storage = InMemoryTokenStorage();
     await tester.pumpWidget(
@@ -125,10 +126,11 @@ void main() {
     await tester.tap(submit);
     await tester.pumpAndSettle();
 
-    // A fresh account is unverified (AUTH-03), so the router parks the new
-    // seller on the email-verification screen rather than the seller home —
-    // the pending-approval queue banner is only reachable after verification.
-    expect(find.text('Verify your email'), findsWidgets);
+    // A fresh account is unverified (AUTH-03), but D7 is browse-only: the
+    // new seller lands inside the app under the persistent "verify your
+    // email" banner — order actions are gated at checkout, not by a wall.
+    expect(find.byType(SellerHomeScreen), findsOneWidget);
+    expect(find.text('Resend email'), findsOneWidget);
   });
 
   testWidgets('buyer browses the product grid and opens a detail screen',

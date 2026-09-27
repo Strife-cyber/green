@@ -74,7 +74,10 @@ class _OrderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final t = context.t;
-    final unpaid = order.paymentStatus == PaymentStatus.unpaid;
+    // Same gate as the order detail: a cancelled order stays UNPAID but must
+    // never offer Pay now.
+    final canPay = order.paymentStatus == PaymentStatus.unpaid &&
+        order.status != OrderStatus.cancelled;
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -119,7 +122,7 @@ class _OrderCard extends StatelessWidget {
                 t.itemCount(count: order.items.length),
                 style: theme.textTheme.bodySmall?.copyWith(color: AppColors.tanDark),
               ),
-              if (unpaid && onPayNow != null) ...[
+              if (canPay && onPayNow != null) ...[
                 const SizedBox(height: 10),
                 Align(
                   alignment: Alignment.centerLeft,

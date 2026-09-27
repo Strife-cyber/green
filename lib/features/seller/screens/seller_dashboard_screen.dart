@@ -107,29 +107,31 @@ class SellerDashboardScreen extends ConsumerWidget {
               const SizedBox(height: 20),
               _RevenueHero(weeklyRevenue: data.weeklyRevenue),
               const SizedBox(height: 20),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: _MetricTile(
-                      icon: Icons.people_outline,
-                      accent: AppColors.orange,
-                      value: '${data.totalCustomers}',
-                      label: 'Customers',
-                      caption: 'unique buyers',
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: _MetricTile(
+                        icon: Icons.people_outline,
+                        accent: AppColors.orange,
+                        value: '${data.totalCustomers}',
+                        label: 'Customers',
+                        caption: 'unique buyers',
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _MetricTile(
-                      icon: Icons.star_rounded,
-                      accent: AppColors.greenDark,
-                      value: data.averageRating.toStringAsFixed(1),
-                      label: 'Rating',
-                      caption: '${data.ratingCount} reviews',
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _MetricTile(
+                        icon: Icons.star_rounded,
+                        accent: AppColors.greenDark,
+                        value: data.averageRating.toStringAsFixed(1),
+                        label: 'Rating',
+                        caption: '${data.ratingCount} reviews',
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
               _ChartCard(points: data.monthlySales),

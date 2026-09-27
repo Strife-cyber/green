@@ -7,18 +7,24 @@ import '../../../core/router/app_router.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../data/models/enums.dart';
 import '../../../data/models/order.dart';
+import '../../../data/models/user.dart';
+import '../../../data/repositories/providers.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/amount_text.dart';
 import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/order_timeline.dart';
+import '../../../shared/widgets/user_avatar.dart';
 import '../../../theme/app_colors.dart';
 import '../../order/order_status_text.dart';
 import '../controllers/seller_order_detail_controller.dart';
 import '../controllers/seller_queue_controller.dart';
 
-/// Seller order detail (SELL-03, reworked): plain status, items, progress and
-/// a soft "Done" for orders to prepare. The driver owns pickup/complete — so
-/// there is no confirm, ship or assign-driver button anywhere here.
+/// Seller order detail (SELL-03): status, items, progress — and the actions
+/// that advance a paid order through its lifecycle: Confirm (PENDING +
+/// ESCROW_HELD) → Assign driver (CONFIRMED, `POST /deliveries`) → Mark as
+/// shipped (delivery assigned). Pickup/delivery completion stays with the
+/// driver and the buyer.
 class SellerOrderDetailScreen extends ConsumerWidget {
   final String id;
 
@@ -37,10 +43,54 @@ class SellerOrderDetailScreen extends ConsumerWidget {
         onRetry: () => ref.invalidate(sellerOrderDetailControllerProvider(id)),
         builder: (order) => _OrderDetailContent(
           order: order,
+          onStatus: (status) => _updateStatus(context, ref, order, status),
+          onAssignDriver: () => _assignDriver(context, ref, order),
           onCancel: () => _cancelOrder(context, ref, order),
         ),
       ),
     );
+  }
+
+  /// `PATCH /orders/{id}/status` — API errors surface verbatim in a snackbar.
+  Future<void> _updateStatus(
+      BuildContext context, WidgetRef ref, Order order, OrderStatus status) async {
+    try {
+      await ref
+          .read(sellerOrderDetailControllerProvider(order.id).notifier)
+          .updateStatus(status);
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(friendlyErrorMessage(error, context))),
+        );
+      }
+    }
+  }
+
+  /// Picks a DRIVER user and assigns them via `POST /deliveries`
+  /// (`GET /deliveries/drivers` powers the picker). The returned delivery is
+  /// merged into the order — it's the record that unlocks "Mark as shipped".
+  Future<void> _assignDriver(
+      BuildContext context, WidgetRef ref, Order order) async {
+    final driver = await showModalBottomSheet<User>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const _DriverPickerSheet(),
+    );
+    if (driver == null || !context.mounted) return;
+    try {
+      final delivery =
+          await ref.read(deliveryRepositoryProvider).assign(order.id, driver.id);
+      ref
+          .read(sellerOrderDetailControllerProvider(order.id).notifier)
+          .deliveryAssigned(delivery);
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(friendlyErrorMessage(error, context))),
+        );
+      }
+    }
   }
 
   /// Buyer-initiated cancellation is gone (no confirm buttons). The seller can
@@ -70,10 +120,10 @@ class SellerOrderDetailScreen extends ConsumerWidget {
       await ref
           .read(sellerOrderDetailControllerProvider(order.id).notifier)
           .updateStatus(OrderStatus.cancelled);
-    } catch (_) {
+    } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not update the order.')),
+          SnackBar(content: Text(friendlyErrorMessage(error, context))),
         );
       }
     }
@@ -82,9 +132,16 @@ class SellerOrderDetailScreen extends ConsumerWidget {
 
 class _OrderDetailContent extends ConsumerWidget {
   final Order order;
+  final ValueChanged<OrderStatus> onStatus;
+  final VoidCallback onAssignDriver;
   final VoidCallback onCancel;
 
-  const _OrderDetailContent({required this.order, required this.onCancel});
+  const _OrderDetailContent({
+    required this.order,
+    required this.onStatus,
+    required this.onAssignDriver,
+    required this.onCancel,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -92,7 +149,11 @@ class _OrderDetailContent extends ConsumerWidget {
     final t = context.t;
     final prepared = ref.watch(sellerPreparedProvider).contains(order.id);
     final pending = order.status == OrderStatus.pending;
+    final confirmed = order.status == OrderStatus.confirmed;
     final shipped = order.status == OrderStatus.shipped;
+    // The escrow must be held before the seller commits stock.
+    final confirmable = pending && order.paymentStatus == PaymentStatus.escrowHeld;
+    final assigned = order.deliveryId != null;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -165,11 +226,30 @@ class _OrderDetailContent extends ConsumerWidget {
             ),
           ),
         ),
-        if (order.status == OrderStatus.confirmed) ...[
+        if (confirmed) ...[
           const SizedBox(height: 16),
           _prepareCard(context, ref, prepared),
+          const SizedBox(height: 16),
+          _driverCard(context),
         ],
         const SizedBox(height: 16),
+        if (confirmable) ...[
+          FilledButton.icon(
+            onPressed: () => onStatus(OrderStatus.confirmed),
+            icon: const Icon(Icons.check_circle_outline),
+            label: const Text('Confirm order'),
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (confirmed && assigned) ...[
+          FilledButton.icon(
+            onPressed: () => onStatus(OrderStatus.shipped),
+            icon: const Icon(Icons.local_shipping_outlined),
+            label: const Text('Mark as shipped'),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.greenDark),
+          ),
+          const SizedBox(height: 12),
+        ],
         if (pending) ...[
           OutlinedButton.icon(
             onPressed: onCancel,
@@ -196,6 +276,53 @@ class _OrderDetailContent extends ConsumerWidget {
           label: Text(t.chatWithBuyer),
         ),
       ],
+    );
+  }
+
+  /// Delivery status + the Assign-driver affordance. The delivery record
+  /// (created on assign) is what unlocks "Mark as shipped" — shipping an
+  /// order with no driver would leave the code flow unstartable.
+  Widget _driverCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final assigned = order.deliveryId != null;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(
+              assigned ? Icons.local_shipping : Icons.local_shipping_outlined,
+              color: assigned ? AppColors.green : AppColors.tanDark,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    assigned
+                        ? 'Assigned to ${order.deliveryDriverName ?? 'a driver'}'
+                        : 'No driver assigned yet',
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    assigned
+                        ? 'Mark the order as shipped once the goods leave.'
+                        : 'Assign a driver before marking this order as shipped.',
+                    style: theme.textTheme.bodySmall?.copyWith(color: AppColors.tanDark),
+                  ),
+                ],
+              ),
+            ),
+            if (!assigned)
+              TextButton(
+                onPressed: onAssignDriver,
+                child: const Text('Assign driver'),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -296,6 +423,95 @@ class _TotalRow extends StatelessWidget {
           Text(label, style: style),
           AmountText(amount, style: style),
         ],
+      ),
+    );
+  }
+}
+
+/// Bottom sheet: pick one of the available DRIVER users to assign to the order
+/// (DEL-02). `GET /deliveries/drivers` powers the list — the admin-console
+/// driver endpoint is admin-only.
+class _DriverPickerSheet extends ConsumerStatefulWidget {
+  const _DriverPickerSheet();
+
+  @override
+  ConsumerState<_DriverPickerSheet> createState() => _DriverPickerSheetState();
+}
+
+class _DriverPickerSheetState extends ConsumerState<_DriverPickerSheet> {
+  late Future<List<User>> _driversFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _driversFuture = ref.read(deliveryRepositoryProvider).availableDrivers();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SafeArea(
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+              child: Text('Assign a driver', style: theme.textTheme.titleMedium),
+            ),
+            Expanded(
+              child: FutureBuilder<List<User>>(
+                future: _driversFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return ErrorView(
+                      message: friendlyErrorMessage(snapshot.error!, context),
+                      onRetry: () => setState(() {
+                        _driversFuture = ref
+                            .read(deliveryRepositoryProvider)
+                            .availableDrivers();
+                      }),
+                    );
+                  }
+                  final drivers = snapshot.data ?? const <User>[];
+                  if (drivers.isEmpty) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text('No drivers available yet.'),
+                      ),
+                    );
+                  }
+                  return ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: drivers.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final driver = drivers[index];
+                      return Card(
+                        child: ListTile(
+                          leading: UserAvatar(name: driver.fullName),
+                          title: Text(
+                            driver.fullName,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          subtitle: Text(
+                            '${driver.region ?? 'Region unknown'} · ${driver.phone ?? driver.email}',
+                          ),
+                          onTap: () => Navigator.of(context).pop(driver),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

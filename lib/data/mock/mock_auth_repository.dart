@@ -14,6 +14,12 @@ class MockAuthRepository implements AuthRepository {
   /// the mock accepts this fixed value so the flow is exercisable pre-hand-off.
   static const demoOtpCode = '123456';
 
+  /// Tracks whether the current signup's verification link has been "clicked".
+  /// Seeded demo users are always verified; a fresh signup starts unverified
+  /// and flips once a link is delivered (resend) or a token is consumed —
+  /// there's no real mailbox, so delivery counts as clicked in the demo.
+  bool _linkClicked = true;
+
   @override
   Future<AuthSession> login({required String email, required String password}) async {
     await Future<void>.delayed(_latency);
@@ -49,7 +55,7 @@ class MockAuthRepository implements AuthRepository {
       region: input.region,
       emailVerified: false, // verification email would be sent (AUTH-03)
     );
-    return AuthSession(
+    final session = AuthSession(
       accessToken: 'mock-access-${user.id}',
       refreshToken: 'mock-refresh-${user.id}',
       user: user,
@@ -65,6 +71,8 @@ class MockAuthRepository implements AuthRepository {
             )
           : null,
     );
+    _linkClicked = false;
+    return session;
   }
 
   @override
@@ -108,12 +116,22 @@ class MockAuthRepository implements AuthRepository {
   @override
   Future<void> verifyEmail(String token) async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
+    _linkClicked = true;
   }
 
   @override
   Future<void> resendVerification(String email) async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
-    // Simulates re-sending the verification email (AUTH-03).
+    // Simulates re-sending the verification email (AUTH-03). With no real
+    // mailbox, delivery counts as the link being clicked — the next
+    // emailVerified() poll then reports verified.
+    _linkClicked = true;
+  }
+
+  @override
+  Future<bool> emailVerified() async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    return _linkClicked;
   }
 
   AuthSession _sessionFor(String email, {required bool approvedSeller}) {

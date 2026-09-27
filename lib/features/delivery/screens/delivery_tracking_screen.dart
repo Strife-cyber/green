@@ -15,6 +15,10 @@ import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/order_timeline.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../../../theme/app_colors.dart';
+import '../../buyer/controllers/buyer_order_list_controller.dart';
+import '../../buyer/controllers/order_detail_controller.dart';
+import '../../wallet/controllers/ledger_controller.dart';
+import '../../wallet/controllers/wallet_controller.dart';
 import '../controllers/delivery_tracking_controller.dart';
 import '../widgets/live_delivery_map.dart';
 
@@ -102,10 +106,11 @@ class _DeliveryTrackingScreenState extends ConsumerState<DeliveryTrackingScreen>
     );
   }
 
-  /// Delivery confirmation (DEL-07). The code input is shown only once the
-  /// driver has issued a code, and only to the buyer — a seller or driver
-  /// sees no code UI here. Before the code is issued the buyer sees a neutral
-  /// "waiting" state instead of a dead input.
+  /// Delivery confirmation (DEL-07). Buyer-only — a seller or driver sees no
+  /// code UI here. The 6-digit input shows whenever the order is
+  /// code-required or a code has been issued (`codeRequired` /
+  /// `confirmationCodeIssued` now arrive from the backend); below the
+  /// threshold the card is a one-tap confirm instead of a dead waiting card.
   Widget _confirmationSection(
     BuildContext context,
     Delivery delivery,
@@ -114,29 +119,44 @@ class _DeliveryTrackingScreenState extends ConsumerState<DeliveryTrackingScreen>
     final theme = Theme.of(context);
     final role = ref.read(authControllerProvider).valueOrNull?.user?.role;
     if (role != UserRole.buyer) return const SizedBox.shrink();
-    if (!delivery.confirmationCodeIssued) {
-      // En route but no code issued yet — nothing to enter.
+    final needsCode = delivery.codeRequired || delivery.confirmationCodeIssued;
+    if (!needsCode) {
+      // Under the code threshold — one tap confirms the hand-off.
       return Card(
-        color: AppColors.backgroundElevated,
+        color: AppColors.greenContainer,
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.schedule, color: AppColors.tanDark),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'The confirmation code will appear here once the driver issues it.',
-                  style: theme.textTheme.bodySmall?.copyWith(color: AppColors.tanDark),
-                ),
+              Row(
+                children: [
+                  const Icon(Icons.check_circle_outline, color: AppColors.greenDark, size: 26),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Driver is at your address — confirm the hand-off.',
+                      style: theme.textTheme.titleSmall,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: _confirming
+                    ? null
+                    : () => _confirmDelivery(delivery, request),
+                icon: const Icon(Icons.check),
+                label: const Text('Got it'),
+                style: FilledButton.styleFrom(backgroundColor: AppColors.greenDark),
               ),
             ],
           ),
         ),
       );
     }
-    // Code issued — the backend emails it to the buyer; ask for it here. No
-    // separate resend endpoint exists (the driver issues/re-issues the code).
+    // The backend emails the code to the buyer; ask for it here. No separate
+    // resend endpoint exists (the driver issues/re-issues the code).
     final code = _codeController.text.trim();
     return Card(
       color: AppColors.greenContainer,
@@ -186,7 +206,13 @@ class _DeliveryTrackingScreenState extends ConsumerState<DeliveryTrackingScreen>
                 prefixIcon: const Icon(Icons.pin_outlined),
                 counterText: '',
               ),
-              onChanged: (_) => setState(() {}),
+              onChanged: (_) {
+                setState(() {});
+                // Auto-submit on the 6th digit — one fewer tap.
+                if (_codeController.text.trim().length == 6 && !_confirming) {
+                  _confirmDelivery(delivery, request);
+                }
+              },
               onSubmitted: (_) {
                 if (code.length == 6) _confirmDelivery(delivery, request);
               },
@@ -209,20 +235,28 @@ class _DeliveryTrackingScreenState extends ConsumerState<DeliveryTrackingScreen>
     Delivery delivery,
     DeliveryTrackingRequest request,
   ) async {
+    final needsCode = delivery.codeRequired || delivery.confirmationCodeIssued;
     final code = _codeController.text.trim();
-    if (code.length != 6) return;
+    if (needsCode && code.length != 6) return;
     setState(() => _confirming = true);
     try {
-      await ref.read(deliveryRepositoryProvider).confirm(delivery.id, code: code);
+      await ref.read(deliveryRepositoryProvider).confirm(delivery.id, code: needsCode ? code : null);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.t.deliveryConfirmed)),
       );
+      // Confirming flips the order to DELIVERED and releases escrow — refresh
+      // the buyer order detail + wallet surfaces alongside the tracking state.
+      ref.invalidate(orderDetailControllerProvider);
+      ref.invalidate(buyerOrderListControllerProvider);
+      ref.invalidate(walletControllerProvider);
+      ref.invalidate(ledgerControllerProvider);
       await ref.read(deliveryTrackingControllerProvider(request).notifier).refreshNow();
-    } catch (_) {
+    } catch (error) {
+      // API errors verbatim — e.g. a wrong code's "attempts left" message.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.t.confirmFailed)),
+          SnackBar(content: Text(friendlyErrorMessage(error, context))),
         );
       }
     } finally {

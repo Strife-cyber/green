@@ -510,6 +510,12 @@ class MockWithdrawalRepository implements WithdrawalRepository {
   @override
   Future<Withdrawal> request(WithdrawalRequest input) async {
     await _delay();
+    // The backend verifies `password` server-side (bcrypt) and rejects with
+    // "incorrect password" — the mock has no password store, so any non-empty
+    // password is accepted and an empty one mimics the rejection.
+    if (input.password.trim().isEmpty) {
+      throw Exception('incorrect password');
+    }
     final withdrawal = Withdrawal(
       id: _id('wd'),
       walletId: 'w-seller-1',

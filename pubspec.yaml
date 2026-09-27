@@ -44,7 +44,7 @@ dependencies:
   dio: ^5.11.0
   flutter_secure_storage: ^10.3.1
   shared_preferences: ^2.5.5
-  intl: 0.20.2
+  intl: ^0.20.3
   image_picker: ^1.2.3
   # Read picked files (paths on native, blob URLs on web) into bytes so image
   # previews and uploads work cross-platform — `Image.file`/`dart:io` don't on web.

@@ -4,6 +4,7 @@ import '../../../data/models/address.dart';
 import '../../../data/models/enums.dart';
 import '../../../data/repositories/order_repository.dart';
 import '../../../data/repositories/providers.dart';
+import '../../auth/controllers/auth_controller.dart';
 import 'cart_controller.dart';
 
 /// One successfully-created order (per seller group) from a multi-seller
@@ -60,7 +61,11 @@ class CheckoutState {
 /// partial checkout still leaves the placed orders payable.
 class CheckoutController extends Notifier<CheckoutState> {
   @override
-  CheckoutState build() => const CheckoutState();
+  CheckoutState build() {
+    // Resets leftover submit/result state on account switch.
+    ref.watch(currentUserIdProvider);
+    return const CheckoutState();
+  }
 
   Future<CheckoutResult> submit({
     required Map<String, List<CartLine>> sellerGroups,
