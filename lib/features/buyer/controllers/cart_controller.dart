@@ -39,6 +39,38 @@ class Cart {
 
   /// Sum of every line total in FCFA.
   int get subtotal => lines.fold(0, (sum, line) => sum + line.lineTotal);
+
+  /// Lines grouped per seller (one seller → one order at checkout; the cart
+  /// explains the split when several farms are present — design 13).
+  List<SellerCartGroup> get sellerGroups {
+    final bySeller = <String, List<CartLine>>{};
+    for (final line in lines) {
+      bySeller.putIfAbsent(line.product.sellerId, () => []).add(line);
+    }
+    return [
+      for (final entry in bySeller.entries)
+        SellerCartGroup(
+          sellerId: entry.key,
+          sellerName: entry.value.first.product.sellerName,
+          lines: entry.value,
+        ),
+    ];
+  }
+}
+
+/// The lines belonging to one farm — one order at checkout.
+class SellerCartGroup {
+  final String sellerId;
+  final String? sellerName;
+  final List<CartLine> lines;
+
+  const SellerCartGroup({
+    required this.sellerId,
+    this.sellerName,
+    required this.lines,
+  });
+
+  int get subtotal => lines.fold(0, (sum, line) => sum + line.lineTotal);
 }
 
 const _cartStorageKeyPrefix = 'greenish.cart.v1';

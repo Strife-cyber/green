@@ -11,12 +11,24 @@ class ProductGrid extends ConsumerWidget {
   final List<Product> products;
   final void Function(Product)? onTap;
 
-  const ProductGrid({super.key, required this.products, this.onTap});
+  /// Renders the grid non-scrolling, sized to its content — for embedding
+  /// inside an outer scrollable (the search screen's Farms+Products list).
+  final bool shrinkWrap;
+
+  const ProductGrid({
+    super.key,
+    required this.products,
+    this.onTap,
+    this.shrinkWrap = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GridView.builder(
-      physics: const AlwaysScrollableScrollPhysics(),
+      physics: shrinkWrap
+          ? const NeverScrollableScrollPhysics()
+          : const AlwaysScrollableScrollPhysics(),
+      shrinkWrap: shrinkWrap,
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,

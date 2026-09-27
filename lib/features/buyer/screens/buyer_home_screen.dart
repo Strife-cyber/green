@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:go_router/go_router.dart';
+
+import '../../../core/router/app_router.dart';
 import '../../../core/router/nav_providers.dart';
 import '../../../data/models/product.dart';
 import '../../../l10n/l10n_ext.dart';
@@ -10,48 +13,48 @@ import '../../../shared/widgets/debounced_search_bar.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../theme/app_colors.dart';
-import '../../chat/screens/chat_threads_screen.dart';
+import '../../wallet/screens/wallet_screen.dart';
 import '../controllers/buyer_order_list_controller.dart';
 import '../controllers/cart_controller.dart';
 import '../controllers/product_list_controller.dart';
 import '../widgets/product_grid.dart';
 import 'buyer_orders_screen.dart';
 import 'buyer_profile_screen.dart';
-import 'cart_screen.dart';
+import 'wishlist_screen.dart';
 
-/// The buyer's landing shell: a BraidsBook-style [AppShell] over five tabs —
-/// Home feed, Cart (with live badge), Orders, Chat, Profile. Search lives on
-/// the Home feed (search bar + quick action), so the bar stays at 5 items.
+/// The buyer's landing shell: [AppShell] over the five design-doc tabs —
+/// Market (home feed), Wishlist, Orders, Wallet (read-only), Me. The cart is
+/// a badge on the Market app bar and lives at `/buyer/cart`; chat threads open
+/// from order/product contexts.
 class BuyerHomeScreen extends ConsumerWidget {
   const BuyerHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.t;
-    final cartCount = ref.watch(cartControllerProvider).itemCount;
     // Auto-refresh the active tab's data whenever the user switches tabs.
     ref.listen(buyerTabProvider, (previous, next) {
       if (previous == next) return;
       switch (next) {
-        case 0: ref.invalidate(productListControllerProvider); break;
-        case 2: ref.invalidate(buyerOrderListControllerProvider); break;
-        // 1 = Cart (local state), 3 = Chat (self-managing), 4 = Profile.
+        case 0:
+          ref.invalidate(productListControllerProvider);
+          break;
+        case 2:
+          ref.invalidate(buyerOrderListControllerProvider);
+          break;
+        // 1 = Wishlist (self-refreshing), 3 = Wallet (self-managing),
+        // 4 = Me.
       }
     });
     return AppShell(
       tabProvider: buyerTabProvider,
       persistKey: 'buyer',
       tabs: [
-        AppShellTab(label: t.navHome, icon: Icons.home_outlined, page: const _HomeFeed()),
-        AppShellTab(
-          label: t.navCart,
-          icon: Icons.shopping_cart_outlined,
-          badge: cartCount,
-          page: const CartScreen(),
-        ),
+        AppShellTab(label: t.navMarket, icon: Icons.storefront_outlined, page: const _HomeFeed()),
+        AppShellTab(label: t.navWishlist, icon: Icons.favorite_border, page: const WishlistScreen()),
         AppShellTab(label: t.navOrders, icon: Icons.receipt_long_outlined, page: const BuyerOrdersScreen()),
-        AppShellTab(label: t.navChat, icon: Icons.chat_bubble_outline, page: const ChatThreadsScreen()),
-        AppShellTab(label: t.navProfile, icon: Icons.person_outline, page: const BuyerProfileScreen()),
+        AppShellTab(label: t.navWallet, icon: Icons.account_balance_wallet_outlined, page: const WalletScreen(readOnly: true)),
+        AppShellTab(label: t.navMe, icon: Icons.person_outline, page: const BuyerProfileScreen()),
       ],
     );
   }
@@ -69,11 +72,28 @@ class _HomeFeed extends ConsumerWidget {
     final products = ref.watch(productListControllerProvider);
     final categories = ref.watch(categoryListProvider);
 
+    final cartCount = ref.watch(cartControllerProvider).itemCount;
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leading: Navigator.canPop(context) ? const BackButton() : null,
-        title: Text(t.appTitle)
+        title: Text(t.appTitle),
+        actions: [
+          IconButton(
+            tooltip: t.navChat,
+            icon: const Icon(Icons.chat_bubble_outline),
+            onPressed: () => context.push(AppRoutes.chatThreads),
+          ),
+          IconButton(
+            tooltip: t.navCart,
+            onPressed: () => context.push(AppRoutes.cart),
+            icon: Badge(
+              isLabelVisible: cartCount > 0,
+              label: Text('$cartCount'),
+              child: const Icon(Icons.shopping_cart_outlined),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [

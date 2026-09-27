@@ -22,6 +22,13 @@ class Product {
   final String? sellerName;
   final String? categoryName;
 
+  /// The farm's region/city label — shown as the "Farm location" row on the
+  /// product detail (design 11). Parsed from the nested `seller`/`sellerProfile`
+  /// region when the API enriches it.
+  final String? farmRegion;
+  final double? sellerRating;
+  final int? sellerRatingCount;
+
   const Product({
     required this.id,
     required this.sellerId,
@@ -37,6 +44,9 @@ class Product {
     this.createdAt,
     this.sellerName,
     this.categoryName,
+    this.farmRegion,
+    this.sellerRating,
+    this.sellerRatingCount,
   });
 
   /// Parses the backend `ProductListItemDto` — camelCase, money/quantity as
@@ -56,6 +66,11 @@ class Product {
         createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'] as String) : null,
         sellerName: _sellerName(json['seller']),
         categoryName: _categoryName(json['category']),
+        farmRegion: _sellerRegion(json['seller']),
+        sellerRating: _toDoubleOrNull(
+            _sellerMetric(json['seller'], 'rating', 'averageRating')),
+        sellerRatingCount: _toIntOrNull(
+            _sellerMetric(json['seller'], 'ratingCount', 'reviewsCount')),
       );
 
   static double _toDouble(dynamic value) {
@@ -82,6 +97,33 @@ class Product {
     final last = seller['lastName'] as String? ?? '';
     final full = '$first $last'.trim();
     return full.isEmpty ? null : full;
+  }
+
+  /// `seller: { region }` / `seller.sellerProfile: { region }` → the farm's
+  /// location label for the detail row.
+  static String? _sellerRegion(dynamic seller) {
+    if (seller is! Map<String, dynamic>) return null;
+    final farm = seller['sellerProfile'];
+    if (farm is Map<String, dynamic> && farm['region'] != null) {
+      return farm['region'] as String;
+    }
+    return seller['region'] as String?;
+  }
+
+  /// Reads `seller[key]` then `seller.sellerProfile[altKey]` — the API packs
+  /// seller aggregates on either level depending on the endpoint.
+  static dynamic _sellerMetric(dynamic seller, String key, String altKey) {
+    if (seller is! Map<String, dynamic>) return null;
+    if (seller[key] != null) return seller[key];
+    final farm = seller['sellerProfile'];
+    if (farm is Map<String, dynamic>) return farm[key] ?? farm[altKey];
+    return null;
+  }
+
+  static int? _toIntOrNull(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString());
   }
 
   /// `category: { name }` → the category display name.

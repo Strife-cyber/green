@@ -6,13 +6,21 @@ import '../models/seller_profile.dart';
 abstract class SellerProfileRepository {
   Future<SellerProfile> me();
 
+  /// Farm search for the buyer catalog (BUY-02):
+  /// `GET /seller-profiles?search=` → `{data:{items:[{id,farmName,region,
+  /// rating,ratingCount}]}}`.
+  Future<List<SellerSearchItem>> search(String query);
+
   /// Creates/updates the seller profile (PATCH `/seller-profiles/me`).
-  /// `farmName` and `mainCategoryId` are required by the API.
+  /// `farmName` and `mainCategoryId` are required by the API; the farm
+  /// coordinates come from "Use my location" when granted.
   Future<void> update({
     required String farmName,
     required int mainCategoryId,
     String? farmDescription,
     String? businessLicense,
+    double? farmLatitude,
+    double? farmLongitude,
   });
 
   /// Uploads an identity document (multipart `file`) and returns its stored URL.

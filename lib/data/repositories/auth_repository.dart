@@ -49,15 +49,17 @@ class SignupInput {
   final String region;
   final String password;
 
-  // Seller-only. Farm coordinates are not part of the signup contract — they
-  // are captured later on the seller profile (the region dropdown stands in at
-  // sign-up). Identity documents are local file paths uploaded after signup.
+  // Seller-only. Farm coordinates are pushed to `PATCH /seller-profiles/me`
+  // during onboarding (they aren't part of the signup DTO itself). Identity
+  // documents are local file paths uploaded after signup.
   final String? farmName;
   final int? mainCategoryId;
   final String? businessLicense;
   final String? farmDescription;
   final String? nationalIdUrl;
   final String? selfieUrl;
+  final double? farmLatitude;
+  final double? farmLongitude;
 
   const SignupInput({
     required this.role,
@@ -73,6 +75,8 @@ class SignupInput {
     this.farmDescription,
     this.nationalIdUrl,
     this.selfieUrl,
+    this.farmLatitude,
+    this.farmLongitude,
   });
 
   bool get isSeller => role == UserRole.seller;

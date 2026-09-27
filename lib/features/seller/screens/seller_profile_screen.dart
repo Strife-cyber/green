@@ -3,12 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
+import '../../../core/location/cameroon_locator.dart';
+import '../../../data/models/category.dart';
 import '../../../data/models/enums.dart';
 import '../../../data/models/seller_profile.dart';
 import '../../../data/models/user.dart';
 import '../../../data/repositories/providers.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/form_text_field.dart';
+import '../../../shared/widgets/image_network.dart';
 import '../../../shared/widgets/language_selector.dart';
 import '../../../shared/widgets/photo_picker.dart';
 import '../../../shared/widgets/status_badge.dart';
@@ -103,10 +107,12 @@ class _ProfileContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        if (profile.approvalStatus == SellerApprovalStatus.rejected) ...[
-          const _RejectedDocumentsCard(),
-          const SizedBox(height: 16),
-        ],
+        // Editable farm profile (design 35): name, description, location,
+        // category + document uploads — PATCH /seller-profiles/me.
+        _FarmDetailsCard(profile: profile),
+        const SizedBox(height: 16),
+        _DocumentsCard(profile: profile),
+        const SizedBox(height: 16),
         Card(
           child: Column(
             children: [
@@ -153,6 +159,415 @@ class _ProfileContent extends StatelessWidget {
         SellerApprovalStatus.pending => AppColors.orange,
         SellerApprovalStatus.rejected => const Color(0xFFB3261E),
       };
+}
+
+/// Farm details (design 35) — shows current values and opens the edit
+/// sheet (`PATCH /seller-profiles/me`).
+class _FarmDetailsCard extends ConsumerWidget {
+  final SellerProfile profile;
+
+  const _FarmDetailsCard({required this.profile});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final t = context.t;
+    final categories = ref.watch(categoriesProvider).valueOrNull ?? const [];
+    final category = categories
+        .where((c) => c.id == profile.mainCategoryId)
+        .firstOrNull;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(t.farmProfile, style: theme.textTheme.titleSmall),
+                ),
+                TextButton.icon(
+                  onPressed: () => _edit(context, ref, categories),
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: Text(t.edit),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(profile.farmName, style: theme.textTheme.titleMedium),
+            if (profile.farmDescription != null &&
+                profile.farmDescription!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(profile.farmDescription!,
+                    style: theme.textTheme.bodyMedium),
+              ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.place_outlined,
+                    size: 16, color: AppColors.tanDark),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    profile.farmLatitude != null
+                        ? '${profile.farmLatitude!.toStringAsFixed(4)}, ${profile.farmLongitude!.toStringAsFixed(4)}'
+                        : t.noLocationSet,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: AppColors.tanDark),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.category_outlined,
+                    size: 16, color: AppColors.tanDark),
+                const SizedBox(width: 6),
+                Text(
+                  category?.name ?? t.uncategorized,
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: AppColors.tanDark),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _edit(
+    BuildContext context,
+    WidgetRef ref,
+    List<Category> categories,
+  ) async {
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (_) => _FarmEditDialog(profile: profile, categories: categories),
+    );
+    if (saved == true && context.mounted) {
+      ref.invalidate(sellerProfileControllerProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.t.profileUpdated)),
+      );
+    }
+  }
+}
+
+/// The edit-farm dialog: name, description, main category chips and a
+/// "Use my location" button that records the GPS fix (design 35).
+class _FarmEditDialog extends ConsumerStatefulWidget {
+  final SellerProfile profile;
+  final List<Category> categories;
+
+  const _FarmEditDialog({required this.profile, required this.categories});
+
+  @override
+  ConsumerState<_FarmEditDialog> createState() => _FarmEditDialogState();
+}
+
+class _FarmEditDialogState extends ConsumerState<_FarmEditDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _name =
+      TextEditingController(text: widget.profile.farmName);
+  late final TextEditingController _description =
+      TextEditingController(text: widget.profile.farmDescription ?? '');
+  late final TextEditingController _license =
+      TextEditingController(text: widget.profile.businessLicense ?? '');
+  late int? _categoryId = widget.profile.mainCategoryId;
+  double? _lat;
+  double? _lng;
+  bool _locating = false;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _lat = widget.profile.farmLatitude;
+    _lng = widget.profile.farmLongitude;
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _description.dispose();
+    _license.dispose();
+    super.dispose();
+  }
+
+  Future<void> _useMyLocation() async {
+    setState(() => _locating = true);
+    final result = await CameroonLocator.detect();
+    if (!mounted) return;
+    setState(() {
+      _locating = false;
+      if (result.latitude != null) {
+        _lat = result.latitude;
+        _lng = result.longitude;
+      }
+    });
+    if (result.latitude == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.t.locationFailed)),
+      );
+    }
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    final categoryId = _categoryId;
+    if (categoryId == null) return;
+    setState(() => _saving = true);
+    try {
+      await ref.read(sellerProfileRepositoryProvider).update(
+            farmName: _name.text.trim(),
+            mainCategoryId: categoryId,
+            farmDescription: _description.text.trim().isEmpty
+                ? null
+                : _description.text.trim(),
+            businessLicense: _license.text.trim().isEmpty
+                ? null
+                : _license.text.trim(),
+            farmLatitude: _lat,
+            farmLongitude: _lng,
+          );
+      if (mounted) Navigator.pop(context, true);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.t.errorGeneric)),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.t;
+    return AlertDialog(
+      title: Text(t.editFarmProfile),
+      content: SizedBox(
+        width: 420,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FormTextField(
+                  controller: _name,
+                  label: t.farmName,
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? t.required : null,
+                ),
+                const SizedBox(height: 12),
+                FormTextField(
+                  controller: _description,
+                  label: t.farmDescription,
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 12),
+                FormTextField(
+                  controller: _license,
+                  label: t.businessLicenseOptional,
+                ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Wrap(
+                    spacing: 8,
+                    children: [
+                      for (final c in widget.categories)
+                        ChoiceChip(
+                          label: Text(c.name),
+                          selected: _categoryId == c.id,
+                          onSelected: (_) =>
+                              setState(() => _categoryId = c.id),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _locating ? null : _useMyLocation,
+                  icon: const Icon(Icons.my_location, size: 18),
+                  label: Text(_lat == null
+                      ? t.useMyLocation
+                      : t.locationSet(
+                          lat: _lat!.toStringAsFixed(4),
+                          lng: _lng!.toStringAsFixed(4))),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.pop(context),
+          child: Text(t.cancel),
+        ),
+        FilledButton(
+          onPressed: _saving ? null : _save,
+          child: Text(t.save),
+        ),
+      ],
+    );
+  }
+}
+
+/// Identity documents (design 35): National ID + selfie with view links and
+/// re-upload affordances — same endpoints as the rejected-profile card.
+class _DocumentsCard extends ConsumerStatefulWidget {
+  final SellerProfile profile;
+
+  const _DocumentsCard({required this.profile});
+
+  @override
+  ConsumerState<_DocumentsCard> createState() => _DocumentsCardState();
+}
+
+class _DocumentsCardState extends ConsumerState<_DocumentsCard> {
+  bool _uploading = false;
+
+  Future<void> _upload(String field) async {
+    if (_uploading) return;
+    final path = await showModalBottomSheet<String>(
+      context: context,
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(context.t.uploadIdentityDocument,
+                style: Theme.of(sheetContext).textTheme.titleMedium),
+            const SizedBox(height: 16),
+            PhotoPicker(
+              size: 140,
+              onPicked: (p) => Navigator.of(sheetContext).pop(p),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (path == null || !mounted) return;
+    setState(() => _uploading = true);
+    try {
+      final repo = ref.read(sellerProfileRepositoryProvider);
+      if (field == 'nationalId') {
+        await repo.uploadNationalId(path);
+      } else {
+        await repo.uploadSelfie(path);
+      }
+      ref.invalidate(sellerProfileControllerProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.t.documentsUpdated)),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.t.uploadFailed)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  void _view(String title, String url) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => Dialog(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppBar(
+              title: Text(title),
+              automaticallyImplyLeading: false,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            Flexible(
+              child: InteractiveViewer(
+                child: ImageNetwork(url: url, fit: BoxFit.contain),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.t;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(t.identityDocuments,
+                style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            _docRow(
+              context,
+              t.nationalId,
+              widget.profile.nationalIdUrl,
+              () => _upload('nationalId'),
+            ),
+            const Divider(height: 16),
+            _docRow(
+              context,
+              t.selfieOrMarket,
+              widget.profile.selfieUrl,
+              () => _upload('selfie'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _docRow(
+    BuildContext context,
+    String label,
+    String? url,
+    VoidCallback onUpload,
+  ) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Icon(
+          url == null ? Icons.upload_file : Icons.check_circle_outline,
+          size: 20,
+          color: url == null ? AppColors.tanDark : AppColors.green,
+        ),
+        const SizedBox(width: 8),
+        Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
+        if (url != null)
+          TextButton(
+            onPressed: () => _view(label, url),
+            child: Text(context.t.view),
+          ),
+        TextButton(
+          onPressed: _uploading ? null : onUpload,
+          child: Text(url == null ? context.t.upload : context.t.reUpload),
+        ),
+      ],
+    );
+  }
 }
 
 class _LinkTile extends StatelessWidget {

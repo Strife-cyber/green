@@ -14,6 +14,14 @@ int parseMoney(String? value) {
   return parsed == null ? 0 : parsed.round();
 }
 
+/// Flat per-order delivery fee shown in cart/checkout (ORD-05). The platform
+/// config key `delivery_fee_flat` overrides it (backend default: 700 FCFA).
+const int kDefaultDeliveryFee = 700;
+
+/// Minimum withdrawal (WAL-04); the platform config key `min_withdrawal`
+/// overrides it once exposed.
+const int kDefaultMinWithdrawal = 5000;
+
 /// Formats an amount as `2 500 FCFA`.
 String formatMoney(int amount) => '${formatAmount(amount)} FCFA';
 

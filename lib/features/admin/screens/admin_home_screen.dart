@@ -6,6 +6,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/router/nav_providers.dart';
 import '../../../core/utils/money.dart';
 import '../../../data/models/admin_stats.dart';
+import '../../../data/models/enums.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/app_shell.dart';
 import '../../../shared/widgets/refreshable_async_view.dart';
@@ -187,6 +188,27 @@ class _OverviewTab extends ConsumerWidget {
                   label: 'Drivers',
                   onTap: () => context.push(AppRoutes.adminDrivers),
                 ),
+                QuickAction(
+                  icon: Icons.forum_outlined,
+                  label: t.chatAuditTitle,
+                  onTap: () => context.push(AppRoutes.adminChat),
+                ),
+                QuickAction(
+                  icon: Icons.receipt_long_outlined,
+                  label: t.receiptsTitle,
+                  onTap: () => context.push(AppRoutes.adminReceipts),
+                ),
+                // Admin & role management is super-admin only (ADM-13).
+                if (ref.read(authControllerProvider)
+                        .valueOrNull
+                        ?.user
+                        ?.adminRole ==
+                    AdminRole.superAdmin)
+                  QuickAction(
+                    icon: Icons.admin_panel_settings_outlined,
+                    label: t.adminsAndRoles,
+                    onTap: () => context.push(AppRoutes.adminAdmins),
+                  ),
               ],
             ),
             const SizedBox(height: 20),
@@ -199,12 +221,11 @@ class _OverviewTab extends ConsumerWidget {
               childAspectRatio: 1.45,
               children: [
                 StatCard(label: t.statTotalUsers, value: '${s.totalUsers}', icon: Icons.people_outline),
-                StatCard(label: t.statActiveSellers, value: '${s.activeSellers}', icon: Icons.storefront_outlined),
                 StatCard(
-                  label: t.statPendingSellers,
-                  value: '${s.pendingSellers}',
-                  icon: Icons.hourglass_top,
-                  color: AppColors.orange,
+                  label: t.statSellersPendingLabel,
+                  value: t.statSellersPending(
+                      count: s.totalSellers, pending: s.pendingSellers),
+                  icon: Icons.storefront_outlined,
                 ),
                 StatCard(
                   label: t.statGrossRevenue,
@@ -214,6 +235,17 @@ class _OverviewTab extends ConsumerWidget {
                 ),
                 StatCard(label: t.statCommission, value: formatMoney(s.commissionEarned), icon: Icons.payments_outlined),
                 StatCard(label: t.statTotalOrders, value: '${s.totalOrders}', icon: Icons.receipt_long_outlined),
+                StatCard(label: t.statEscrowBalance, value: formatMoney(s.escrowBalance), icon: Icons.lock_outline),
+                StatCard(label: t.statSellerBalances, value: formatMoney(s.sellerBalances), icon: Icons.account_balance_wallet_outlined),
+                StatCard(label: t.statBuyerBalances, value: formatMoney(s.buyerBalances), icon: Icons.wallet_outlined),
+                StatCard(
+                  label: t.statPendingWithdrawals,
+                  value: '${s.pendingWithdrawals}',
+                  icon: Icons.request_quote_outlined,
+                  color: AppColors.orange,
+                ),
+                StatCard(label: t.statOpenTickets, value: '${s.openTickets}', icon: Icons.support_agent_outlined),
+                StatCard(label: t.statPendingReports, value: '${s.pendingReports}', icon: Icons.flag_outlined),
               ],
             ),
           ],

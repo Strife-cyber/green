@@ -4,9 +4,9 @@
 /// To regenerate, run: `dart run slang`
 ///
 /// Locales: 2
-/// Strings: 496 (248 per locale)
+/// Strings: 820 (410 per locale)
 ///
-/// Built on 2026-08-19 at 00:28 UTC
+/// Built on 2026-09-27 at 20:11 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -158,7 +158,7 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
 	String get retry => 'Try again';
 	String get search => 'Search';
 	String get loading => 'Loading…';
-	String get errorGeneric => 'Something went wrong. Please try again.';
+	String get errorGeneric => 'Something went wrong — try again';
 	String get empty => 'Nothing here yet';
 	String get back => 'Back';
 	String get confirm => 'Confirm';
@@ -196,11 +196,11 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
 	String get lastName => 'Last name';
 	String get phone => 'Phone';
 	String get region => 'Region';
-	String get farmName => 'Farm / business name';
+	String get farmName => 'Farm name';
 	String get mainCategory => 'Main product category';
 	String get businessLicense => 'Business license (optional)';
 	String get farmDescription => 'Farm description';
-	String get nationalId => 'National ID card';
+	String get nationalId => 'National ID';
 	String get selfie => 'Selfie of you or your market space';
 	String get dontHaveAccount => 'Don\'t have an account?';
 	String get alreadyHaveAccount => 'Already have an account?';
@@ -215,7 +215,7 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
 	String get escrow => 'Escrow';
 	String get totalBalance => 'Total';
 	String get withdraw => 'Withdraw';
-	String get transactions => 'Transaction history';
+	String get transactions => 'Transactions';
 	String get payNow => 'Pay now';
 	String get mtnMomo => 'MTN Mobile Money';
 	String get orangeMoney => 'Orange Money';
@@ -292,7 +292,7 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
 	String get confirmDeliveryBody => 'Enter the 6-digit code your driver shared with you to confirm the hand-off.';
 	String get confirmationCode => 'Confirmation code';
 	String get confirmDeliveryAction => 'Confirm delivery';
-	String get deliveryConfirmed => 'Delivery confirmed — thank you!';
+	String get deliveryConfirmed => 'Delivery confirmed';
 	String get confirmFailed => 'Could not confirm — check the code and try again.';
 	String get driverCreatedTitle => 'Driver created';
 	String get shareTempPassword => 'Share this temporary password with the driver — it is shown once and will be reset on their first login.';
@@ -404,6 +404,176 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
 		one: '${count} more delivery',
 		other: '${count} more deliveries',
 	);
+	String get welcomeBuyerTitle => 'I want to buy produce';
+	String get welcomeBuyerSubtitle => 'Fresh from local farms to your door';
+	String get welcomeSellerTitle => 'I want to sell my harvest';
+	String get welcomeSellerSubtitle => 'Reach buyers across Cameroon';
+	String get welcomeReturning => 'Already with us? Log in';
+	String get signupBuyerSubtitle => 'Create your buyer account';
+	String get signupSellerTitle => 'Become a seller';
+	String get signupSellerSubtitle => 'Set up your farm profile in a few steps';
+	String signupStepOf({required Object step, required Object total}) => 'Step ${step} of ${total}';
+	String get finishSignup => 'Finish';
+	String get farmCategories => 'Farm category';
+	String get farmCategoriesRequired => 'Pick a category for your farm';
+	String get categoriesUnavailable => 'Categories could not be loaded';
+	String get businessLicenseTile => 'Attach business licence (optional)';
+	String get businessLicenseNumber => 'Business licence number (optional)';
+	String get businessLicenseOptional => 'Business licence (optional)';
+	String get nationalIdTile => 'National ID — front';
+	String get nationalIdHint => 'All four corners in frame';
+	String get selfieTile => 'Selfie or market-space photo';
+	String get selfieHint => 'A clear photo of you';
+	String get marketSpaceTile => 'Market-space photo';
+	String get marketSpaceHint => 'Show your stall or field';
+	String get selfieOptionSelfie => 'Selfie';
+	String get selfieOptionMarket => 'Market space';
+	String get identityAdminOnly => 'Documents are visible only to admins';
+	String get doThisLater => 'Do this later';
+	String get termsSummary => 'I agree to the Greenish terms and the marketplace rules';
+	String get selectRegion => 'Select your region';
+	String get useMyLocation => 'Use my location';
+	String locationSet({required Object lat, required Object lng}) => 'Location: ${lat}, ${lng}';
+	String get locationFailed => 'Could not get your location — enter it manually';
+	String get locationUnavailable => 'Location unavailable';
+	String get sellerPendingTitle => 'Application received';
+	String get sellerPendingSubtitle => 'We are reviewing your farm profile';
+	String get pendingDocsReceived => 'Documents received';
+	String get pendingAdminReview => 'Admin verification (~24h)';
+	String get pendingListingsLive => 'Your listings go live';
+	String get pendingDraftProduct => 'Draft your first product';
+	String get navMarket => 'Market';
+	String get navWishlist => 'Wishlist';
+	String get navWallet => 'Wallet';
+	String get navMe => 'Me';
+	String get navMessages => 'Messages';
+	String get searchFarmsProducts => 'Search farms or products';
+	String get farmsSection => 'Farms';
+	String get productsSection => 'Products';
+	String get noResults => 'No results';
+	String get tryDifferentKeyword => 'Try a different keyword';
+	String get farmLocation => 'Farm location';
+	String get farmLocationHint => 'Tap to see where this farm is';
+	String get chatUnavailableSeller => 'Chat is unavailable for this seller';
+	String get noRatingsYet => 'No ratings yet';
+	String reviewsCount({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(count,
+		one: '1 review',
+		other: '${count} reviews',
+	);
+	String get loadingRating => 'Loading ratings…';
+	String get reportSeller => 'Report seller';
+	String rateSellerTitle({required Object name}) => 'Rate ${name}';
+	String get tagFresh => 'Fresh';
+	String get tagOnTime => 'On time';
+	String get tagWellPacked => 'Well packed';
+	String get tagGoodPrice => 'Good price';
+	String get reviewOptional => 'Review (optional)';
+	String get reportSellerProblem => 'Report a problem with this seller';
+	String get submit => 'Submit';
+	String multiFarmExplainer({required Object count}) => '${count} farms — this checks out as ${count} separate orders, one per farm';
+	String get orderSubtotal => 'Order subtotal';
+	String get deliveryFeeLabel => 'Delivery fee';
+	String deliveryPerOrder({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(count,
+		one: 'Delivery (1 order)',
+		other: 'Delivery (${count} orders)',
+	);
+	String get orderTotal => 'Order total';
+	String get choosePaymentChannel => 'Choose how to pay';
+	String get greenishWallet => 'Greenish Wallet';
+	String walletBalanceLine({required Object balance}) => 'Balance: ${balance}';
+	String walletBalanceInsufficient({required Object balance}) => 'Balance ${balance} — not enough';
+	String payWithMtn({required Object phone}) => 'Pay with MTN MoMo ${phone}';
+	String payWithOrange({required Object phone}) => 'Pay with Orange Money ${phone}';
+	String get addMtnNumber => 'Add an MTN MoMo number';
+	String get addOrangeNumber => 'Add an Orange Money number';
+	String get paymentSuccessful => 'Payment successful';
+	String get escrowExplainer => 'Your money is held in escrow and released to the seller only when you confirm delivery.';
+	String get receiptNumber => 'Receipt';
+	String get deliveryCodeLabel => 'Delivery code';
+	String unpaidOrdersLeft({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(count,
+		one: '1 order left to pay',
+		other: '${count} orders left to pay',
+	);
+	String payNextOrder({required Object count}) => 'Pay next order (${count})';
+	String get doneForNow => 'Done for now';
+	String get trackThisDelivery => 'Track this delivery';
+	String get downloadReceipt => 'Download receipt';
+	String get receiptNotReady => 'Receipt is not ready yet';
+	String get downloadFailed => 'Download failed — try again';
+	String minWithdrawalNote({required Object amount}) => 'Minimum ${amount}. An admin processes withdrawals manually — allow 2–3 business days.';
+	String get all => 'All';
+	String get amountFcfa => 'Amount (FCFA)';
+	String get channel => 'Channel';
+	String get bankTransferNote => 'Bank transfer via Afriland First Bank — processed within 2–3 business days.';
+	String get accountNumberIban => 'Account number / IBAN';
+	String get accountReferencePhone => 'Phone number or account reference';
+	String get required => 'Required';
+	String get invalidEmail => 'Enter a valid email';
+	String get role => 'Role';
+	String minWithdrawalInline({required Object amount}) => 'Minimum ${amount}';
+	String get exportStatement => 'Export as statement';
+	String get statementExported => 'Statement exported';
+	String get noTransactionsYet => 'No transactions yet';
+	String get walletActivityAppearsHere => 'Your wallet activity appears here';
+	String get filterPayments => 'Payments';
+	String get filterEscrow => 'Escrow';
+	String get filterCommission => 'Commission';
+	String get filterWithdrawals => 'Withdrawals';
+	String get downloadPdf => 'Download PDF';
+	String get shareReceipt => 'Share';
+	String get callDriver => 'Call driver';
+	String get messageDriver => 'Message driver';
+	String get myDay => 'My day';
+	String dayDeliveries({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(count,
+		zero: 'No deliveries today',
+		one: '1 delivery today',
+		other: '${count} deliveries today',
+	);
+	String dayKm({required Object km}) => '${km} km today';
+	String get broadcasting => 'Broadcasting';
+	String get broadcastingOn => 'Sharing your live position';
+	String get broadcastingOff => 'Position sharing paused';
+	String get navigate => 'Navigate';
+	String get enterBuyerCode => 'Enter code';
+	String get askBuyerCodeTitle => 'Ask for the buyer\'s code';
+	String get askBuyerCodeBody => 'The buyer received a 6-digit code — enter it to confirm delivery.';
+	String get reportProblem => 'Report a problem';
+	String get chatAdminDisclosure => 'Greenish admins can read order chats if a dispute is opened.';
+	String get chatAuditTitle => 'Chat audit';
+	String get noThreadsTitle => 'No chats yet';
+	String get noThreadsBody => 'Order conversations appear here.';
+	String get farmProfile => 'Farm profile';
+	String get editFarmProfile => 'Edit farm profile';
+	String get noLocationSet => 'No location set';
+	String get uncategorized => 'Uncategorized';
+	String get identityDocuments => 'Identity documents';
+	String get selfieOrMarket => 'Selfie / market space';
+	String get uploadIdentityDocument => 'Upload identity document';
+	String get upload => 'Upload';
+	String get reUpload => 'Re-upload';
+	String get view => 'View';
+	String get statSellersPendingLabel => 'Sellers';
+	String statSellersPending({required Object count, required Object pending}) => '${count} (${pending} pending)';
+	String get statEscrowBalance => 'Escrow held';
+	String get statSellerBalances => 'Seller balances';
+	String get statBuyerBalances => 'Buyer balances';
+	String get statPendingWithdrawals => 'Pending withdrawals';
+	String get statOpenTickets => 'Open tickets';
+	String get statPendingReports => 'Reported';
+	String get openChatAudit => 'Open chat audit';
+	String get receiptsTitle => 'Receipts';
+	String get noReceiptsTitle => 'No receipts yet';
+	String get noReceiptsBody => 'Issued receipts land here.';
+	String get adminsAndRoles => 'Admins & roles';
+	String get addAdmin => 'Add admin';
+	String get adminCreated => 'Admin created';
+	String get noAdminsTitle => 'No other admins';
+	String get noAdminsBody => 'Add an admin to share the console.';
+	String get superAdminOnly => 'Super admins only';
+	String get superAdminOnlyBody => 'Ask a super admin to change roles or add admins.';
+	String get askNewIdPhoto => 'Ask for a new ID photo';
+	String get askNewSelfiePhoto => 'Ask for a new selfie';
+	String get documentRequested => 'Document request sent';
 }
 
 // Path: <root>
@@ -442,7 +612,7 @@ class _StringsFr extends Translations {
 	@override String get retry => 'Réessayer';
 	@override String get search => 'Rechercher';
 	@override String get loading => 'Chargement…';
-	@override String get errorGeneric => 'Une erreur est survenue. Veuillez réessayer.';
+	@override String get errorGeneric => 'Une erreur est survenue — réessayez';
 	@override String get empty => 'Rien ici pour le moment';
 	@override String get back => 'Retour';
 	@override String get confirm => 'Confirmer';
@@ -472,7 +642,7 @@ class _StringsFr extends Translations {
 	@override String get welcomeBack => 'Bon retour';
 	@override String get createAccount => 'Créer un compte';
 	@override String get signIn => 'Se connecter';
-	@override String get email => 'Email';
+	@override String get email => 'E-mail';
 	@override String get password => 'Mot de passe';
 	@override String get confirmPassword => 'Confirmer le mot de passe';
 	@override String get forgotPassword => 'Mot de passe oublié ?';
@@ -480,11 +650,11 @@ class _StringsFr extends Translations {
 	@override String get lastName => 'Nom';
 	@override String get phone => 'Téléphone';
 	@override String get region => 'Région';
-	@override String get farmName => 'Nom de la ferme / entreprise';
+	@override String get farmName => 'Nom de la ferme';
 	@override String get mainCategory => 'Catégorie principale';
 	@override String get businessLicense => 'Licence commerciale (optionnel)';
 	@override String get farmDescription => 'Description de la ferme';
-	@override String get nationalId => 'Carte d\'identité nationale';
+	@override String get nationalId => 'Carte nationale d\'identité';
 	@override String get selfie => 'Selfie de vous ou de votre espace de vente';
 	@override String get dontHaveAccount => 'Vous n\'avez pas de compte ?';
 	@override String get alreadyHaveAccount => 'Vous avez déjà un compte ?';
@@ -499,7 +669,7 @@ class _StringsFr extends Translations {
 	@override String get escrow => 'Séquestre';
 	@override String get totalBalance => 'Total';
 	@override String get withdraw => 'Retirer';
-	@override String get transactions => 'Historique des transactions';
+	@override String get transactions => 'Transactions';
 	@override String get payNow => 'Payer maintenant';
 	@override String get mtnMomo => 'MTN Mobile Money';
 	@override String get orangeMoney => 'Orange Money';
@@ -576,7 +746,7 @@ class _StringsFr extends Translations {
 	@override String get confirmDeliveryBody => 'Saisissez le code à 6 chiffres que votre livreur vous a communiqué pour confirmer la remise.';
 	@override String get confirmationCode => 'Code de confirmation';
 	@override String get confirmDeliveryAction => 'Confirmer la livraison';
-	@override String get deliveryConfirmed => 'Livraison confirmée — merci !';
+	@override String get deliveryConfirmed => 'Livraison confirmée';
 	@override String get confirmFailed => 'Impossible de confirmer — vérifiez le code et réessayez.';
 	@override String get driverCreatedTitle => 'Livreur créé';
 	@override String get shareTempPassword => 'Partagez ce mot de passe temporaire avec le livreur — il n\'est affiché qu\'une fois et sera réinitialisé à sa première connexion.';
@@ -688,6 +858,176 @@ class _StringsFr extends Translations {
 		one: '${count} autre livraison',
 		other: '${count} autres livraisons',
 	);
+	@override String get welcomeBuyerTitle => 'Je veux acheter des produits';
+	@override String get welcomeBuyerSubtitle => 'Des fermes locales jusqu\'à votre porte';
+	@override String get welcomeSellerTitle => 'Je veux vendre ma récolte';
+	@override String get welcomeSellerSubtitle => 'Touchez des acheteurs partout au Cameroun';
+	@override String get welcomeReturning => 'Déjà des nôtres ? Connexion';
+	@override String get signupBuyerSubtitle => 'Créez votre compte acheteur';
+	@override String get signupSellerTitle => 'Devenir vendeur';
+	@override String get signupSellerSubtitle => 'Créez votre profil de ferme en quelques étapes';
+	@override String signupStepOf({required Object step, required Object total}) => 'Étape ${step} sur ${total}';
+	@override String get finishSignup => 'Terminer';
+	@override String get farmCategories => 'Catégorie de la ferme';
+	@override String get farmCategoriesRequired => 'Choisissez une catégorie pour votre ferme';
+	@override String get categoriesUnavailable => 'Impossible de charger les catégories';
+	@override String get businessLicenseTile => 'Joindre la licence commerciale (optionnel)';
+	@override String get businessLicenseNumber => 'Numéro de licence commerciale (optionnel)';
+	@override String get businessLicenseOptional => 'Licence commerciale (optionnel)';
+	@override String get nationalIdTile => 'Carte nationale d\'identité — recto';
+	@override String get nationalIdHint => 'Les quatre coins dans le cadre';
+	@override String get selfieTile => 'Selfie ou photo de l\'espace de vente';
+	@override String get selfieHint => 'Une photo nette de vous';
+	@override String get marketSpaceTile => 'Photo de l\'espace de vente';
+	@override String get marketSpaceHint => 'Montrez votre étal ou votre champ';
+	@override String get selfieOptionSelfie => 'Selfie';
+	@override String get selfieOptionMarket => 'Espace de vente';
+	@override String get identityAdminOnly => 'Les documents ne sont visibles que par les admins';
+	@override String get doThisLater => 'Faire plus tard';
+	@override String get termsSummary => 'J\'accepte les conditions Greenish et les règles du marché';
+	@override String get selectRegion => 'Sélectionnez votre région';
+	@override String get useMyLocation => 'Utiliser ma position';
+	@override String locationSet({required Object lat, required Object lng}) => 'Position : ${lat}, ${lng}';
+	@override String get locationFailed => 'Position introuvable — saisissez-la manuellement';
+	@override String get locationUnavailable => 'Position indisponible';
+	@override String get sellerPendingTitle => 'Candidature reçue';
+	@override String get sellerPendingSubtitle => 'Nous vérifions votre profil de ferme';
+	@override String get pendingDocsReceived => 'Documents reçus';
+	@override String get pendingAdminReview => 'Vérification admin (~24 h)';
+	@override String get pendingListingsLive => 'Vos produits sont en ligne';
+	@override String get pendingDraftProduct => 'Préparer votre premier produit';
+	@override String get navMarket => 'Marché';
+	@override String get navWishlist => 'Favoris';
+	@override String get navWallet => 'Portefeuille';
+	@override String get navMe => 'Moi';
+	@override String get navMessages => 'Messages';
+	@override String get searchFarmsProducts => 'Rechercher fermes ou produits';
+	@override String get farmsSection => 'Fermes';
+	@override String get productsSection => 'Produits';
+	@override String get noResults => 'Aucun résultat';
+	@override String get tryDifferentKeyword => 'Essayez un autre mot-clé';
+	@override String get farmLocation => 'Localisation de la ferme';
+	@override String get farmLocationHint => 'Voir où se trouve cette ferme';
+	@override String get chatUnavailableSeller => 'Chat indisponible pour ce vendeur';
+	@override String get noRatingsYet => 'Pas encore d\'avis';
+	@override String reviewsCount({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('fr'))(count,
+		one: '1 avis',
+		other: '${count} avis',
+	);
+	@override String get loadingRating => 'Chargement des avis…';
+	@override String get reportSeller => 'Signaler le vendeur';
+	@override String rateSellerTitle({required Object name}) => 'Noter ${name}';
+	@override String get tagFresh => 'Frais';
+	@override String get tagOnTime => 'À l\'heure';
+	@override String get tagWellPacked => 'Bien emballé';
+	@override String get tagGoodPrice => 'Bon prix';
+	@override String get reviewOptional => 'Avis (optionnel)';
+	@override String get reportSellerProblem => 'Signaler un problème avec ce vendeur';
+	@override String get submit => 'Envoyer';
+	@override String multiFarmExplainer({required Object count}) => '${count} fermes — la commande se découpe en ${count} commandes séparées, une par ferme';
+	@override String get orderSubtotal => 'Sous-total de la commande';
+	@override String get deliveryFeeLabel => 'Frais de livraison';
+	@override String deliveryPerOrder({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('fr'))(count,
+		one: 'Livraison (1 commande)',
+		other: 'Livraison (${count} commandes)',
+	);
+	@override String get orderTotal => 'Total de la commande';
+	@override String get choosePaymentChannel => 'Choisissez comment payer';
+	@override String get greenishWallet => 'Portefeuille Greenish';
+	@override String walletBalanceLine({required Object balance}) => 'Solde : ${balance}';
+	@override String walletBalanceInsufficient({required Object balance}) => 'Solde ${balance} — insuffisant';
+	@override String payWithMtn({required Object phone}) => 'Payer avec MTN MoMo ${phone}';
+	@override String payWithOrange({required Object phone}) => 'Payer avec Orange Money ${phone}';
+	@override String get addMtnNumber => 'Ajouter un numéro MTN MoMo';
+	@override String get addOrangeNumber => 'Ajouter un numéro Orange Money';
+	@override String get paymentSuccessful => 'Paiement réussi';
+	@override String get escrowExplainer => 'Votre argent est conservé en séquestre et versé au vendeur uniquement quand vous confirmez la livraison.';
+	@override String get receiptNumber => 'Reçu';
+	@override String get deliveryCodeLabel => 'Code de livraison';
+	@override String unpaidOrdersLeft({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('fr'))(count,
+		one: '1 commande à payer',
+		other: '${count} commandes à payer',
+	);
+	@override String payNextOrder({required Object count}) => 'Payer la commande suivante (${count})';
+	@override String get doneForNow => 'Terminer pour l\'instant';
+	@override String get trackThisDelivery => 'Suivre cette livraison';
+	@override String get downloadReceipt => 'Télécharger le reçu';
+	@override String get receiptNotReady => 'Le reçu n\'est pas encore prêt';
+	@override String get downloadFailed => 'Échec du téléchargement — réessayez';
+	@override String minWithdrawalNote({required Object amount}) => 'Minimum ${amount}. Un admin traite les retraits manuellement — comptez 2–3 jours ouvrés.';
+	@override String get all => 'Tout';
+	@override String get amountFcfa => 'Montant (FCFA)';
+	@override String get channel => 'Canal';
+	@override String get bankTransferNote => 'Virement via Afriland First Bank — traité sous 2–3 jours ouvrés.';
+	@override String get accountNumberIban => 'Numéro de compte / IBAN';
+	@override String get accountReferencePhone => 'Numéro de téléphone ou référence du compte';
+	@override String get required => 'Obligatoire';
+	@override String get invalidEmail => 'Entrez un e-mail valide';
+	@override String get role => 'Rôle';
+	@override String minWithdrawalInline({required Object amount}) => 'Minimum ${amount}';
+	@override String get exportStatement => 'Exporter le relevé';
+	@override String get statementExported => 'Relevé exporté';
+	@override String get noTransactionsYet => 'Aucune transaction';
+	@override String get walletActivityAppearsHere => 'Votre activité de portefeuille apparaît ici';
+	@override String get filterPayments => 'Paiements';
+	@override String get filterEscrow => 'Séquestre';
+	@override String get filterCommission => 'Commission';
+	@override String get filterWithdrawals => 'Retraits';
+	@override String get downloadPdf => 'Télécharger le PDF';
+	@override String get shareReceipt => 'Partager';
+	@override String get callDriver => 'Appeler le livreur';
+	@override String get messageDriver => 'Écrire au livreur';
+	@override String get myDay => 'Ma journée';
+	@override String dayDeliveries({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('fr'))(count,
+		zero: 'Aucune livraison aujourd\'hui',
+		one: '1 livraison aujourd\'hui',
+		other: '${count} livraisons aujourd\'hui',
+	);
+	@override String dayKm({required Object km}) => '${km} km aujourd\'hui';
+	@override String get broadcasting => 'Diffusion';
+	@override String get broadcastingOn => 'Position en direct partagée';
+	@override String get broadcastingOff => 'Partage de position en pause';
+	@override String get navigate => 'Naviguer';
+	@override String get enterBuyerCode => 'Saisir le code';
+	@override String get askBuyerCodeTitle => 'Demandez le code de l\'acheteur';
+	@override String get askBuyerCodeBody => 'L\'acheteur a reçu un code à 6 chiffres — saisissez-le pour confirmer la livraison.';
+	@override String get reportProblem => 'Signaler un problème';
+	@override String get chatAdminDisclosure => 'Les admins Greenish peuvent lire les conversations en cas de litige.';
+	@override String get chatAuditTitle => 'Audit des conversations';
+	@override String get noThreadsTitle => 'Pas de conversations';
+	@override String get noThreadsBody => 'Les conversations de commande apparaissent ici.';
+	@override String get farmProfile => 'Profil de la ferme';
+	@override String get editFarmProfile => 'Modifier le profil';
+	@override String get noLocationSet => 'Aucune position définie';
+	@override String get uncategorized => 'Sans catégorie';
+	@override String get identityDocuments => 'Documents d\'identité';
+	@override String get selfieOrMarket => 'Selfie / espace de vente';
+	@override String get uploadIdentityDocument => 'Téléverser un document d\'identité';
+	@override String get upload => 'Téléverser';
+	@override String get reUpload => 'Remplacer';
+	@override String get view => 'Voir';
+	@override String get statSellersPendingLabel => 'Vendeurs';
+	@override String statSellersPending({required Object count, required Object pending}) => '${count} (${pending} en attente)';
+	@override String get statEscrowBalance => 'Séquestre détenu';
+	@override String get statSellerBalances => 'Soldes vendeurs';
+	@override String get statBuyerBalances => 'Soldes acheteurs';
+	@override String get statPendingWithdrawals => 'Retraits en attente';
+	@override String get statOpenTickets => 'Tickets ouverts';
+	@override String get statPendingReports => 'Signalés';
+	@override String get openChatAudit => 'Ouvrir l\'audit des conversations';
+	@override String get receiptsTitle => 'Reçus';
+	@override String get noReceiptsTitle => 'Aucun reçu';
+	@override String get noReceiptsBody => 'Les reçus émis apparaissent ici.';
+	@override String get adminsAndRoles => 'Admins et rôles';
+	@override String get addAdmin => 'Ajouter un admin';
+	@override String get adminCreated => 'Admin créé';
+	@override String get noAdminsTitle => 'Aucun autre admin';
+	@override String get noAdminsBody => 'Ajoutez un admin pour partager la console.';
+	@override String get superAdminOnly => 'Super admins uniquement';
+	@override String get superAdminOnlyBody => 'Demandez à un super admin de changer les rôles ou d\'ajouter des admins.';
+	@override String get askNewIdPhoto => 'Demander une nouvelle photo d\'ID';
+	@override String get askNewSelfiePhoto => 'Demander un nouveau selfie';
+	@override String get documentRequested => 'Demande de document envoyée';
 }
 
 /// Flat map(s) containing all translations.
@@ -706,7 +1046,7 @@ extension on Translations {
 			case 'retry': return 'Try again';
 			case 'search': return 'Search';
 			case 'loading': return 'Loading…';
-			case 'errorGeneric': return 'Something went wrong. Please try again.';
+			case 'errorGeneric': return 'Something went wrong — try again';
 			case 'empty': return 'Nothing here yet';
 			case 'back': return 'Back';
 			case 'confirm': return 'Confirm';
@@ -744,11 +1084,11 @@ extension on Translations {
 			case 'lastName': return 'Last name';
 			case 'phone': return 'Phone';
 			case 'region': return 'Region';
-			case 'farmName': return 'Farm / business name';
+			case 'farmName': return 'Farm name';
 			case 'mainCategory': return 'Main product category';
 			case 'businessLicense': return 'Business license (optional)';
 			case 'farmDescription': return 'Farm description';
-			case 'nationalId': return 'National ID card';
+			case 'nationalId': return 'National ID';
 			case 'selfie': return 'Selfie of you or your market space';
 			case 'dontHaveAccount': return 'Don\'t have an account?';
 			case 'alreadyHaveAccount': return 'Already have an account?';
@@ -763,7 +1103,7 @@ extension on Translations {
 			case 'escrow': return 'Escrow';
 			case 'totalBalance': return 'Total';
 			case 'withdraw': return 'Withdraw';
-			case 'transactions': return 'Transaction history';
+			case 'transactions': return 'Transactions';
 			case 'payNow': return 'Pay now';
 			case 'mtnMomo': return 'MTN Mobile Money';
 			case 'orangeMoney': return 'Orange Money';
@@ -840,7 +1180,7 @@ extension on Translations {
 			case 'confirmDeliveryBody': return 'Enter the 6-digit code your driver shared with you to confirm the hand-off.';
 			case 'confirmationCode': return 'Confirmation code';
 			case 'confirmDeliveryAction': return 'Confirm delivery';
-			case 'deliveryConfirmed': return 'Delivery confirmed — thank you!';
+			case 'deliveryConfirmed': return 'Delivery confirmed';
 			case 'confirmFailed': return 'Could not confirm — check the code and try again.';
 			case 'driverCreatedTitle': return 'Driver created';
 			case 'shareTempPassword': return 'Share this temporary password with the driver — it is shown once and will be reset on their first login.';
@@ -952,6 +1292,176 @@ extension on Translations {
 				one: '${count} more delivery',
 				other: '${count} more deliveries',
 			);
+			case 'welcomeBuyerTitle': return 'I want to buy produce';
+			case 'welcomeBuyerSubtitle': return 'Fresh from local farms to your door';
+			case 'welcomeSellerTitle': return 'I want to sell my harvest';
+			case 'welcomeSellerSubtitle': return 'Reach buyers across Cameroon';
+			case 'welcomeReturning': return 'Already with us? Log in';
+			case 'signupBuyerSubtitle': return 'Create your buyer account';
+			case 'signupSellerTitle': return 'Become a seller';
+			case 'signupSellerSubtitle': return 'Set up your farm profile in a few steps';
+			case 'signupStepOf': return ({required Object step, required Object total}) => 'Step ${step} of ${total}';
+			case 'finishSignup': return 'Finish';
+			case 'farmCategories': return 'Farm category';
+			case 'farmCategoriesRequired': return 'Pick a category for your farm';
+			case 'categoriesUnavailable': return 'Categories could not be loaded';
+			case 'businessLicenseTile': return 'Attach business licence (optional)';
+			case 'businessLicenseNumber': return 'Business licence number (optional)';
+			case 'businessLicenseOptional': return 'Business licence (optional)';
+			case 'nationalIdTile': return 'National ID — front';
+			case 'nationalIdHint': return 'All four corners in frame';
+			case 'selfieTile': return 'Selfie or market-space photo';
+			case 'selfieHint': return 'A clear photo of you';
+			case 'marketSpaceTile': return 'Market-space photo';
+			case 'marketSpaceHint': return 'Show your stall or field';
+			case 'selfieOptionSelfie': return 'Selfie';
+			case 'selfieOptionMarket': return 'Market space';
+			case 'identityAdminOnly': return 'Documents are visible only to admins';
+			case 'doThisLater': return 'Do this later';
+			case 'termsSummary': return 'I agree to the Greenish terms and the marketplace rules';
+			case 'selectRegion': return 'Select your region';
+			case 'useMyLocation': return 'Use my location';
+			case 'locationSet': return ({required Object lat, required Object lng}) => 'Location: ${lat}, ${lng}';
+			case 'locationFailed': return 'Could not get your location — enter it manually';
+			case 'locationUnavailable': return 'Location unavailable';
+			case 'sellerPendingTitle': return 'Application received';
+			case 'sellerPendingSubtitle': return 'We are reviewing your farm profile';
+			case 'pendingDocsReceived': return 'Documents received';
+			case 'pendingAdminReview': return 'Admin verification (~24h)';
+			case 'pendingListingsLive': return 'Your listings go live';
+			case 'pendingDraftProduct': return 'Draft your first product';
+			case 'navMarket': return 'Market';
+			case 'navWishlist': return 'Wishlist';
+			case 'navWallet': return 'Wallet';
+			case 'navMe': return 'Me';
+			case 'navMessages': return 'Messages';
+			case 'searchFarmsProducts': return 'Search farms or products';
+			case 'farmsSection': return 'Farms';
+			case 'productsSection': return 'Products';
+			case 'noResults': return 'No results';
+			case 'tryDifferentKeyword': return 'Try a different keyword';
+			case 'farmLocation': return 'Farm location';
+			case 'farmLocationHint': return 'Tap to see where this farm is';
+			case 'chatUnavailableSeller': return 'Chat is unavailable for this seller';
+			case 'noRatingsYet': return 'No ratings yet';
+			case 'reviewsCount': return ({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(count,
+				one: '1 review',
+				other: '${count} reviews',
+			);
+			case 'loadingRating': return 'Loading ratings…';
+			case 'reportSeller': return 'Report seller';
+			case 'rateSellerTitle': return ({required Object name}) => 'Rate ${name}';
+			case 'tagFresh': return 'Fresh';
+			case 'tagOnTime': return 'On time';
+			case 'tagWellPacked': return 'Well packed';
+			case 'tagGoodPrice': return 'Good price';
+			case 'reviewOptional': return 'Review (optional)';
+			case 'reportSellerProblem': return 'Report a problem with this seller';
+			case 'submit': return 'Submit';
+			case 'multiFarmExplainer': return ({required Object count}) => '${count} farms — this checks out as ${count} separate orders, one per farm';
+			case 'orderSubtotal': return 'Order subtotal';
+			case 'deliveryFeeLabel': return 'Delivery fee';
+			case 'deliveryPerOrder': return ({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(count,
+				one: 'Delivery (1 order)',
+				other: 'Delivery (${count} orders)',
+			);
+			case 'orderTotal': return 'Order total';
+			case 'choosePaymentChannel': return 'Choose how to pay';
+			case 'greenishWallet': return 'Greenish Wallet';
+			case 'walletBalanceLine': return ({required Object balance}) => 'Balance: ${balance}';
+			case 'walletBalanceInsufficient': return ({required Object balance}) => 'Balance ${balance} — not enough';
+			case 'payWithMtn': return ({required Object phone}) => 'Pay with MTN MoMo ${phone}';
+			case 'payWithOrange': return ({required Object phone}) => 'Pay with Orange Money ${phone}';
+			case 'addMtnNumber': return 'Add an MTN MoMo number';
+			case 'addOrangeNumber': return 'Add an Orange Money number';
+			case 'paymentSuccessful': return 'Payment successful';
+			case 'escrowExplainer': return 'Your money is held in escrow and released to the seller only when you confirm delivery.';
+			case 'receiptNumber': return 'Receipt';
+			case 'deliveryCodeLabel': return 'Delivery code';
+			case 'unpaidOrdersLeft': return ({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(count,
+				one: '1 order left to pay',
+				other: '${count} orders left to pay',
+			);
+			case 'payNextOrder': return ({required Object count}) => 'Pay next order (${count})';
+			case 'doneForNow': return 'Done for now';
+			case 'trackThisDelivery': return 'Track this delivery';
+			case 'downloadReceipt': return 'Download receipt';
+			case 'receiptNotReady': return 'Receipt is not ready yet';
+			case 'downloadFailed': return 'Download failed — try again';
+			case 'minWithdrawalNote': return ({required Object amount}) => 'Minimum ${amount}. An admin processes withdrawals manually — allow 2–3 business days.';
+			case 'all': return 'All';
+			case 'amountFcfa': return 'Amount (FCFA)';
+			case 'channel': return 'Channel';
+			case 'bankTransferNote': return 'Bank transfer via Afriland First Bank — processed within 2–3 business days.';
+			case 'accountNumberIban': return 'Account number / IBAN';
+			case 'accountReferencePhone': return 'Phone number or account reference';
+			case 'required': return 'Required';
+			case 'invalidEmail': return 'Enter a valid email';
+			case 'role': return 'Role';
+			case 'minWithdrawalInline': return ({required Object amount}) => 'Minimum ${amount}';
+			case 'exportStatement': return 'Export as statement';
+			case 'statementExported': return 'Statement exported';
+			case 'noTransactionsYet': return 'No transactions yet';
+			case 'walletActivityAppearsHere': return 'Your wallet activity appears here';
+			case 'filterPayments': return 'Payments';
+			case 'filterEscrow': return 'Escrow';
+			case 'filterCommission': return 'Commission';
+			case 'filterWithdrawals': return 'Withdrawals';
+			case 'downloadPdf': return 'Download PDF';
+			case 'shareReceipt': return 'Share';
+			case 'callDriver': return 'Call driver';
+			case 'messageDriver': return 'Message driver';
+			case 'myDay': return 'My day';
+			case 'dayDeliveries': return ({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(count,
+				zero: 'No deliveries today',
+				one: '1 delivery today',
+				other: '${count} deliveries today',
+			);
+			case 'dayKm': return ({required Object km}) => '${km} km today';
+			case 'broadcasting': return 'Broadcasting';
+			case 'broadcastingOn': return 'Sharing your live position';
+			case 'broadcastingOff': return 'Position sharing paused';
+			case 'navigate': return 'Navigate';
+			case 'enterBuyerCode': return 'Enter code';
+			case 'askBuyerCodeTitle': return 'Ask for the buyer\'s code';
+			case 'askBuyerCodeBody': return 'The buyer received a 6-digit code — enter it to confirm delivery.';
+			case 'reportProblem': return 'Report a problem';
+			case 'chatAdminDisclosure': return 'Greenish admins can read order chats if a dispute is opened.';
+			case 'chatAuditTitle': return 'Chat audit';
+			case 'noThreadsTitle': return 'No chats yet';
+			case 'noThreadsBody': return 'Order conversations appear here.';
+			case 'farmProfile': return 'Farm profile';
+			case 'editFarmProfile': return 'Edit farm profile';
+			case 'noLocationSet': return 'No location set';
+			case 'uncategorized': return 'Uncategorized';
+			case 'identityDocuments': return 'Identity documents';
+			case 'selfieOrMarket': return 'Selfie / market space';
+			case 'uploadIdentityDocument': return 'Upload identity document';
+			case 'upload': return 'Upload';
+			case 'reUpload': return 'Re-upload';
+			case 'view': return 'View';
+			case 'statSellersPendingLabel': return 'Sellers';
+			case 'statSellersPending': return ({required Object count, required Object pending}) => '${count} (${pending} pending)';
+			case 'statEscrowBalance': return 'Escrow held';
+			case 'statSellerBalances': return 'Seller balances';
+			case 'statBuyerBalances': return 'Buyer balances';
+			case 'statPendingWithdrawals': return 'Pending withdrawals';
+			case 'statOpenTickets': return 'Open tickets';
+			case 'statPendingReports': return 'Reported';
+			case 'openChatAudit': return 'Open chat audit';
+			case 'receiptsTitle': return 'Receipts';
+			case 'noReceiptsTitle': return 'No receipts yet';
+			case 'noReceiptsBody': return 'Issued receipts land here.';
+			case 'adminsAndRoles': return 'Admins & roles';
+			case 'addAdmin': return 'Add admin';
+			case 'adminCreated': return 'Admin created';
+			case 'noAdminsTitle': return 'No other admins';
+			case 'noAdminsBody': return 'Add an admin to share the console.';
+			case 'superAdminOnly': return 'Super admins only';
+			case 'superAdminOnlyBody': return 'Ask a super admin to change roles or add admins.';
+			case 'askNewIdPhoto': return 'Ask for a new ID photo';
+			case 'askNewSelfiePhoto': return 'Ask for a new selfie';
+			case 'documentRequested': return 'Document request sent';
 			default: return null;
 		}
 	}
@@ -970,7 +1480,7 @@ extension on _StringsFr {
 			case 'retry': return 'Réessayer';
 			case 'search': return 'Rechercher';
 			case 'loading': return 'Chargement…';
-			case 'errorGeneric': return 'Une erreur est survenue. Veuillez réessayer.';
+			case 'errorGeneric': return 'Une erreur est survenue — réessayez';
 			case 'empty': return 'Rien ici pour le moment';
 			case 'back': return 'Retour';
 			case 'confirm': return 'Confirmer';
@@ -1000,7 +1510,7 @@ extension on _StringsFr {
 			case 'welcomeBack': return 'Bon retour';
 			case 'createAccount': return 'Créer un compte';
 			case 'signIn': return 'Se connecter';
-			case 'email': return 'Email';
+			case 'email': return 'E-mail';
 			case 'password': return 'Mot de passe';
 			case 'confirmPassword': return 'Confirmer le mot de passe';
 			case 'forgotPassword': return 'Mot de passe oublié ?';
@@ -1008,11 +1518,11 @@ extension on _StringsFr {
 			case 'lastName': return 'Nom';
 			case 'phone': return 'Téléphone';
 			case 'region': return 'Région';
-			case 'farmName': return 'Nom de la ferme / entreprise';
+			case 'farmName': return 'Nom de la ferme';
 			case 'mainCategory': return 'Catégorie principale';
 			case 'businessLicense': return 'Licence commerciale (optionnel)';
 			case 'farmDescription': return 'Description de la ferme';
-			case 'nationalId': return 'Carte d\'identité nationale';
+			case 'nationalId': return 'Carte nationale d\'identité';
 			case 'selfie': return 'Selfie de vous ou de votre espace de vente';
 			case 'dontHaveAccount': return 'Vous n\'avez pas de compte ?';
 			case 'alreadyHaveAccount': return 'Vous avez déjà un compte ?';
@@ -1027,7 +1537,7 @@ extension on _StringsFr {
 			case 'escrow': return 'Séquestre';
 			case 'totalBalance': return 'Total';
 			case 'withdraw': return 'Retirer';
-			case 'transactions': return 'Historique des transactions';
+			case 'transactions': return 'Transactions';
 			case 'payNow': return 'Payer maintenant';
 			case 'mtnMomo': return 'MTN Mobile Money';
 			case 'orangeMoney': return 'Orange Money';
@@ -1104,7 +1614,7 @@ extension on _StringsFr {
 			case 'confirmDeliveryBody': return 'Saisissez le code à 6 chiffres que votre livreur vous a communiqué pour confirmer la remise.';
 			case 'confirmationCode': return 'Code de confirmation';
 			case 'confirmDeliveryAction': return 'Confirmer la livraison';
-			case 'deliveryConfirmed': return 'Livraison confirmée — merci !';
+			case 'deliveryConfirmed': return 'Livraison confirmée';
 			case 'confirmFailed': return 'Impossible de confirmer — vérifiez le code et réessayez.';
 			case 'driverCreatedTitle': return 'Livreur créé';
 			case 'shareTempPassword': return 'Partagez ce mot de passe temporaire avec le livreur — il n\'est affiché qu\'une fois et sera réinitialisé à sa première connexion.';
@@ -1216,6 +1726,176 @@ extension on _StringsFr {
 				one: '${count} autre livraison',
 				other: '${count} autres livraisons',
 			);
+			case 'welcomeBuyerTitle': return 'Je veux acheter des produits';
+			case 'welcomeBuyerSubtitle': return 'Des fermes locales jusqu\'à votre porte';
+			case 'welcomeSellerTitle': return 'Je veux vendre ma récolte';
+			case 'welcomeSellerSubtitle': return 'Touchez des acheteurs partout au Cameroun';
+			case 'welcomeReturning': return 'Déjà des nôtres ? Connexion';
+			case 'signupBuyerSubtitle': return 'Créez votre compte acheteur';
+			case 'signupSellerTitle': return 'Devenir vendeur';
+			case 'signupSellerSubtitle': return 'Créez votre profil de ferme en quelques étapes';
+			case 'signupStepOf': return ({required Object step, required Object total}) => 'Étape ${step} sur ${total}';
+			case 'finishSignup': return 'Terminer';
+			case 'farmCategories': return 'Catégorie de la ferme';
+			case 'farmCategoriesRequired': return 'Choisissez une catégorie pour votre ferme';
+			case 'categoriesUnavailable': return 'Impossible de charger les catégories';
+			case 'businessLicenseTile': return 'Joindre la licence commerciale (optionnel)';
+			case 'businessLicenseNumber': return 'Numéro de licence commerciale (optionnel)';
+			case 'businessLicenseOptional': return 'Licence commerciale (optionnel)';
+			case 'nationalIdTile': return 'Carte nationale d\'identité — recto';
+			case 'nationalIdHint': return 'Les quatre coins dans le cadre';
+			case 'selfieTile': return 'Selfie ou photo de l\'espace de vente';
+			case 'selfieHint': return 'Une photo nette de vous';
+			case 'marketSpaceTile': return 'Photo de l\'espace de vente';
+			case 'marketSpaceHint': return 'Montrez votre étal ou votre champ';
+			case 'selfieOptionSelfie': return 'Selfie';
+			case 'selfieOptionMarket': return 'Espace de vente';
+			case 'identityAdminOnly': return 'Les documents ne sont visibles que par les admins';
+			case 'doThisLater': return 'Faire plus tard';
+			case 'termsSummary': return 'J\'accepte les conditions Greenish et les règles du marché';
+			case 'selectRegion': return 'Sélectionnez votre région';
+			case 'useMyLocation': return 'Utiliser ma position';
+			case 'locationSet': return ({required Object lat, required Object lng}) => 'Position : ${lat}, ${lng}';
+			case 'locationFailed': return 'Position introuvable — saisissez-la manuellement';
+			case 'locationUnavailable': return 'Position indisponible';
+			case 'sellerPendingTitle': return 'Candidature reçue';
+			case 'sellerPendingSubtitle': return 'Nous vérifions votre profil de ferme';
+			case 'pendingDocsReceived': return 'Documents reçus';
+			case 'pendingAdminReview': return 'Vérification admin (~24 h)';
+			case 'pendingListingsLive': return 'Vos produits sont en ligne';
+			case 'pendingDraftProduct': return 'Préparer votre premier produit';
+			case 'navMarket': return 'Marché';
+			case 'navWishlist': return 'Favoris';
+			case 'navWallet': return 'Portefeuille';
+			case 'navMe': return 'Moi';
+			case 'navMessages': return 'Messages';
+			case 'searchFarmsProducts': return 'Rechercher fermes ou produits';
+			case 'farmsSection': return 'Fermes';
+			case 'productsSection': return 'Produits';
+			case 'noResults': return 'Aucun résultat';
+			case 'tryDifferentKeyword': return 'Essayez un autre mot-clé';
+			case 'farmLocation': return 'Localisation de la ferme';
+			case 'farmLocationHint': return 'Voir où se trouve cette ferme';
+			case 'chatUnavailableSeller': return 'Chat indisponible pour ce vendeur';
+			case 'noRatingsYet': return 'Pas encore d\'avis';
+			case 'reviewsCount': return ({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('fr'))(count,
+				one: '1 avis',
+				other: '${count} avis',
+			);
+			case 'loadingRating': return 'Chargement des avis…';
+			case 'reportSeller': return 'Signaler le vendeur';
+			case 'rateSellerTitle': return ({required Object name}) => 'Noter ${name}';
+			case 'tagFresh': return 'Frais';
+			case 'tagOnTime': return 'À l\'heure';
+			case 'tagWellPacked': return 'Bien emballé';
+			case 'tagGoodPrice': return 'Bon prix';
+			case 'reviewOptional': return 'Avis (optionnel)';
+			case 'reportSellerProblem': return 'Signaler un problème avec ce vendeur';
+			case 'submit': return 'Envoyer';
+			case 'multiFarmExplainer': return ({required Object count}) => '${count} fermes — la commande se découpe en ${count} commandes séparées, une par ferme';
+			case 'orderSubtotal': return 'Sous-total de la commande';
+			case 'deliveryFeeLabel': return 'Frais de livraison';
+			case 'deliveryPerOrder': return ({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('fr'))(count,
+				one: 'Livraison (1 commande)',
+				other: 'Livraison (${count} commandes)',
+			);
+			case 'orderTotal': return 'Total de la commande';
+			case 'choosePaymentChannel': return 'Choisissez comment payer';
+			case 'greenishWallet': return 'Portefeuille Greenish';
+			case 'walletBalanceLine': return ({required Object balance}) => 'Solde : ${balance}';
+			case 'walletBalanceInsufficient': return ({required Object balance}) => 'Solde ${balance} — insuffisant';
+			case 'payWithMtn': return ({required Object phone}) => 'Payer avec MTN MoMo ${phone}';
+			case 'payWithOrange': return ({required Object phone}) => 'Payer avec Orange Money ${phone}';
+			case 'addMtnNumber': return 'Ajouter un numéro MTN MoMo';
+			case 'addOrangeNumber': return 'Ajouter un numéro Orange Money';
+			case 'paymentSuccessful': return 'Paiement réussi';
+			case 'escrowExplainer': return 'Votre argent est conservé en séquestre et versé au vendeur uniquement quand vous confirmez la livraison.';
+			case 'receiptNumber': return 'Reçu';
+			case 'deliveryCodeLabel': return 'Code de livraison';
+			case 'unpaidOrdersLeft': return ({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('fr'))(count,
+				one: '1 commande à payer',
+				other: '${count} commandes à payer',
+			);
+			case 'payNextOrder': return ({required Object count}) => 'Payer la commande suivante (${count})';
+			case 'doneForNow': return 'Terminer pour l\'instant';
+			case 'trackThisDelivery': return 'Suivre cette livraison';
+			case 'downloadReceipt': return 'Télécharger le reçu';
+			case 'receiptNotReady': return 'Le reçu n\'est pas encore prêt';
+			case 'downloadFailed': return 'Échec du téléchargement — réessayez';
+			case 'minWithdrawalNote': return ({required Object amount}) => 'Minimum ${amount}. Un admin traite les retraits manuellement — comptez 2–3 jours ouvrés.';
+			case 'all': return 'Tout';
+			case 'amountFcfa': return 'Montant (FCFA)';
+			case 'channel': return 'Canal';
+			case 'bankTransferNote': return 'Virement via Afriland First Bank — traité sous 2–3 jours ouvrés.';
+			case 'accountNumberIban': return 'Numéro de compte / IBAN';
+			case 'accountReferencePhone': return 'Numéro de téléphone ou référence du compte';
+			case 'required': return 'Obligatoire';
+			case 'invalidEmail': return 'Entrez un e-mail valide';
+			case 'role': return 'Rôle';
+			case 'minWithdrawalInline': return ({required Object amount}) => 'Minimum ${amount}';
+			case 'exportStatement': return 'Exporter le relevé';
+			case 'statementExported': return 'Relevé exporté';
+			case 'noTransactionsYet': return 'Aucune transaction';
+			case 'walletActivityAppearsHere': return 'Votre activité de portefeuille apparaît ici';
+			case 'filterPayments': return 'Paiements';
+			case 'filterEscrow': return 'Séquestre';
+			case 'filterCommission': return 'Commission';
+			case 'filterWithdrawals': return 'Retraits';
+			case 'downloadPdf': return 'Télécharger le PDF';
+			case 'shareReceipt': return 'Partager';
+			case 'callDriver': return 'Appeler le livreur';
+			case 'messageDriver': return 'Écrire au livreur';
+			case 'myDay': return 'Ma journée';
+			case 'dayDeliveries': return ({required num count}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('fr'))(count,
+				zero: 'Aucune livraison aujourd\'hui',
+				one: '1 livraison aujourd\'hui',
+				other: '${count} livraisons aujourd\'hui',
+			);
+			case 'dayKm': return ({required Object km}) => '${km} km aujourd\'hui';
+			case 'broadcasting': return 'Diffusion';
+			case 'broadcastingOn': return 'Position en direct partagée';
+			case 'broadcastingOff': return 'Partage de position en pause';
+			case 'navigate': return 'Naviguer';
+			case 'enterBuyerCode': return 'Saisir le code';
+			case 'askBuyerCodeTitle': return 'Demandez le code de l\'acheteur';
+			case 'askBuyerCodeBody': return 'L\'acheteur a reçu un code à 6 chiffres — saisissez-le pour confirmer la livraison.';
+			case 'reportProblem': return 'Signaler un problème';
+			case 'chatAdminDisclosure': return 'Les admins Greenish peuvent lire les conversations en cas de litige.';
+			case 'chatAuditTitle': return 'Audit des conversations';
+			case 'noThreadsTitle': return 'Pas de conversations';
+			case 'noThreadsBody': return 'Les conversations de commande apparaissent ici.';
+			case 'farmProfile': return 'Profil de la ferme';
+			case 'editFarmProfile': return 'Modifier le profil';
+			case 'noLocationSet': return 'Aucune position définie';
+			case 'uncategorized': return 'Sans catégorie';
+			case 'identityDocuments': return 'Documents d\'identité';
+			case 'selfieOrMarket': return 'Selfie / espace de vente';
+			case 'uploadIdentityDocument': return 'Téléverser un document d\'identité';
+			case 'upload': return 'Téléverser';
+			case 'reUpload': return 'Remplacer';
+			case 'view': return 'Voir';
+			case 'statSellersPendingLabel': return 'Vendeurs';
+			case 'statSellersPending': return ({required Object count, required Object pending}) => '${count} (${pending} en attente)';
+			case 'statEscrowBalance': return 'Séquestre détenu';
+			case 'statSellerBalances': return 'Soldes vendeurs';
+			case 'statBuyerBalances': return 'Soldes acheteurs';
+			case 'statPendingWithdrawals': return 'Retraits en attente';
+			case 'statOpenTickets': return 'Tickets ouverts';
+			case 'statPendingReports': return 'Signalés';
+			case 'openChatAudit': return 'Ouvrir l\'audit des conversations';
+			case 'receiptsTitle': return 'Reçus';
+			case 'noReceiptsTitle': return 'Aucun reçu';
+			case 'noReceiptsBody': return 'Les reçus émis apparaissent ici.';
+			case 'adminsAndRoles': return 'Admins et rôles';
+			case 'addAdmin': return 'Ajouter un admin';
+			case 'adminCreated': return 'Admin créé';
+			case 'noAdminsTitle': return 'Aucun autre admin';
+			case 'noAdminsBody': return 'Ajoutez un admin pour partager la console.';
+			case 'superAdminOnly': return 'Super admins uniquement';
+			case 'superAdminOnlyBody': return 'Demandez à un super admin de changer les rôles ou d\'ajouter des admins.';
+			case 'askNewIdPhoto': return 'Demander une nouvelle photo d\'ID';
+			case 'askNewSelfiePhoto': return 'Demander un nouveau selfie';
+			case 'documentRequested': return 'Demande de document envoyée';
 			default: return null;
 		}
 	}

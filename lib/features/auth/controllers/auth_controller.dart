@@ -131,6 +131,8 @@ class AuthController extends AsyncNotifier<AuthState> {
           mainCategoryId: categoryId,
           farmDescription: input.farmDescription,
           businessLicense: input.businessLicense,
+          farmLatitude: input.farmLatitude,
+          farmLongitude: input.farmLongitude,
         );
       } catch (_) {
         // Profile already created by signup; the description is best-effort.

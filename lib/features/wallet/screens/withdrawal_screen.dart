@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/utils/validators.dart';
 import '../../../data/models/enums.dart';
+import '../../../data/repositories/providers.dart';
+import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/form_text_field.dart';
 import '../../../theme/app_colors.dart';
 import '../../auth/controllers/auth_controller.dart';
@@ -113,24 +115,56 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
       }
     });
 
+    final balance = ref.watch(walletControllerProvider).valueOrNull?.balance ?? 0;
+    // The floor comes from platform config `min_withdrawal` (design 21);
+    // admins process withdrawals by hand.
+    final min = int.tryParse(
+          ref
+              .watch(platformConfigProvider('min_withdrawal'))
+              .valueOrNull ??
+              '',
+        ) ??
+        kDefaultMinWithdrawal;
+    final theme = Theme.of(context);
+    final t = context.t;
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leading: Navigator.canPop(context) ? const BackButton() : null,
-        title: const Text('Withdraw')),
+        title: Text(t.withdraw)),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
             Text(
-              'Minimum withdrawal is 2 000 FCFA.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.tanDark),
+              t.minWithdrawalNote(amount: formatMoney(min)),
+              style: theme.textTheme.bodySmall?.copyWith(color: AppColors.tanDark),
             ),
             const SizedBox(height: 16),
+            // One-tap fills of the available balance (design 21).
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final (label, fraction) in [
+                  ('25%', 0.25),
+                  ('50%', 0.5),
+                  (t.all, 1.0),
+                ])
+                  ActionChip(
+                    label: Text(label),
+                    onPressed: balance > 0
+                        ? () => _amount.text =
+                            (balance * fraction).floor().toString()
+                        : null,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
             FormTextField(
               controller: _amount,
-              label: 'Amount (FCFA)',
+              label: t.amountFcfa,
               keyboardType: TextInputType.number,
               textInputAction: TextInputAction.next,
               prefixIcon: const Icon(Icons.currency_exchange),
@@ -139,21 +173,47 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
             const SizedBox(height: 16),
             DropdownButtonFormField<WithdrawalChannel>(
               initialValue: _channel,
-              decoration: const InputDecoration(labelText: 'Channel'),
+              decoration: InputDecoration(labelText: t.channel),
               items: [
                 for (final c in WithdrawalChannel.values)
                   DropdownMenuItem(value: c, child: Text(c.label)),
               ],
               onChanged: (v) => setState(() => _channel = v ?? _channel),
             ),
+            // Bank rail specifics — fixed partner bank, slower settlement.
+            if (_channel == WithdrawalChannel.bank)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline,
+                        size: 16, color: AppColors.tanDark),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        t.bankTransferNote,
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: AppColors.tanDark),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 16),
             FormTextField(
               controller: _account,
-              label: 'Account reference (phone)',
-              keyboardType: TextInputType.phone,
+              label: _channel == WithdrawalChannel.bank
+                  ? t.accountNumberIban
+                  : t.accountReferencePhone,
+              keyboardType: _channel == WithdrawalChannel.bank
+                  ? TextInputType.text
+                  : TextInputType.phone,
               textInputAction: TextInputAction.done,
               prefixIcon: const Icon(Icons.phone_outlined),
-              validator: validatePhone,
+              validator: _channel == WithdrawalChannel.bank
+                  ? (v) =>
+                      (v == null || v.trim().isEmpty) ? t.required : null
+                  : validatePhone,
             ),
             const SizedBox(height: 24),
             FilledButton(
@@ -180,7 +240,13 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
     if (value == null || value.trim().isEmpty) return 'Amount is required.';
     final amount = int.tryParse(value.trim());
     if (amount == null || amount <= 0) return 'Enter a valid amount.';
-    if (amount < 2000) return 'Minimum withdrawal is 2 000 FCFA.';
+    final min = int.tryParse(
+          ref.read(platformConfigProvider('min_withdrawal')).valueOrNull ?? '',
+        ) ??
+        kDefaultMinWithdrawal;
+    if (amount < min) {
+      return context.t.minWithdrawalInline(amount: formatMoney(min));
+    }
     return null;
   }
 }

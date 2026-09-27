@@ -41,6 +41,7 @@ abstract final class Endpoints {
   static String get productImage => '$base/products/{id}/image';
 
   // ---- seller profiles ----
+  static String get sellerProfiles => '$base/seller-profiles';
   static String get sellerProfileMe => '$base/seller-profiles/me';
   static String get sellerProfileNationalId => '$base/seller-profiles/me/national-id';
   static String get sellerProfileSelfie => '$base/seller-profiles/me/selfie';
@@ -70,6 +71,7 @@ abstract final class Endpoints {
   // ---- wallets & transactions ----
   static String get walletMe => '$base/wallets/me';
   static String get myTransactions => '$base/transactions/me';
+  static String get myTransactionsExport => '$base/transactions/me/export';
   static String get adminTransactions => '$base/admin/transactions';
 
   // ---- payments ----
@@ -135,6 +137,7 @@ abstract final class Endpoints {
   static String get approveSeller => '$base/admin/seller-profiles/{userId}/approve';
   static String get rejectSeller => '$base/admin/seller-profiles/{userId}/reject';
   static String get adminSellerDocuments => '$base/admin/seller-profiles/{userId}/documents/{kind}';
+  static String get adminSellerRequestDocument => '$base/admin/seller-profiles/{userId}/request-document';
   static String get adminAdmins => '$base/admin/admins';
   static String get adminAdminRole => '$base/admin/admins/{userId}/role';
   static String get adminDrivers => '$base/admin/drivers';

@@ -10,9 +10,10 @@ class ReceiptController extends FamilyAsyncNotifier<Receipt, String> {
   Future<Receipt> build(String orderId) =>
       ref.watch(receiptRepositoryProvider).getForOrder(orderId);
 
-  /// Download the PDF copy. Returns the local path when the backend is live,
-  /// `null` today (the mock defers PDF generation).
-  Future<String?> download() => ref.read(receiptRepositoryProvider).downloadPdf(arg);
+  /// The PDF bytes of this receipt (`GET /receipts/:id/download`,
+  /// REC-04). Null when the receipt has no downloadable copy yet.
+  Future<List<int>?> downloadPdf() =>
+      ref.read(receiptRepositoryProvider).downloadOrderPdf(arg);
 }
 
 final receiptControllerProvider =

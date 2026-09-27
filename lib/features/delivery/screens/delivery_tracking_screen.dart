@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/utils/formatters.dart';
@@ -88,6 +89,9 @@ class _DeliveryTrackingScreenState extends ConsumerState<DeliveryTrackingScreen>
           height: 280,
           onTap: () => context.push(AppRoutes.liveMap(widget.orderId)),
         ),
+        const SizedBox(height: 16),
+        // Driver card (design 23): name · vehicle · rating + call/message.
+        _DriverCard(delivery: delivery),
         const SizedBox(height: 16),
         _statusRow(context, delivery),
         if (delivery.isPickupConfirmed && !delivery.isDelivered) ...[
@@ -250,7 +254,7 @@ class _DeliveryTrackingScreenState extends ConsumerState<DeliveryTrackingScreen>
       ref.invalidate(orderDetailControllerProvider);
       ref.invalidate(buyerOrderListControllerProvider);
       ref.invalidate(walletControllerProvider);
-      ref.invalidate(ledgerControllerProvider);
+      ref.invalidate(ledgerControllerProvider(null));
       await ref.read(deliveryTrackingControllerProvider(request).notifier).refreshNow();
     } catch (error) {
       // API errors verbatim — e.g. a wrong code's "attempts left" message.
@@ -292,5 +296,74 @@ class _DeliveryTrackingScreenState extends ConsumerState<DeliveryTrackingScreen>
     if (delivery.isDelivered) return OrderStatus.delivered;
     if (delivery.isPickupConfirmed) return OrderStatus.shipped;
     return OrderStatus.confirmed;
+  }
+}
+
+/// The assigned driver's card (design 23) — name, vehicle, rating, and one
+/// tap call/message shortcuts. Renders only when the backend enriches the
+/// delivery with driver details.
+class _DriverCard extends ConsumerWidget {
+  final Delivery delivery;
+
+  const _DriverCard({required this.delivery});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final t = context.t;
+    final name = delivery.driverName;
+    final phone = delivery.driverPhone;
+    final vehicle = delivery.driverVehicle;
+    final rating = delivery.driverRating;
+    if (name == null && phone == null) return const SizedBox.shrink();
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            const CircleAvatar(
+              backgroundColor: AppColors.greenPale,
+              child: Icon(Icons.local_shipping_outlined,
+                  color: AppColors.green),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name ?? t.roleDriver,
+                      style: theme.textTheme.titleSmall),
+                  const SizedBox(height: 2),
+                  Text(
+                    [
+                      ?vehicle,
+                      ?rating == null
+                          ? null
+                          : '${rating.toStringAsFixed(1)} ★',
+                    ].join(' · '),
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: AppColors.tanDark),
+                  ),
+                ],
+              ),
+            ),
+            if (phone != null && phone.isNotEmpty)
+              IconButton(
+                tooltip: t.callDriver,
+                icon: const Icon(Icons.phone_outlined,
+                    color: AppColors.greenDark),
+                onPressed: () => launchUrl(Uri.parse('tel:$phone')),
+              ),
+            IconButton(
+              tooltip: t.messageDriver,
+              icon: const Icon(Icons.chat_bubble_outline,
+                  color: AppColors.greenDark),
+              onPressed: () =>
+                  openChatForOrder(context, ref, delivery.orderId),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

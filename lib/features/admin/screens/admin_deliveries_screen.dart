@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 
+import '../../../core/router/app_router.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../data/models/delivery.dart';
-import '../../../shared/widgets/refreshable_async_view.dart';
+import '../../../l10n/l10n_ext.dart';
+import '../../../theme/app_colors.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../controllers/admin_deliveries_controller.dart';
 
@@ -44,9 +50,109 @@ class AdminDeliveriesBody extends ConsumerWidget {
       builder: (list) => ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
-        itemCount: list.length,
+        // The live map sits above the cards (design 40) — one marker per
+        // delivery that has a reported position.
+        itemCount: list.length + 2,
         separatorBuilder: (_, _) => const SizedBox(height: 12),
-        itemBuilder: (context, index) => _DeliveryCard(delivery: list[index]),
+        itemBuilder: (context, index) {
+          if (index == 0) return _LiveMap(deliveries: list);
+          if (index == 1) {
+            return Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => context.push(AppRoutes.adminChat),
+                icon: const Icon(Icons.forum_outlined, size: 18),
+                label: Text(context.t.openChatAudit),
+              ),
+            );
+          }
+          return _DeliveryCard(delivery: list[index - 2]);
+        },
+      ),
+    );
+  }
+}
+
+/// Map of every active delivery's latest reported position (design 40).
+/// Douala-centred with fallback zoom until a driver posts a fix.
+class _LiveMap extends StatelessWidget {
+  final List<Delivery> deliveries;
+
+  const _LiveMap({required this.deliveries});
+
+  static const _fallback = LatLng(4.0511, 9.7679); // Douala
+  static const _tileTemplate =
+      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+
+  @override
+  Widget build(BuildContext context) {
+    final points = [
+      for (final d in deliveries)
+        if (d.currentLatitude != null && d.currentLongitude != null)
+          LatLng(d.currentLatitude!, d.currentLongitude!),
+    ];
+    final center = points.isNotEmpty
+        ? LatLng(
+            points.map((p) => p.latitude).reduce((a, b) => a + b) /
+                points.length,
+            points.map((p) => p.longitude).reduce((a, b) => a + b) /
+                points.length,
+          )
+        : _fallback;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: SizedBox(
+        height: 220,
+        width: double.infinity,
+        child: FlutterMap(
+          options: MapOptions(
+            initialCenter: center,
+            initialZoom: points.isEmpty ? 11 : 12,
+          ),
+          children: [
+            TileLayer(
+              urlTemplate: _tileTemplate,
+              subdomains: const ['a', 'b', 'c', 'd'],
+              retinaMode: true,
+              userAgentPackageName: 'com.example.green',
+            ),
+            MarkerLayer(
+              markers: [
+                for (final d in deliveries)
+                  if (d.currentLatitude != null &&
+                      d.currentLongitude != null)
+                    Marker(
+                      point: LatLng(
+                          d.currentLatitude!, d.currentLongitude!),
+                      width: 40,
+                      height: 40,
+                      child: Tooltip(
+                        message: d.driverName ??
+                            'Order ${orderReference(d.orderId)}',
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.green,
+                            border: Border.all(
+                                color: Colors.white, width: 2.5),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black26,
+                                blurRadius: 6,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(6),
+                          child: const Icon(Icons.local_shipping,
+                              color: Colors.white, size: 16),
+                        ),
+                      ),
+                    ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

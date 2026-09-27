@@ -9,9 +9,13 @@ import '../../../shared/widgets/refreshable_async_view.dart';
 import '../../../theme/app_colors.dart';
 import '../controllers/wallet_controller.dart';
 
-/// The user's wallet balances (PAY-03).
+/// The user's wallet balances (PAY-03). [readOnly] hides the withdraw action —
+/// used by the buyer's Wallet tab (buyers only ever receive escrow refunds;
+/// sellers get the withdraw flow).
 class WalletScreen extends ConsumerWidget {
-  const WalletScreen({super.key});
+  final bool readOnly;
+
+  const WalletScreen({super.key, this.readOnly = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -65,19 +69,20 @@ class WalletScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: () async {
-                  await context.push(AppRoutes.walletWithdraw);
-                  ref.invalidate(walletControllerProvider);
-                },
-                icon: const Icon(Icons.currency_exchange),
-                label: const Text('Withdraw'),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+              if (!readOnly)
+                FilledButton.icon(
+                  onPressed: () async {
+                    await context.push(AppRoutes.walletWithdraw);
+                    ref.invalidate(walletControllerProvider);
+                  },
+                  icon: const Icon(Icons.currency_exchange),
+                  label: const Text('Withdraw'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
+              if (!readOnly) const SizedBox(height: 12),
               OutlinedButton.icon(
                 onPressed: () => context.push(AppRoutes.walletTransactions),
                 icon: const Icon(Icons.receipt_long_outlined),

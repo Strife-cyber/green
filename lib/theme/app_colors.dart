@@ -37,6 +37,10 @@ abstract final class AppColors {
   /// Soft green used for chips, containers and success surfaces.
   static const Color greenContainer = Color(0xFFA5D6A7);
 
+  /// Softer green tint for selected chips/avatars (between surface and
+  /// [greenContainer]).
+  static const Color greenPale = Color(0xFFDFF0DC);
+
   // ---- Logo warm orange (secondary) ----------------------------------------
   /// Warm orange accent extracted from the logo's fruit accent.
   static const Color orange = Color(0xFFF07030);

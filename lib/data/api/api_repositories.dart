@@ -1,10 +1,5 @@
-import 'dart:io' as io;
-
 import 'package:cross_file/cross_file.dart';
 import 'package:dio/dio.dart';
-// `kIsWeb` for the receipt guard — hide the `Category` annotation it also
-// exports (it collides with our `models/category.dart`).
-import 'package:flutter/foundation.dart' hide Category;
 
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
@@ -20,6 +15,7 @@ import '../models/delivery.dart';
 import '../models/enums.dart';
 import '../models/order.dart';
 import '../models/page.dart';
+import '../models/platform_config.dart';
 import '../models/product.dart';
 import '../models/rating_review.dart';
 import '../models/receipt.dart';
@@ -43,6 +39,7 @@ import '../repositories/device_token_repository.dart';
 import '../repositories/notification_repository.dart';
 import '../repositories/order_repository.dart';
 import '../repositories/payment_repository.dart';
+import '../repositories/platform_config_repository.dart';
 import '../repositories/product_repository.dart';
 import '../repositories/rating_repository.dart';
 import '../repositories/receipt_repository.dart';
@@ -630,10 +627,38 @@ class ApiWalletRepository implements WalletRepository {
   }
 
   @override
-  Future<List<WalletTransaction>> transactions() async {
+  Future<List<WalletTransaction>> transactions({TransactionType? type}) async {
     try {
-      final res = await _dio.get(Endpoints.myTransactions);
+      final res = await _dio.get(
+        Endpoints.myTransactions,
+        queryParameters: {if (type != null) 'type': type.apiValue},
+      );
       return _page(_unwrap(res.data), WalletTransaction.fromJson).items;
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
+
+  @override
+  Future<CsvExport> exportTransactions() async {
+    try {
+      final res = await _dio.get(
+        Endpoints.myTransactionsExport,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      final bytes = res.data;
+      if (bytes is! List<int>) {
+        throw const ApiException(
+            kind: ApiErrorKind.unknown, message: 'Unexpected export payload');
+      }
+      String filename = 'transactions.csv';
+      final header = res.headers.value('content-disposition');
+      if (header != null) {
+        final match =
+            RegExp(r'filename="?([^";]+)"?').firstMatch(header);
+        if (match != null) filename = match.group(1)!;
+      }
+      return CsvExport(bytes, filename);
     } on DioException catch (e) {
       _fail(e);
     }
@@ -647,8 +672,11 @@ class ApiPaymentRepository implements PaymentRepository {
   final Dio _dio;
   ApiPaymentRepository(this._dio);
 
-  static String _channel(PaymentChannel channel) =>
-      channel == PaymentChannel.mtnMomo ? 'mtn_momo' : 'orange_money';
+  static String _channel(PaymentChannel channel) => switch (channel) {
+        PaymentChannel.mtnMomo => 'mtn_momo',
+        PaymentChannel.orangeMoney => 'orange_money',
+        PaymentChannel.wallet => 'wallet',
+      };
 
   static PaymentResultStatus _status(String value) => switch (value.toUpperCase()) {
         'SUCCESS' || 'PAID' || 'SETTLED' || 'ESCROW_HELD' => PaymentResultStatus.success,
@@ -668,6 +696,8 @@ class ApiPaymentRepository implements PaymentRepository {
         orderId: map['orderId'] as String? ?? orderId,
         status: _status(map['status'] as String? ?? ''),
         reference: map['reference'] as String?,
+        receiptNumber: map['receiptNumber'] as String?,
+        deliveryCode: map['deliveryCode'] as String?,
       );
     } on DioException catch (e) {
       _fail(e);
@@ -859,6 +889,28 @@ class ApiChatRepository implements ChatRepository {
   }
 
   @override
+  Future<ChatThread?> threadForSeller(String sellerId) async {
+    // Reuse an existing thread when the caller already talks to this seller.
+    try {
+      final threads = await this.threads();
+      for (final t in threads) {
+        if (t.sellerId == sellerId ||
+            t.buyerId == sellerId ||
+            t.counterpartyId == sellerId) {
+          return t;
+        }
+      }
+      final res =
+          await _dio.post(Endpoints.chatThreads, data: {'sellerId': sellerId});
+      final data = _unwrap(res.data);
+      if (data is Map<String, dynamic>) return ChatThread.fromJson(data);
+    } on DioException catch (e) {
+      _fail(e);
+    }
+    return null;
+  }
+
+  @override
   Future<List<ChatMessage>> messages(String threadId) async {
     try {
       final res = await _dio.get(_sub(Endpoints.chatThread, 'threadId', threadId));
@@ -975,22 +1027,33 @@ class ApiReceiptRepository implements ReceiptRepository {
   }
 
   @override
-  Future<String?> downloadPdf(String orderId) async {
-    // No filesystem on web — returning null lets the caller show its usual
-    // "unavailable" snackbar (same as the mock repository).
-    if (kIsWeb) return null;
+  Future<List<Receipt>> mine() async {
     try {
-      final receipt = await getForOrder(orderId);
+      final res = await _dio.get(Endpoints.receipts);
+      return _page(_unwrap(res.data), Receipt.fromJson).items;
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
+
+  @override
+  Future<List<int>?> downloadPdfBytes(String receiptId) async {
+    try {
       final res = await _dio.get(
-        _sub(Endpoints.receiptDownload, 'id', receipt.id),
+        _sub(Endpoints.receiptDownload, 'id', receiptId),
         options: Options(responseType: ResponseType.bytes),
       );
-      final bytes = res.data;
-      if (bytes is! List<int>) return null;
-      final file =
-          io.File('${io.Directory.systemTemp.path}/receipt-${receipt.id}.pdf');
-      await file.writeAsBytes(bytes);
-      return file.path;
+      return res.data is List<int> ? res.data as List<int> : null;
+    } on DioException catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<List<int>?> downloadOrderPdf(String orderId) async {
+    try {
+      final receipt = await getForOrder(orderId);
+      return await downloadPdfBytes(receipt.id);
     } on DioException catch (_) {
       return null;
     }
@@ -1069,20 +1132,39 @@ class ApiSellerProfileRepository implements SellerProfileRepository {
   }
 
   @override
+  Future<List<SellerSearchItem>> search(String query) async {
+    try {
+      final res = await _dio.get(
+        Endpoints.sellerProfiles,
+        queryParameters: {'search': query},
+      );
+      return _page(_unwrap(res.data), SellerSearchItem.fromJson).items;
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
+
+  @override
   Future<void> update({
     required String farmName,
     required int mainCategoryId,
     String? farmDescription,
     String? businessLicense,
+    double? farmLatitude,
+    double? farmLongitude,
   }) async {
     try {
       await _dio.patch(Endpoints.sellerProfileMe, data: {
         'farmName': farmName,
         'mainCategoryId': mainCategoryId,
-        if (farmDescription != null && farmDescription.isNotEmpty)
-          'farmDescription': farmDescription,
-        if (businessLicense != null && businessLicense.isNotEmpty)
-          'businessLicense': businessLicense,
+        'farmDescription': ?(farmDescription?.isNotEmpty == true
+            ? farmDescription
+            : null),
+        'businessLicense': ?(businessLicense?.isNotEmpty == true
+            ? businessLicense
+            : null),
+        'farmLatitude': ?farmLatitude,
+        'farmLongitude': ?farmLongitude,
       });
     } on DioException catch (e) {
       _fail(e);
@@ -1237,6 +1319,54 @@ class ApiAdminRepository implements AdminRepository {
       await _dio.post(
         _sub(Endpoints.processWithdrawal, 'id', id),
         data: {'approve': !reject},
+      );
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
+
+  @override
+  Future<void> requestSellerDocument(String userId, String kind) async {
+    try {
+      await _dio.post(
+        _sub(Endpoints.adminSellerRequestDocument, 'userId', userId),
+        data: {'kind': kind},
+      );
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
+
+  @override
+  Future<List<User>> admins() async {
+    try {
+      final res = await _dio.get(Endpoints.adminAdmins);
+      return _page(_unwrap(res.data), User.fromJson).items;
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
+
+  @override
+  Future<void> createAdmin(CreateAdminInput input) async {
+    try {
+      await _dio.post(Endpoints.adminAdmins, data: {
+        'firstName': input.firstName,
+        'lastName': input.lastName,
+        'email': input.email,
+        'role': input.role.apiValue,
+      });
+    } on DioException catch (e) {
+      _fail(e);
+    }
+  }
+
+  @override
+  Future<void> updateAdminRole(String userId, AdminRole role) async {
+    try {
+      await _dio.patch(
+        _sub(Endpoints.adminAdminRole, 'userId', userId),
+        data: {'role': role.apiValue},
       );
     } on DioException catch (e) {
       _fail(e);
@@ -1435,6 +1565,29 @@ class ApiDeviceTokenRepository implements DeviceTokenRepository {
     try {
       await _dio.delete(Endpoints.deviceTokens, data: {'token': token});
     } on DioException catch (e) {
+      _fail(e);
+    }
+  }
+}
+
+/// ────────────────────────────────────────────────────────────────────────────
+/// Platform config (`GET /platform-config/{key}`)
+/// ────────────────────────────────────────────────────────────────────────────
+class ApiPlatformConfigRepository implements PlatformConfigRepository {
+  final Dio _dio;
+  ApiPlatformConfigRepository(this._dio);
+
+  @override
+  Future<PlatformConfig?> get(String key) async {
+    try {
+      final res = await _dio.get(_sub(Endpoints.platformConfigKey, 'key', key));
+      final data = _unwrap(res.data);
+      if (data is Map<String, dynamic>) return PlatformConfig.fromJson(data);
+      return null;
+    } on DioException catch (e) {
+      // A missing key is a 404 — treat it as "not configured" rather than an
+      // error so callers fall back to their baked-in defaults.
+      if (e.response?.statusCode == 404) return null;
       _fail(e);
     }
   }

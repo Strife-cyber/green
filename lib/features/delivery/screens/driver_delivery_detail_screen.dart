@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
-import '../../../core/utils/formatters.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/utils/formatters.dart';
 import '../../../data/models/delivery.dart';
+import '../../../data/models/enums.dart';
+import '../../../data/repositories/providers.dart';
+import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/error_view.dart';
+import '../../../shared/widgets/report_dialog.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../../../theme/app_colors.dart';
 import '../controllers/delivery_tracking_controller.dart';
 import '../controllers/driver_delivery_detail_controller.dart';
+import '../widgets/buyer_code_dialog.dart';
 import '../widgets/live_delivery_map.dart';
 
 /// Driver view of one delivery: live map, the destination (recipient, phone,
@@ -67,6 +74,7 @@ class _DriverDeliveryDetailScreenState extends ConsumerState<DriverDeliveryDetai
             _infoCard(context, data),
             const SizedBox(height: 16),
             ..._actions(context, data),
+            _reportProblem(context, data),
           ],
         ),
       ),
@@ -193,8 +201,8 @@ class _DriverDeliveryDetailScreenState extends ConsumerState<DriverDeliveryDetai
 
   /// One contextual primary action: not picked up → "Confirm pickup";
   /// picked up → "I've arrived — send buyer the code"; delivered → nothing.
-  /// The confirmation code is issued by the backend and sent to the buyer
-  /// (DEL-07) — the driver never sees it.
+  /// Under it sits the "Ask for the buyer's code" hand-off (the driver types
+  /// the buyer's 6-digit code and confirms directly) plus a problem report.
   List<Widget> _actions(BuildContext context, Delivery delivery) {
     if (delivery.isDelivered) return const [];
     return [
@@ -215,8 +223,96 @@ class _DriverDeliveryDetailScreenState extends ConsumerState<DriverDeliveryDetai
           ),
         ),
       ),
+      if (delivery.isPickupConfirmed) ...[
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _busy ? null : _askForBuyerCode,
+            icon: const Icon(Icons.pin_outlined),
+            label: Text(context.t.enterBuyerCode),
+          ),
+        ),
+      ],
+      if (delivery.hasDestination) ...[
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => _navigate(delivery),
+            icon: const Icon(Icons.navigation_outlined),
+            label: Text(context.t.navigate),
+          ),
+        ),
+      ],
       const SizedBox(height: 12),
     ];
+  }
+
+  /// "Report a problem" (design 24) — flags the order's buyer for admin
+  /// follow-up (POST /reports).
+  Widget _reportProblem(BuildContext context, Delivery delivery) {
+    final buyerId = delivery.buyerId;
+    if (buyerId == null || delivery.isDelivered) {
+      return const SizedBox.shrink();
+    }
+    return Center(
+      child: TextButton.icon(
+        onPressed: () => showReportDialog(
+          context,
+          ref,
+          reportedId: buyerId,
+          targetType: ReportTargetType.profile,
+        ),
+        icon: const Icon(Icons.flag_outlined, size: 16),
+        label: Text(context.t.reportProblem),
+        style: TextButton.styleFrom(foregroundColor: AppColors.orangeDark),
+      ),
+    );
+  }
+
+  /// Google Maps directions to the destination (design 24).
+  Future<void> _navigate(Delivery delivery) async {
+    final lat = delivery.destinationLatitude;
+    final lng = delivery.destinationLongitude;
+    if (lat == null || lng == null) return;
+    await launchUrl(
+      Uri.parse(
+        'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng',
+      ),
+      mode: LaunchMode.externalApplication,
+    );
+  }
+
+  /// The driver-side code hand-off: the buyer reads their 6-digit code out
+  /// and the driver posts it to `POST /deliveries/{id}/confirm` — the
+  /// extended contract accepts it from the assigned driver (DEL-07).
+  Future<void> _askForBuyerCode() async {
+    final code = await showDialog<String>(
+      context: context,
+      builder: (context) => const BuyerCodeDialog(),
+    );
+    if (code == null || code.length != 6 || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(deliveryRepositoryProvider)
+          .confirm(widget.id, code: code);
+      if (!mounted) return;
+      ref.invalidate(driverDeliveryDetailControllerProvider(widget.id));
+      final messenger = ScaffoldMessenger.of(context);
+      final confirmed = context.t.deliveryConfirmed;
+      await ref
+          .read(deliveryTrackingControllerProvider(_trackingRequest).notifier)
+          .refreshNow();
+      messenger.showSnackBar(SnackBar(content: Text(confirmed)));
+    } catch (error) {
+      if (mounted) {
+        _showError(friendlyErrorMessage(error, context));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _confirmPickup() async {

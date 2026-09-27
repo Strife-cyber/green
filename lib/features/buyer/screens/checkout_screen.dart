@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
+import '../../../core/utils/money.dart';
 import '../../../data/models/address.dart';
+import '../../../data/repositories/providers.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../shared/widgets/amount_text.dart';
 import '../../../shared/widgets/async_view.dart';
@@ -27,19 +29,24 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 }
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
-  /// Per-seller delivery fee sent on order creation. The backend currently
-  /// persists `delivery_fee: 0` and charges the subtotal only (the fee rule
-  /// isn't decided yet), so the summary shows "set at order" instead of a
-  /// phantom amount and the displayed total always equals the charge.
-  static const int deliveryFee = 0;
-
   String? _selectedAddressId;
+
+  /// The flat fee charged per order (one per farm) — platform config
+  /// `delivery_fee_flat`, falling back to the app-wide default while the
+  /// config endpoint isn't live. The backend persists the same fee on the
+  /// created orders (`deliveryFee`), so the shown total equals the charge.
+  int _deliveryFee() => int.tryParse(
+        ref.watch(platformConfigProvider('delivery_fee_flat')).valueOrNull ??
+            '',
+      ) ??
+      kDefaultDeliveryFee;
 
   @override
   Widget build(BuildContext context) {
     final cart = ref.watch(cartControllerProvider);
     final checkout = ref.watch(checkoutControllerProvider);
     final addresses = ref.watch(addressControllerProvider);
+    final deliveryFee = _deliveryFee();
 
     ref.listen(checkoutControllerProvider, (previous, next) {
       if (previous != null &&
@@ -132,6 +139,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     Map<String, List<CartLine>> groups,
     Address address,
   ) async {
+    final deliveryFee = _deliveryFee();
     // D7: browsing is free for unverified accounts, but placing an order is
     // the one action that requires a verified email — the banner's Resend /
     // check-status affordances live above the app shell.
@@ -303,10 +311,9 @@ class _AddressCard extends StatelessWidget {
 }
 
 /// A single order-style summary of the whole cart: every line item, one
-/// subtotal, one delivery line, one total. The seller grouping is only used to
-/// charge the correct flat fee per seller — the buyer never sees the split.
-/// Until the backend computes a fee, the delivery line reads "set at order"
-/// and the total is exactly what payment charges.
+/// subtotal, the per-order delivery fee (× number of farm orders) and one
+/// total. The seller grouping is only used to charge the correct flat fee
+/// per seller — the buyer never sees the split itself.
 class _CheckoutSummaryCard extends StatelessWidget {
   final Map<String, List<CartLine>> groups;
   final int deliveryFee;
@@ -324,7 +331,8 @@ class _CheckoutSummaryCard extends StatelessWidget {
         subtotal += line.lineTotal;
       }
     }
-    final deliveryTotal = deliveryFee * groups.length;
+    final orderCount = groups.length;
+    final deliveryTotal = deliveryFee * orderCount;
     final total = subtotal + deliveryTotal;
 
     return Card(
@@ -350,9 +358,14 @@ class _CheckoutSummaryCard extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(t.delivery, style: theme.textTheme.bodyMedium),
                   Text(
-                    'Set at order',
+                    orderCount > 1
+                        ? t.deliveryPerOrder(count: orderCount)
+                        : t.delivery,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  AmountText(
+                    deliveryTotal,
                     style: theme.textTheme.bodyMedium
                         ?.copyWith(color: AppColors.tanDark),
                   ),
