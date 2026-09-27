@@ -219,7 +219,7 @@ class _SellerCard extends ConsumerWidget {
                   _IdentityImage(
                     label: 'National ID',
                     userId: seller.userId,
-                    kind: 'nationalId',
+                    kind: 'national_id',
                     token: accessToken,
                     hasDoc: seller.nationalIdUrl != null,
                   ),
@@ -257,7 +257,7 @@ class _SellerCard extends ConsumerWidget {
               children: [
                 Expanded(
                   child: TextButton.icon(
-                    onPressed: () => _requestDocument(context, ref, 'nationalId'),
+                    onPressed: () => _requestDocument(context, ref, 'national_id'),
                     icon: const Icon(Icons.badge_outlined, size: 16),
                     label: Text(context.t.askNewIdPhoto),
                   ),

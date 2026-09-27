@@ -4,9 +4,9 @@
 /// To regenerate, run: `dart run slang`
 ///
 /// Locales: 2
-/// Strings: 820 (410 per locale)
+/// Strings: 828 (414 per locale)
 ///
-/// Built on 2026-09-27 at 20:11 UTC
+/// Built on 2026-09-27 at 21:20 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -574,6 +574,10 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
 	String get askNewIdPhoto => 'Ask for a new ID photo';
 	String get askNewSelfiePhoto => 'Ask for a new selfie';
 	String get documentRequested => 'Document request sent';
+	String get ordersTabNew => 'New';
+	String get ordersTabShipping => 'Shipping';
+	String get ordersTabDone => 'Done';
+	String get noOrdersInTab => 'No orders here';
 }
 
 // Path: <root>
@@ -1028,6 +1032,10 @@ class _StringsFr extends Translations {
 	@override String get askNewIdPhoto => 'Demander une nouvelle photo d\'ID';
 	@override String get askNewSelfiePhoto => 'Demander un nouveau selfie';
 	@override String get documentRequested => 'Demande de document envoyée';
+	@override String get ordersTabNew => 'Nouvelles';
+	@override String get ordersTabShipping => 'En livraison';
+	@override String get ordersTabDone => 'Terminées';
+	@override String get noOrdersInTab => 'Aucune commande ici';
 }
 
 /// Flat map(s) containing all translations.
@@ -1462,6 +1470,10 @@ extension on Translations {
 			case 'askNewIdPhoto': return 'Ask for a new ID photo';
 			case 'askNewSelfiePhoto': return 'Ask for a new selfie';
 			case 'documentRequested': return 'Document request sent';
+			case 'ordersTabNew': return 'New';
+			case 'ordersTabShipping': return 'Shipping';
+			case 'ordersTabDone': return 'Done';
+			case 'noOrdersInTab': return 'No orders here';
 			default: return null;
 		}
 	}
@@ -1896,6 +1908,10 @@ extension on _StringsFr {
 			case 'askNewIdPhoto': return 'Demander une nouvelle photo d\'ID';
 			case 'askNewSelfiePhoto': return 'Demander un nouveau selfie';
 			case 'documentRequested': return 'Demande de document envoyée';
+			case 'ordersTabNew': return 'Nouvelles';
+			case 'ordersTabShipping': return 'En livraison';
+			case 'ordersTabDone': return 'Terminées';
+			case 'noOrdersInTab': return 'Aucune commande ici';
 			default: return null;
 		}
 	}

@@ -804,8 +804,9 @@ class _VoiceBubbleState extends State<_VoiceBubble> {
   Source? _source() {
     final fileUrl = widget.message.fileUrl;
     if (fileUrl == null || fileUrl.isEmpty) return null;
-    final isLocal = fileUrl.startsWith('/') || RegExp(r'^[A-Za-z]:').hasMatch(fileUrl);
-    return isLocal ? DeviceFileSource(fileUrl) : UrlSource(resolveMediaUrl(fileUrl));
+    return isLocalMediaPath(fileUrl)
+        ? DeviceFileSource(fileUrl)
+        : UrlSource(resolveMediaUrl(fileUrl));
   }
 
   String _durationLabel() {
@@ -868,9 +869,7 @@ class _ImageContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final filePath = message.fileUrl;
-    final isLocal = filePath != null &&
-        (filePath.startsWith('/') || RegExp(r'^[A-Za-z]:').hasMatch(filePath));
-    if (isLocal) {
+    if (filePath != null && isLocalMediaPath(filePath)) {
       // `Image.file` can't render blob URLs on web — LocalFileImage reads the
       // picked file's bytes cross-platform instead.
       return ClipRRect(

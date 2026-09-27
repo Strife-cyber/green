@@ -399,5 +399,9 @@
   "superAdminOnlyBody": "Demandez à un super admin de changer les rôles ou d'ajouter des admins.",
   "askNewIdPhoto": "Demander une nouvelle photo d'ID",
   "askNewSelfiePhoto": "Demander un nouveau selfie",
-  "documentRequested": "Demande de document envoyée"
+  "documentRequested": "Demande de document envoyée",
+  "ordersTabNew": "Nouvelles",
+  "ordersTabShipping": "En livraison",
+  "ordersTabDone": "Terminées",
+  "noOrdersInTab": "Aucune commande ici"
 }

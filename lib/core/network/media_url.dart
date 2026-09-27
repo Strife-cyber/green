@@ -13,3 +13,14 @@ String resolveMediaUrl(String? url) {
   final base = AppConfig.apiBaseUrl.replaceAll(RegExp(r'/$'), '');
   return '$base${url.startsWith('/') ? url : '/$url'}';
 }
+
+/// True when [path] refers to a client-side file (a just-picked camera/gallery
+/// or microphone artifact), false for anything the API serves. Server paths are
+/// relative (`/uploads/…`) or absolute `http(s)`; a leading `/` alone is NOT a
+/// local signal — `/uploads/x.jpg` is remote.
+bool isLocalMediaPath(String path) =>
+    path.startsWith('blob:') ||
+    path.startsWith('data:') ||
+    path.startsWith('file:') ||
+    RegExp(r'^[A-Za-z]:').hasMatch(path) ||
+    (path.startsWith('/') && !path.startsWith('/uploads/'));

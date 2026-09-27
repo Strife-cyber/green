@@ -15,6 +15,7 @@ import '../controllers/seller_profile_controller.dart';
 import 'seller_dashboard_screen.dart';
 import 'seller_products_screen.dart';
 import 'seller_profile_screen.dart';
+import 'seller_orders_screen.dart';
 import 'seller_queue_screen.dart';
 
 /// Seller role home: a BraidsBook-style [AppShell] where the first tab is the
@@ -45,10 +46,11 @@ class _SellerHomeScreenState extends ConsumerState<SellerHomeScreen> {
       if (previous == next) return;
       switch (next) {
         case 0: ref.invalidate(sellerOrderListControllerProvider); break;
-        case 1: ref.invalidate(sellerProductListControllerProvider); break;
-        case 2: ref.invalidate(sellerDashboardControllerProvider); break;
-        case 3: break; // Chat is self-managing.
-        case 4: ref.invalidate(sellerProfileControllerProvider); break;
+        case 1: ref.invalidate(sellerOrderListControllerProvider); break;
+        case 2: ref.invalidate(sellerProductListControllerProvider); break;
+        case 3: ref.invalidate(sellerDashboardControllerProvider); break;
+        case 4: break; // Chat is self-managing.
+        case 5: ref.invalidate(sellerProfileControllerProvider); break;
       }
     });
     return AppShell(
@@ -56,6 +58,7 @@ class _SellerHomeScreenState extends ConsumerState<SellerHomeScreen> {
       persistKey: 'seller',
       tabs: [
         AppShellTab(label: t.navQueue, icon: Icons.inventory_2_outlined, page: const SellerQueueScreen()),
+        AppShellTab(label: t.navOrders, icon: Icons.receipt_long_outlined, page: const SellerOrdersScreen()),
         AppShellTab(label: t.navProducts, icon: Icons.storefront_outlined, page: const SellerProductsScreen()),
         AppShellTab(label: t.navDashboard, icon: Icons.analytics_outlined, page: const SellerDashboardScreen()),
         AppShellTab(label: t.navChat, icon: Icons.chat_bubble_outline, page: const ChatThreadsScreen()),
