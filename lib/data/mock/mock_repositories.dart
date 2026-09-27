@@ -615,6 +615,19 @@ class MockDeliveryRepository implements DeliveryRepository {
     return _enrich(store.deliveries.firstWhere((d) => d.id == id));
   }
 
+  /// No socket server under USE_MOCKS — the driver-side simulated route writes
+  /// its fixes here so a buyer/seller's 5s poll sees the same movement.
+  @override
+  Future<void> reportPosition(String id, double latitude, double longitude) async {
+    final index = store.deliveries.indexWhere((d) => d.id == id);
+    if (index < 0) return;
+    store.deliveries[index] = store.deliveries[index].copyWith(
+      currentLatitude: latitude,
+      currentLongitude: longitude,
+      locationUpdatedAt: DateTime.now(),
+    );
+  }
+
   @override
   Future<Delivery> pickup(String id) async {
     await _delay();

@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/repositories/payment_repository.dart';
 import '../../../data/repositories/providers.dart';
+import '../../buyer/controllers/buyer_order_list_controller.dart';
+import '../../buyer/controllers/order_detail_controller.dart';
 
 /// Flow state of the current payment attempt (distinct from the order's
 /// [PaymentStatus]).
@@ -38,6 +40,10 @@ class PaymentController extends FamilyNotifier<PaymentState, String> {
     try {
       final result = await ref.read(paymentRepositoryProvider).initiate(orderId, channel);
       state = PaymentSuccess(result);
+      // The order list shows its own "Pay now" affordance — refetch so the
+      // just-paid order loses it without waiting for a manual refresh.
+      ref.invalidate(buyerOrderListControllerProvider);
+      ref.invalidate(orderDetailControllerProvider);
     } catch (_) {
       state = const PaymentFailure('Payment failed. Please check your connection and try again.');
     }

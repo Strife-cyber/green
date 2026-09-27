@@ -164,6 +164,9 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   Widget _buildOrder(BuildContext context, Order order, Delivery? delivery) {
     final theme = Theme.of(context);
     final shipped = order.status == OrderStatus.shipped;
+    // A driver being assigned (deliveryId set) is enough to surface live
+    // tracking — don't wait for SHIPPED.
+    final hasDelivery = order.deliveryId != null;
     final canGotIt = shipped && delivery != null && delivery.isAwaitingBuyer;
 
     final addressLabel = order.deliveryAddressLabel ??
@@ -210,7 +213,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           const SizedBox(height: 16),
           _gotItCard(context, delivery),
         ],
-        if (shipped && delivery != null) ...[
+        if (hasDelivery) ...[
           const SizedBox(height: 16),
           LiveDeliveryMap(
             delivery: delivery,
@@ -428,7 +431,6 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final unpaid = order.paymentStatus == PaymentStatus.unpaid;
     final pending = order.status == OrderStatus.pending;
     final cancelled = order.status == OrderStatus.cancelled;
-    final shipped = order.status == OrderStatus.shipped;
     final delivered = order.status == OrderStatus.delivered;
 
     // Gate on BOTH fields — a cancelled order stays UNPAID (mustn't offer
@@ -459,7 +461,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         ),
       );
     }
-    if (shipped) {
+    if (order.deliveryId != null) {
       buttons.add(
         OutlinedButton.icon(
           onPressed: () => context.push(AppRoutes.deliveryTracking(order.id)),

@@ -88,12 +88,22 @@ class DeliveryTrackingController
     if (ref.watch(currentUserIdProvider) == null) {
       return const DeliveryTrackingState();
     }
+    // No-op request (no delivery or order to track) — stays idle without
+    // opening a socket. Used by the driver home anchor when the queue is
+    // empty.
+    if ((request.deliveryId ?? '').isEmpty && (request.orderId ?? '').isEmpty) {
+      return const DeliveryTrackingState();
+    }
+    // The notifier instance persists across rebuilds — re-resolve through the
+    // order on account switch so a stale id can't keep a previous user's
+    // room/poll alive.
+    _resolvedDeliveryId = request.deliveryId;
     final socket = ref.read(socketServiceProvider);
     // Connect (awaiting session restore on cold start, so the token is never
     // empty) and join the deliveries room — rooms are re-joined automatically
     // on any reconnect.
     unawaited(socket.connectWhenAuthed(ref, namespace: SocketService.deliveriesNamespace));
-    if (request.deliveryId != null) {
+    if (request.deliveryId != null && request.deliveryId!.isNotEmpty) {
       socket.joinRoom(SocketService.deliveriesNamespace, {'deliveryId': request.deliveryId!});
     }
     _socketSub = socket
@@ -197,7 +207,9 @@ class DeliveryTrackingController
   }
 
   /// Broadcasts a position so buyers/sellers following the order see movement
-  /// (real protocol: `location:update` with lat/lng).
+  /// (real protocol: `location:update` with lat/lng). Under USE_MOCKS the
+  /// socket is dead — reportPosition persists the fix into the shared mock
+  /// store so every role's poll sees the same simulated movement.
   void _emitLocation(Delivery updated) {
     try {
       ref.read(socketServiceProvider).emit(
@@ -211,6 +223,13 @@ class DeliveryTrackingController
           );
     } catch (_) {
       // Socket unavailable — ignore.
+    }
+    final lat = updated.currentLatitude;
+    final lng = updated.currentLongitude;
+    if (lat != null && lng != null) {
+      unawaited(
+        ref.read(deliveryRepositoryProvider).reportPosition(updated.id, lat, lng),
+      );
     }
   }
 
@@ -253,6 +272,15 @@ class DeliveryTrackingController
         }
       }
       if (_disposed) return;
+      // Buyers/sellers only know the ORDER id, so the room join in build()
+      // can't happen for them — join as soon as the delivery id resolves
+      // here. joinRoom dedupes and re-sends on reconnect, so a late or
+      // repeated join is safe.
+      final resolved = _resolvedDeliveryId;
+      if (resolved != null && resolved.isNotEmpty) {
+        ref.read(socketServiceProvider).joinRoom(
+            SocketService.deliveriesNamespace, {'deliveryId': resolved});
+      }
       // While publishing, keep the driver's locally-stepped coordinates and
       // only take the status fields from the repository.
       final keepCoords = state.publishing && state.delivery != null;
