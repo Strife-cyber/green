@@ -1030,7 +1030,27 @@ class ApiReceiptRepository implements ReceiptRepository {
   Future<List<Receipt>> mine() async {
     try {
       final res = await _dio.get(Endpoints.receipts);
-      return _page(_unwrap(res.data), Receipt.fromJson).items;
+      // The list items are receipt-COPY wrappers `{id: copyId, receiptId,
+      // recipientRole, deliveredAt, receipt: {…}}` (REC-03) — unwrap the
+      // nested receipt and address it by `receiptId` so download hits
+      // `/receipts/<receiptId>/download`, not the copy id. A bare flat
+      // receipt item still parses directly.
+      Receipt? parse(dynamic item) {
+        if (item is! Map<String, dynamic>) return null;
+        if (item['receipt'] is Map<String, dynamic>) {
+          final merged = {
+            ...item['receipt'] as Map<String, dynamic>,
+            'id': item['receiptId'] ?? item['receipt_id'],
+          };
+          return Receipt.fromJson(merged);
+        }
+        return Receipt.fromJson(item);
+      }
+
+      final data = _unwrap(res.data);
+      final list = data is Map<String, dynamic> ? data['items'] : data;
+      if (list is! List) return const [];
+      return [for (final it in list) ?parse(it)];
     } on DioException catch (e) {
       _fail(e);
     }
